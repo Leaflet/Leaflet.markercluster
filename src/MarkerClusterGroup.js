@@ -36,14 +36,21 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_zoomStart: function (e) {
+		if (!e.zoom) { //Do nothing for a touchZoom
+			return;
+		}
+
 		this._animationStart();
 
 		this._mergeSplitClusters(e.zoom);
 	},
 	_zoomEnd: function () {
-		//this._animationStart();
+		if (this._inZoomAnimation === 0) {
+			//A touch zoom just happened, hopefully this fixes it (TODO: Test me)
+			this._zoomStart({ zoom: this._map._zoom });
+		}
 
-		//this._mergeSplitClusters();
+		this._animationZoomEnd();
 
 		this._zoom = this._map._zoom;
 		this._currentShownBounds = this._getExpandedVisibleBounds();
@@ -267,6 +274,8 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 		if (newCluster !== layer && newCluster._childCount === 2) {
 			newCluster._recursivelyRemoveChildrenFromMap(newCluster._bounds, 1);
 		}
+	},
+	_animationZoomEnd: function () {
 	}
 } : {
 
@@ -379,6 +388,18 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			me._animationEnd();
 		}, 250);
 	},
+	_animationZoomEnd: function () {
+		var newBounds = this._getExpandedVisibleBounds(),
+			depth = this._map._zoom - this._topClusterLevel._zoom;
+
+		if (depth < 0) {
+			return;
+		}
+
+		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, depth, newBounds);
+	},
+
+
 	_animationAddLayer: function (layer, newCluster) {
 		var me = this;
 
