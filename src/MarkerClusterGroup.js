@@ -35,10 +35,15 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		return dx * dx + dy * dy;
 	},
 
-	_zoomEnd: function () {
+	_zoomStart: function (e) {
 		this._animationStart();
 
-		this._mergeSplitClusters();
+		this._mergeSplitClusters(e.zoom);
+	},
+	_zoomEnd: function () {
+		//this._animationStart();
+
+		//this._mergeSplitClusters();
 
 		this._zoom = this._map._zoom;
 		this._currentShownBounds = this._getExpandedVisibleBounds();
@@ -80,17 +85,17 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	//Merge and split any existing clusters that are too big or small
-	_mergeSplitClusters: function () {
+	_mergeSplitClusters: function (zoom) {
 
-		if (this._zoom < this._map._zoom) { //Zoom in, split
+		if (this._zoom < zoom) { //Zoom in, split
 			//Remove clusters now off screen
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._zoom - this._topClusterLevel._zoom, this._getExpandedVisibleBounds());
 
-			this._animationZoomIn(this._zoom, this._map._zoom);
+			this._animationZoomIn(this._zoom, zoom);
 
-		} else if (this._zoom > this._map._zoom) { //Zoom out, merge
+		} else if (this._zoom > zoom) { //Zoom out, merge
 
-			this._animationZoomOut(this._zoom, this._map._zoom);
+			this._animationZoomOut(this._zoom, zoom);
 		}
 	},
 
@@ -120,6 +125,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._generateInitialClusters();
 		this._map.on('zoomend', this._zoomEnd, this);
+		this._map.on('zoomstart', this._zoomStart, this);
 		this._map.on('moveend', this._moveEnd, this);
 
 		if (this._spiderfierOnAdd) { //TODO FIXME: Not sure how to have spiderfier add something on here nicely
