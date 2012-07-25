@@ -95,9 +95,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_mergeSplitClusters: function (zoom) {
 
 		if (this._zoom < zoom) { //Zoom in, split
-			//Remove clusters now off screen
-			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._zoom - this._topClusterLevel._zoom, this._getExpandedVisibleBounds());
-
 			this._animationZoomIn(this._zoom, zoom);
 
 		} else if (this._zoom > zoom) { //Zoom out, merge

@@ -198,7 +198,9 @@ L.MarkerCluster = L.Marker.extend({
 		return false;
 	},
 
-	_recursivelyAnimateChildrenIn: function (bounds, center, depth) {
+	_recursivelyAnimateChildrenIn: function (bounds, depth) {
+		var latlng = this._latlng;
+
 		this._recursively(bounds, 0, depth - 1,
 			function (c) {
 				var markers = c._markers,
@@ -208,7 +210,8 @@ L.MarkerCluster = L.Marker.extend({
 
 					//Only do it if the icon is still on the map
 					if (m._icon) {
-						m._setPos(center);
+						m._backupLatlng = m._latlng;
+						m.setLatLng(latlng);
 						m.setOpacity(0);
 					}
 				}
@@ -219,7 +222,8 @@ L.MarkerCluster = L.Marker.extend({
 				for (j = childClusters.length - 1; j >= 0; j--) {
 					cm = childClusters[j];
 					if (cm._icon) {
-						cm._setPos(center);
+						cm._backupLatlng = cm._latlng;
+						cm.setLatLng(latlng);
 						cm.setOpacity(0);
 					}
 				}
@@ -230,7 +234,7 @@ L.MarkerCluster = L.Marker.extend({
 	_recursivelyAnimateChildrenInAndAddSelfToMap: function (bounds, depthToStartAt, depthToAnimateIn) {
 		this._recursively(bounds, depthToStartAt, 0,
 			function (c) {
-				c._recursivelyAnimateChildrenIn(bounds, c._group._map.latLngToLayerPoint(c.getLatLng()).round(), depthToAnimateIn);
+				c._recursivelyAnimateChildrenIn(bounds, depthToAnimateIn);
 
 				//TODO: depthToAnimateIn affects _isSingleParent, if there is a multizoom we may/may not be.
 				//As a hack we only do a animation free zoom on a single level zoom, if someone does multiple levels then we always animate
@@ -324,6 +328,7 @@ L.MarkerCluster = L.Marker.extend({
 					if (!exceptBounds || !exceptBounds.contains(m._latlng)) {
 						L.FeatureGroup.prototype.removeLayer.call(c._group, m);
 						m.setOpacity(1);
+						m._latlng = m._backupLatlng || m._latlng;
 					}
 				}
 			},
@@ -334,6 +339,7 @@ L.MarkerCluster = L.Marker.extend({
 					if (!exceptBounds || !exceptBounds.contains(m._latlng)) {
 						L.FeatureGroup.prototype.removeLayer.call(c._group, m);
 						m.setOpacity(1);
+						m._latlng = m._backupLatlng || m._latlng;
 					}
 				}
 			}
