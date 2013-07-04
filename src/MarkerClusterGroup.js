@@ -414,6 +414,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._bindEvents();
 
+		// if this is a re-add, check to see if the map zoom changed while we were gone
+		if (this._zoom && this._zoom != this._map.getZoom()) {
+			this._mergeSplitClusters();
+		}
 
 		//Actually add our markers to the map:
 
