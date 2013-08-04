@@ -330,7 +330,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Zoom down to show the given layer (spiderfying if necessary) then calls the callback
 	zoomToShowLayer: function (layer, callback) {
 
-		var showMarker = function () {
+		var me = this,
+		    showMarker = function () {
 			if ((layer._icon || layer.__parent._icon) && !this._inZoomAnimation) {
 				this._map.off('moveend', showMarker, this);
 				this.off('animationend', showMarker, this);
@@ -350,9 +351,15 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		};
 
 		if (layer._icon) {
+            // center on the pre-spiderfy or original lat/lng position
+            if (layer._preSpiderfyLatlng) {
+                this._map.panTo(layer._preSpiderfyLatlng);
+            } else if (layer._latlng) {
+                this._map.panTo(layer._latlng);
+            }
 			callback();
 		} else if (layer.__parent._zoom < this._map.getZoom()) {
-			//Layer should be visible now but isn't on screen, just pan over to it
+			//Layer should be visible now but isn't on screen, just center to it
 			this._map.on('moveend', showMarker, this);
 			if (!layer._icon) {
 				this._map.panTo(layer.getLatLng());
@@ -362,7 +369,14 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this.on('animationend', showMarker, this);
 			this._map.setView(layer.getLatLng(), layer.__parent._zoom + 1);
 			layer.__parent.zoomToBounds();
-		}
+
+            // simulate a movement if nothing's change show that it will spiderfy properly
+            setTimeout(function () {
+                if ((layer._icon || layer.__parent._icon) && !me._inZoomAnimation) {
+                    me._map.fire('moveend');
+                }
+            }, 100);
+        }
 	},
 
 	//Overrides FeatureGroup.onAdd
