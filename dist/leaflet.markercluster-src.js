@@ -336,7 +336,18 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	zoomToShowLayer: function (layer, callback) {
 
 		var me = this,
-		    showMarker = function () {
+            showMarker = function () {
+            // Remove the timer if it still exists
+            if (this._z2slTimeoutID) {
+                clearTimeout(this._z2slTimeoutID);
+                delete this._z2slTimeoutID;
+            }
+            // Check if the layer still exists
+            if (!layer.__parent) {
+                this._map.off('moveend', showMarker, this);
+                this.off('animationend', showMarker, this);
+                return;
+            }
 			if ((layer._icon || layer.__parent._icon) && !this._inZoomAnimation) {
 				this._map.off('moveend', showMarker, this);
 				this.off('animationend', showMarker, this);
@@ -366,6 +377,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		} else if (layer.__parent._zoom < this._map.getZoom()) {
 			//Layer should be visible now but isn't on screen, just center to it
 			this._map.on('moveend', showMarker, this);
+            this.on('animationend', showMarker, this);
 			if (!layer._icon) {
 				this._map.panTo(layer.getLatLng());
 			}
@@ -376,10 +388,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			layer.__parent.zoomToBounds();
 
             // simulate a movement if nothing's change show that it will spiderfy properly
-            setTimeout(function () {
-                if ((layer._icon || layer.__parent._icon) && !me._inZoomAnimation) {
-                    me._map.fire('moveend');
-                }
+            this._z2slTimeoutID = setTimeout(function () {
+                me._map.fire('moveend');
             }, 100);
         }
 	},
