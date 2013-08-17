@@ -330,39 +330,81 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Zoom down to show the given layer (spiderfying if necessary) then calls the callback
 	zoomToShowLayer: function (layer, callback) {
 
-		var showMarker = function () {
-			if ((layer._icon || layer.__parent._icon) && !this._inZoomAnimation) {
-				this._map.off('moveend', showMarker, this);
-				this.off('animationend', showMarker, this);
+		var me = this,
+            showMarker = function () {
+                // Remove the timer if it still exists
+                if (this._z2slTimeoutID) {
+                    clearTimeout(this._z2slTimeoutID);
+                    delete this._z2slTimeoutID;
+                }
+                // Check if the layer still exists
+                if (!layer.__parent) {
+                    this._map.off('moveend', showMarker, this);
+                    this.off('animationend', showMarker, this);
+                    return;
+                }
+                if ((layer._icon || layer.__parent._icon) && !this._inZoomAnimation) {
+                    this._map.off('moveend', showMarker, this);
+                    this.off('animationend', showMarker, this);
 
-				if (layer._icon) {
-					callback();
-				} else if (layer.__parent._icon) {
-					var afterSpiderfy = function () {
-						this.off('spiderfied', afterSpiderfy, this);
-						callback();
-					};
+                    if (layer._icon) {
+                        callback();
+                    } else if (layer.__parent._icon) {
+                        var afterSpiderfy = function () {
+                            this.off('spiderfied', afterSpiderfy, this);
+                            callback();
+                        };
 
-					this.on('spiderfied', afterSpiderfy, this);
-					layer.__parent.spiderfy();
-				}
-			}
-		};
+                        this.on('spiderfied', afterSpiderfy, this);
+                        layer.__parent.spiderfy();
+                    }
+                }
+            },
+            zoomToBounds = function () {
+                if (this._z2slTimeoutID) {
+                    clearTimeout(this._z2slTimeoutID);
+                    delete this._z2slTimeoutID;
+                }
+                if (!this._inZoomAnimation) {
+                    this._map.off('moveend', zoomToBounds, this);
+                    this.off('animationend', zoomToBounds, this);
+                    this._map.on('moveend', showMarker, this);
+                    this.on('animationend', showMarker, this);
+                    layer.__parent.zoomToBounds();
+
+                    this._z2slTimeoutID = setTimeout(function () {
+                        delete this._z2slTimeoutID;
+                        me._map.fire('moveend');
+                    }, 100);
+                }
+            };
 
 		if (layer._icon) {
+            // center on the pre-spiderfy or original lat/lng position
+            if (layer._preSpiderfyLatlng) {
+                this._map.panTo(layer._preSpiderfyLatlng);
+            } else if (layer._latlng) {
+                this._map.panTo(layer._latlng);
+            }
 			callback();
 		} else if (layer.__parent._zoom < this._map.getZoom()) {
-			//Layer should be visible now but isn't on screen, just pan over to it
+			//Layer should be visible now but isn't on screen, just center to it
 			this._map.on('moveend', showMarker, this);
+            this.on('animationend', showMarker, this);
 			if (!layer._icon) {
 				this._map.panTo(layer.getLatLng());
 			}
 		} else {
-			this._map.on('moveend', showMarker, this);
-			this.on('animationend', showMarker, this);
+			this._map.on('moveend', zoomToBounds, this);
+			this.on('animationend', zoomToBounds, this);
 			this._map.setView(layer.getLatLng(), layer.__parent._zoom + 1);
-			layer.__parent.zoomToBounds();
-		}
+
+            // simulate a movement if nothing's change show that it will spiderfy properly
+            me._z2slTimeoutID = setTimeout(function () {
+                delete this._z2slTimeoutID;
+                me._map.fire('moveend');
+            }, 100);
+        }
 	},
 
 	//Overrides FeatureGroup.onAdd
