@@ -693,7 +693,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			if (this.options.disableClusteringAtZoom) {
 				var map = this._map;
 				var maxZoom = this._maxZoom;
-				this._map.on('zoomend', function () {
+				this._map.on('moveend', function () {
 					if (map.getZoom() <= maxZoom && layer.options.icon !== layer.options.clustericon) {
 						layer.setIcon(layer.options.clustericon);
 					}
