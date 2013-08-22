@@ -685,7 +685,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    markerPoint, z;
 
 		if (this.options.singleMarkerMode) {
-			layer.options.icon = this.options.iconCreateFunction({
+			layer.options.srcicon = layer.options.icon;
+			layer.options.clustericon = this.options.iconCreateFunction({
 				getChildCount: function () {
 					return 1;
 				},
@@ -693,6 +694,19 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					return [layer];
 				}
 			});
+			layer.setIcon(layer.options.clustericon);
+			if (this.options.disableClusteringAtZoom) {
+				var map = this._map;
+				var maxZoom = this._maxZoom;
+				this._map.on('zoomend', function () {
+					if (map.getZoom() <= maxZoom && layer.options.icon !== layer.options.clustericon) {
+						layer.setIcon(layer.options.clustericon);
+					}
+					else if (map.getZoom() > maxZoom && layer.options.icon !== layer.options.srcicon) {
+						layer.setIcon(layer.options.srcicon);
+					}
+				});
+			}
 		}
 
 		//Find the lowest zoom level to slot this one in
