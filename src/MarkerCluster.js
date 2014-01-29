@@ -153,7 +153,10 @@ L.MarkerCluster = L.Marker.extend({
 	_addToMap: function (startPos) {
 		if (startPos) {
 			this._backupLatlng = this._latlng;
-			this.setLatLng(startPos);
+
+			//We don't use setLatLng so we don't cause a 'move' event
+			this._latlng = startPos;
+			this.update();
 		}
 		this._group._featureGroup.addLayer(this);
 	},
@@ -230,7 +233,10 @@ L.MarkerCluster = L.Marker.extend({
 					if (startPos) {
 						nm._backupLatlng = nm.getLatLng();
 
-						nm.setLatLng(startPos);
+						//We don't use setLatLng so we don't cause a 'move' event
+						nm._latlng = startPos;
+						nm.update();
+
 						if (nm.setOpacity) {
 							nm.setOpacity(0);
 						}
@@ -250,7 +256,10 @@ L.MarkerCluster = L.Marker.extend({
 		for (var i = this._markers.length - 1; i >= 0; i--) {
 			var nm = this._markers[i];
 			if (nm._backupLatlng) {
-				nm.setLatLng(nm._backupLatlng);
+				//We don't use setLatLng so we don't cause a 'move' event
+				nm._latlng = nm._backupLatlng;
+				nm.update();
+
 				delete nm._backupLatlng;
 			}
 		}
@@ -269,7 +278,10 @@ L.MarkerCluster = L.Marker.extend({
 
 	_restorePosition: function () {
 		if (this._backupLatlng) {
-			this.setLatLng(this._backupLatlng);
+			//We don't use setLatLng so we don't cause a 'move' event
+			this._latlng = this._backupLatlng;
+			this.update();
+
 			delete this._backupLatlng;
 		}
 	},

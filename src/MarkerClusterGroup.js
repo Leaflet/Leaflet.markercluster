@@ -1023,7 +1023,10 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			if (cluster._childCount === 1) {
 				var m = cluster._markers[0];
 				//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
-				m.setLatLng(m.getLatLng());
+				//We don't use setLatLng so we don't cause a 'move' event
+				m._latlng = m.getLatLng();
+				m.update();
+
 				if (m.setOpacity) {
 					m.setOpacity(1);
 				}
