@@ -523,37 +523,14 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_childMarkerMoved: function (e) {
+		if (!this._spiderfying) {
+			e.target._latlng = e.oldLatLng;
+			this.removeLayer(e.target);
 
-		e.target._latlng = e.oldLatLng;
-		this.removeLayer(e.target);
-
-		e.target._latlng = e.latlng;
-		this.addLayer(e.target);
-
+			e.target._latlng = e.latlng;
+			this.addLayer(e.target);
+		}
 		return;
-		this._removeLayer(e.layer, true);
-
-		//?????
-		if (this._featureGroup.hasLayer(layer)) {
-			this._featureGroup.removeLayer(layer);
-			if (layer.setOpacity) {
-				layer.setOpacity(1);
-			}
-		}
-
-		e.layer._latlng = e.latlng;
-		this._addLayer(e.layer);
-
-		//Work out what is visible
-		var visibleLayer = this.getVisibleParent(e.layer);
-
-		if (this._currentShownBounds.contains(visibleLayer.getLatLng())) {
-			if (this.options.animateAddingMarkers) {
-				this._animationAddLayer(layer, visibleLayer);
-			} else {
-				this._animationAddLayerNonAnimated(layer, visibleLayer);
-			}
-		}
 	},
 
 	//Internal function for removing a marker from everything.

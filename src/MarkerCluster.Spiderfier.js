@@ -92,6 +92,8 @@ L.MarkerCluster.include({
 			childMarkers = this.getAllChildMarkers(),
 			m, i;
 
+		group._spiderfying = true;
+
 		this.setOpacity(1);
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			m = childMarkers[i];
@@ -112,6 +114,7 @@ L.MarkerCluster.include({
 			}
 		}
 
+		group._spiderfying = false;
 		group._spiderfied = null;
 	}
 });
@@ -123,6 +126,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			map = group._map,
 			fg = group._featureGroup,
 			i, m, leg, newPos;
+
+		group._spiderfying = true;
 
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			newPos = map.layerPointToLatLng(positions[i]);
@@ -142,6 +147,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			m._spiderLeg = leg;
 		}
 		this.setOpacity(0.3);
+
+		group._spiderfying = false;
 		group.fire('spiderfied');
 	},
 
