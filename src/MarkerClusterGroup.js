@@ -146,6 +146,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Remove the marker from clusters
 		this._removeLayer(layer, true);
 
+		layer.off('move', this._childMarkerMoved, this);
+
 		if (this._featureGroup.hasLayer(layer)) {
 			this._featureGroup.removeLayer(layer);
 			if (layer.setOpacity) {
@@ -309,6 +311,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._nonPointGroup.clearLayers();
 
 		this.eachLayer(function (marker) {
+			marker.off('move', this._childMarkerMoved, this);
 			delete marker.__parent;
 		});
 
@@ -515,6 +518,40 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			if (anArray[i] === obj) {
 				anArray.splice(i, 1);
 				return true;
+			}
+		}
+	},
+
+	_childMarkerMoved: function (e) {
+
+		e.target._latlng = e.oldLatLng;
+		this.removeLayer(e.target);
+
+		e.target._latlng = e.latlng;
+		this.addLayer(e.target);
+
+		return;
+		this._removeLayer(e.layer, true);
+
+		//?????
+		if (this._featureGroup.hasLayer(layer)) {
+			this._featureGroup.removeLayer(layer);
+			if (layer.setOpacity) {
+				layer.setOpacity(1);
+			}
+		}
+
+		e.layer._latlng = e.latlng;
+		this._addLayer(e.layer);
+
+		//Work out what is visible
+		var visibleLayer = this.getVisibleParent(e.layer);
+
+		if (this._currentShownBounds.contains(visibleLayer.getLatLng())) {
+			if (this.options.animateAddingMarkers) {
+				this._animationAddLayer(layer, visibleLayer);
+			} else {
+				this._animationAddLayerNonAnimated(layer, visibleLayer);
 			}
 		}
 	},
@@ -767,6 +804,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				}
 			});
 		}
+
+		layer.on('move', this._childMarkerMoved, this);
 
 		//Find the lowest zoom level to slot this one in
 		for (; zoom >= 0; zoom--) {
