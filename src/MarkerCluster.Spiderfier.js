@@ -169,6 +169,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			thisLayerPos = map.latLngToLayerPoint(this._latlng),
 			i, m, leg, newPos;
 
+		group._spiderfying = true;
+
 		//Add markers to map hidden at our center point
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			m = childMarkers[i];
@@ -261,6 +263,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			}
 		}
 
+		group._spiderfying = false;
+
 		setTimeout(function () {
 			group._animationEnd();
 			group.fire('spiderfied');
@@ -276,6 +280,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			svg = L.Path.SVG && this.SVG_ANIMATION,
 			m, i, a;
 
+		group._spiderfying = true;
 		group._animationStart();
 
 		//Make us visible and bring the child markers back in
@@ -315,6 +320,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 				m._spiderLeg._path.setAttribute('stroke-opacity', 0);
 			}
 		}
+
+		group._spiderfying = false;
 
 		setTimeout(function () {
 			//If we have only <= one child left then that marker will be shown on the map so don't remove it!
