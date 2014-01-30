@@ -92,7 +92,7 @@ L.MarkerCluster.include({
 			childMarkers = this.getAllChildMarkers(),
 			m, i;
 
-		group._spiderfying = true;
+		group._ignoreMove = true;
 
 		this.setOpacity(1);
 		for (i = childMarkers.length - 1; i >= 0; i--) {
@@ -114,7 +114,7 @@ L.MarkerCluster.include({
 			}
 		}
 
-		group._spiderfying = false;
+		group._ignoreMove = false;
 		group._spiderfied = null;
 	}
 });
@@ -127,7 +127,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			fg = group._featureGroup,
 			i, m, leg, newPos;
 
-		group._spiderfying = true;
+		group._ignoreMove = true;
 
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			newPos = map.layerPointToLatLng(positions[i]);
@@ -148,7 +148,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 		}
 		this.setOpacity(0.3);
 
-		group._spiderfying = false;
+		group._ignoreMove = false;
 		group.fire('spiderfied');
 	},
 
@@ -170,7 +170,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			xmlns = 'http://www.w3.org/2000/svg',
 			i, m, leg, newPos;
 
-		group._spiderfying = true;
+		group._ignoreMove = true;
 
 		//Add markers to map hidden at our center point
 		for (i = childMarkers.length - 1; i >= 0; i--) {
@@ -258,7 +258,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			m._path.setAttribute('stroke-opacity', 0.5);
 		}
 
-		group._spiderfying = false;
+		group._ignoreMove = false;
 
 		setTimeout(function () {
 			group._animationEnd();
@@ -274,7 +274,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			childMarkers = this.getAllChildMarkers(),
 			m, i, a;
 
-		group._spiderfying = true;
+		group._ignoreMove = true;
 		group._animationStart();
 
 		//Make us visible and bring the child markers back in
@@ -315,7 +315,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			}
 		}
 
-		group._spiderfying = false;
+		group._ignoreMove = false;
 
 		setTimeout(function () {
 			//If we have only <= one child left then that marker will be shown on the map so don't remove it!

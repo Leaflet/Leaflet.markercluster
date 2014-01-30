@@ -523,7 +523,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_childMarkerMoved: function (e) {
-		if (!this._spiderfying) {
+		if (!this._ignoreMove) {
 			e.target._latlng = e.oldLatLng;
 			this.removeLayer(e.target);
 
@@ -953,6 +953,8 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 		    fg = this._featureGroup,
 		    i;
 
+		this._ignoreMove = true;
+
 		//Add all children of current clusters to map and remove those clusters from map
 		this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
 			var startPos = c._latlng,
@@ -999,6 +1001,8 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			c._recursivelyRestoreChildPositions(newZoomLevel);
 		});
 
+		this._ignoreMove = false;
+
 		//Remove the old clusters and close the zoom animation
 		this._enqueue(function () {
 			//update the positions of the just added clusters/markers
@@ -1039,7 +1043,9 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			if (cluster._childCount === 1) {
 				var m = cluster._markers[0];
 				//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
+				this._ignoreMove = true;
 				m.setLatLng(m.getLatLng());
+				this._ignoreMove = false;
 				if (m.setOpacity) {
 					m.setOpacity(1);
 				}
