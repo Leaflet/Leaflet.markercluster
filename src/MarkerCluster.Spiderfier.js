@@ -193,7 +193,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 		group._forceLayout();
 		group._animationStart();
 
-		var initialLegOpacity = L.Path.SVG ? 0 : 0.3;
+		var initialLegOpacity = this.SVG_ANIMATION ? 0 : 0.3;
 
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			newPos = map.layerPointToLatLng(positions[i]);
@@ -238,7 +238,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 				anim.setAttribute("attributeName", "stroke-opacity");
 				anim.setAttribute("begin", "indefinite");
 				anim.setAttribute("from", 0);
-				anim.setAttribute("to", 0.5);
+				anim.setAttribute("to", 0.3);
 				anim.setAttribute("dur", 0.25);
 				leg._path.appendChild(anim);
 				anim.beginElement();
