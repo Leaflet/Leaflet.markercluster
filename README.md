@@ -40,7 +40,9 @@ var markers = new L.MarkerClusterGroup({ spiderfyOnMaxZoom: false, showCoverageO
 ```
 
 ### Customising the Clustered Markers
-As an option to MarkerClusterGroup you can provide your own function for creating the Icon for the clustered markers.
+You may pass an additional class name as a setting for the clustered markers using the className setting. This doesn't override the default behavior, setting classes for different cluster sizes but it does give you an additonal class that you can use for styling.
+
+As an alternative option, MarkerClusterGroup allows you to create your own function to creating the Icon for the clustered markers.
 The default implementation changes color at bounds of 10 and 100, but more advanced uses may require customising this.
 You do not need to include the .Default css if you go this way.
 You are passed a MarkerCluster object, you'll probably want to use getChildCount() or getAllChildMarkers() to work out the icon to show
@@ -68,6 +70,7 @@ Other options
 * **polygonOptions**: Options to pass when creating the L.Polygon(points, options) to show the bounds of a cluster
 * **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster
 * **spiderfyDistanceMultiplier**: Increase from 1 to increase the distance away from the center that spiderfied markers are placed. Use if you are using big marker icons (Default:1)
+* **className**: Adds an additional CSS class name to the markers used by the marker clusters. This is useful for customizing different sets of marker clusters. Full customization of the markers should use the iconCreateFunction option instead.
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
 
 ## Events

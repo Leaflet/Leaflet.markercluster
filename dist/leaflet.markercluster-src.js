@@ -38,7 +38,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		chunkProgress: null, // progress callback: function(processed, total, elapsed) (e.g. for a progress indicator)
 
 		//Options to pass to the L.Polygon constructor
-		polygonOptions: {}
+		polygonOptions: {},
+
+		// An additional CSS class name to add to your cluster
+		className: false,
 	},
 
 	initialize: function (options) {
@@ -624,7 +627,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			c += 'large';
 		}
 
-		return new L.DivIcon({ html: '<div><span>' + childCount + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(40, 40) });
+		var className = 'marker-cluster' + c;
+		if (this.className !== false) {
+			className = className + ' ' + this.className;
+		}
+
+		return new L.DivIcon({ html: '<div><span>' + childCount + '</span></div>', className: className, iconSize: new L.Point(40, 40) });
 	},
 
 	_bindEvents: function () {
