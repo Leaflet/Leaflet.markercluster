@@ -619,7 +619,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			c += 'large';
 		}
 
-		return new L.DivIcon({ html: '<div><span>' + childCount + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(40, 40) });
+		var className = 'marker-cluster' + c;
+		if (this.className !== false) {
+			className = className + ' ' + this.className;
+		}
+
+		return new L.DivIcon({ html: '<div><span>' + childCount + '</span></div>', className: className, iconSize: new L.Point(40, 40) });
 	},
 
 	_bindEvents: function () {
