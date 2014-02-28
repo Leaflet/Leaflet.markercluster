@@ -61,12 +61,30 @@ L.MarkerCluster = L.Marker.extend({
 			childClusters = newClusters;
 		}
 
+		var offset = this._group.options.mapCenterOffset;
+		var tl = offset.paddingTopLeft || 0;
+		var br = offset.paddingBottomRight || 0;
+
 		if (boundsZoom > zoom) {
-			this._group._map.setView(this._latlng, zoom);
+			if (tl || br) {
+				this._group._map.fitBounds(this._bounds, {
+					paddingTopLeft: tl,
+					paddingBottomRight: br
+				});
+			} else {
+				this._group._map.setView(this._latlng, zoom);
+			}
 		} else if (boundsZoom <= mapZoom) { //If fitBounds wouldn't zoom us down, zoom us down instead
 			this._group._map.setView(this._latlng, mapZoom + 1);
 		} else {
-			this._group._map.fitBounds(this._bounds);
+			if (tl || br) {
+				this._group._map.fitBounds(this._bounds, {
+					paddingTopLeft: tl,
+					paddingBottomRight: br
+				});
+			} else {
+				this._group._map.fitBounds(this._bounds);
+			}
 		}
 	},
 
@@ -122,7 +140,7 @@ L.MarkerCluster = L.Marker.extend({
 	//Expand our bounds and tell our parent to
 	_expandBounds: function (marker) {
 		var addedCount,
-		    addedLatLng = marker._wLatLng || marker._latlng;
+			addedLatLng = marker._wLatLng || marker._latlng;
 
 		if (marker instanceof L.MarkerCluster) {
 			this._bounds.extend(marker._bounds);
@@ -313,7 +331,7 @@ L.MarkerCluster = L.Marker.extend({
 	// runAtBottomLevel: function that takes an L.MarkerCluster as an argument that should be applied at only the bottom level
 	_recursively: function (boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel) {
 		var childClusters = this._childClusters,
-		    zoom = this._zoom,
+			zoom = this._zoom,
 			i, c;
 
 		if (zoomLevelToStart > zoom) { //Still going down to required depth, just recurse to child clusters
