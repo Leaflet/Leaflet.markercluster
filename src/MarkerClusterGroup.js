@@ -511,6 +511,15 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		return vMarker || null;
 	},
 
+	getParent: function (marker) {
+                 var vMarker = marker;
+                 if (marker.__parent && marker.__parent._zoom < map.getZoom()) return marker;
+                 while (vMarker.__parent && (vMarker._zoom > map.getZoom() || !vMarker._zoom)) {
+                         vMarker = vMarker.__parent;
+                 };
+                 return vMarker;
+        },
+
 	//Remove the given object from the given array
 	_arraySplice: function (anArray, obj) {
 		for (var i = anArray.length - 1; i >= 0; i--) {
