@@ -1,0 +1,26 @@
+{
+  "name": "leaflet/markercluster",
+  "description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet, a JS library for interactive maps.",
+  "type": "component",
+  "keywords": [
+    "leaflet",
+    "plugins",
+    "map",
+    "google",
+    "bing",
+    "yandex",
+    "cluster",
+    "marker"
+  ],
+  "extra": {
+    "component": {
+      "main": "dist/leaflet.markercluster.js",
+      "styles": [
+        "dist/*.css"
+      ],
+      "files": [
+        "dist/*"
+      ]
+    }
+  }
+}
