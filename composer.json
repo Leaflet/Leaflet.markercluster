@@ -15,6 +15,9 @@
   "extra": {
     "component": {
       "main": "dist/leaflet.markercluster.js",
+      "scripts": [
+        "dist/leaflet.markercluster.js"
+      ],
       "styles": [
         "dist/*.css"
       ],
