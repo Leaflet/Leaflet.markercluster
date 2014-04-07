@@ -209,7 +209,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 
 			//Add Legs. Force the SVG renderer so we can animate
-			leg = new L.Polyline([me._latlng, newPos], { weight: 1.5, color: '#222', opacity: initialLegOpacity, renderer: L.SVG.instance });
+			leg = new L.Polyline([me._latlng, newPos], { weight: 1.5, color: '#222', opacity: initialLegOpacity });
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 
@@ -368,8 +368,7 @@ L.MarkerClusterGroup.include({
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
 
 		if (!L.Browser.touch) {
-			this._map.addLayer(L.SVG.instance);
-			//this._map._initPathRoot();
+			this._map.getRenderer(this);
 			//Needs to happen in the pageload, not after, or animations don't work in webkit
 			//  http://stackoverflow.com/questions/8455200/svg-animate-with-dynamically-added-elements
 			//Disable on touch browsers as the animation messes up on a touch zoom and isn't very noticable
