@@ -2,6 +2,188 @@
  * L.MarkerClusterGroup extends L.FeatureGroup by clustering the markers contained within
  */
 
+L.MarkerClusterGroupAnimationMixins = {
+	WithoutAnimation: {
+		//Non Animated versions of everything
+		_animationStart: function () {
+			//Do nothing...
+		},
+		_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
+			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel);
+			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+
+			//We didn't actually animate, but we use this event to mean "clustering animations have finished"
+			this.fire('animationend');
+		},
+		_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
+			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel);
+			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+
+			//We didn't actually animate, but we use this event to mean "clustering animations have finished"
+			this.fire('animationend');
+		},
+		_animationAddLayer: function (layer, newCluster) {
+			this._animationAddLayerNonAnimated(layer, newCluster);
+		}
+	},
+	WithAnimation: {
+		//Animated versions here
+		_animationStart: function () {
+			this._map._mapPane.className += ' leaflet-cluster-anim';
+			this._inZoomAnimation++;
+		},
+		_animationEnd: function () {
+			if (this._map) {
+				this._map._mapPane.className = this._map._mapPane.className.replace(' leaflet-cluster-anim', '');
+			}
+			this._inZoomAnimation--;
+			this.fire('animationend');
+		},
+		_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
+			var bounds = this._getExpandedVisibleBounds(),
+			    fg = this._featureGroup,
+			    i;
+
+			//Add all children of current clusters to map and remove those clusters from map
+			this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
+				var startPos = c._latlng,
+					markers = c._markers,
+					m;
+
+				if (!bounds.contains(startPos)) {
+					startPos = null;
+				}
+
+				if (c._isSingleParent() && previousZoomLevel + 1 === newZoomLevel) { //Immediately add the new child and remove us
+					fg.removeLayer(c);
+					c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
+				} else {
+					//Fade out old cluster
+					c.setOpacity(0);
+					c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
+				}
+
+				//Remove all markers that aren't visible any more
+				//TODO: Do we actually need to do this on the higher levels too?
+				for (i = markers.length - 1; i >= 0; i--) {
+					m = markers[i];
+					if (!bounds.contains(m._latlng)) {
+						fg.removeLayer(m);
+					}
+				}
+
+			});
+
+			this._forceLayout();
+
+			//Update opacities
+			this._topClusterLevel._recursivelyBecomeVisible(bounds, newZoomLevel);
+			//TODO Maybe? Update markers in _recursivelyBecomeVisible
+			fg.eachLayer(function (n) {
+				if (!(n instanceof L.MarkerCluster) && n._icon) {
+					n.setOpacity(1);
+				}
+			});
+
+			//update the positions of the just added clusters/markers
+			this._topClusterLevel._recursively(bounds, previousZoomLevel, newZoomLevel, function (c) {
+				c._recursivelyRestoreChildPositions(newZoomLevel);
+			});
+
+			//Remove the old clusters and close the zoom animation
+			this._enqueue(function () {
+				//update the positions of the just added clusters/markers
+				this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
+					fg.removeLayer(c);
+					c.setOpacity(1);
+				});
+
+				this._animationEnd();
+			});
+		},
+
+		_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
+			this._animationZoomOutSingle(this._topClusterLevel, previousZoomLevel - 1, newZoomLevel);
+
+			//Need to add markers for those that weren't on the map before but are now
+			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+			//Remove markers that were on the map before but won't be now
+			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel, this._getExpandedVisibleBounds());
+		},
+		_animationZoomOutSingle: function (cluster, previousZoomLevel, newZoomLevel) {
+			var bounds = this._getExpandedVisibleBounds();
+
+			//Animate all of the markers in the clusters to move to their cluster center point
+			cluster._recursivelyAnimateChildrenInAndAddSelfToMap(bounds, previousZoomLevel + 1, newZoomLevel);
+
+			var me = this;
+
+			//Update the opacity (If we immediately set it they won't animate)
+			this._forceLayout();
+			cluster._recursivelyBecomeVisible(bounds, newZoomLevel);
+
+			//TODO: Maybe use the transition timing stuff to make this more reliable
+			//When the animations are done, tidy up
+			this._enqueue(function () {
+
+				//This cluster stopped being a cluster before the timeout fired
+				if (cluster._childCount === 1) {
+					var m = cluster._markers[0];
+					//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
+					m.setLatLng(m.getLatLng());
+					if (m.setOpacity) {
+						m.setOpacity(1);
+					}
+				} else {
+					cluster._recursively(bounds, newZoomLevel, 0, function (c) {
+						c._recursivelyRemoveChildrenFromMap(bounds, previousZoomLevel + 1);
+					});
+				}
+				me._animationEnd();
+			});
+		},
+		_animationAddLayer: function (layer, newCluster) {
+			var me = this,
+				fg = this._featureGroup;
+
+			fg.addLayer(layer);
+			if (newCluster !== layer) {
+				if (newCluster._childCount > 2) { //Was already a cluster
+
+					newCluster._updateIcon();
+					this._forceLayout();
+					this._animationStart();
+
+					layer._setPos(this._map.latLngToLayerPoint(newCluster.getLatLng()));
+					layer.setOpacity(0);
+
+					this._enqueue(function () {
+						fg.removeLayer(layer);
+						layer.setOpacity(1);
+
+						me._animationEnd();
+					});
+
+				} else { //Just became a cluster
+					this._forceLayout();
+
+					me._animationStart();
+					me._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._map.getZoom());
+				}
+			}
+		},
+
+		//Force a browser layout of stuff in the map
+		// Should apply the current opacity and location to all elements so we can update them again for an animation
+		_forceLayout: function () {
+			//In my testing this works, infact offsetWidth of any element seems to work.
+			//Could loop all this._layers and do this for each _icon if it stops working
+
+			L.Util.falseFn(document.body.offsetWidth);
+		}
+	}
+}
+
 L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	options: {
@@ -734,7 +916,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var maxZoom = this._map.getMaxZoom(),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
-	
+
 		//If we just set maxClusterRadius to a single number, we need to create
 		//a simple function to return that number. Otherwise, we just have to
 		//use the function we've passed in.
@@ -748,7 +930,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._maxZoom = maxZoom;
 		this._gridClusters = {};
 		this._gridUnclustered = {};
-	
+
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= 0; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
@@ -902,186 +1084,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	}
 });
 
-L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
-
-	//Non Animated versions of everything
-	_animationStart: function () {
-		//Do nothing...
-	},
-	_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
-		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel);
-		this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
-
-		//We didn't actually animate, but we use this event to mean "clustering animations have finished"
-		this.fire('animationend');
-	},
-	_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
-		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel);
-		this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
-
-		//We didn't actually animate, but we use this event to mean "clustering animations have finished"
-		this.fire('animationend');
-	},
-	_animationAddLayer: function (layer, newCluster) {
-		this._animationAddLayerNonAnimated(layer, newCluster);
-	}
-} : {
-
-	//Animated versions here
-	_animationStart: function () {
-		this._map._mapPane.className += ' leaflet-cluster-anim';
-		this._inZoomAnimation++;
-	},
-	_animationEnd: function () {
-		if (this._map) {
-			this._map._mapPane.className = this._map._mapPane.className.replace(' leaflet-cluster-anim', '');
-		}
-		this._inZoomAnimation--;
-		this.fire('animationend');
-	},
-	_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
-		var bounds = this._getExpandedVisibleBounds(),
-		    fg = this._featureGroup,
-		    i;
-
-		//Add all children of current clusters to map and remove those clusters from map
-		this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
-			var startPos = c._latlng,
-				markers = c._markers,
-				m;
-
-			if (!bounds.contains(startPos)) {
-				startPos = null;
-			}
-
-			if (c._isSingleParent() && previousZoomLevel + 1 === newZoomLevel) { //Immediately add the new child and remove us
-				fg.removeLayer(c);
-				c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
-			} else {
-				//Fade out old cluster
-				c.setOpacity(0);
-				c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
-			}
-
-			//Remove all markers that aren't visible any more
-			//TODO: Do we actually need to do this on the higher levels too?
-			for (i = markers.length - 1; i >= 0; i--) {
-				m = markers[i];
-				if (!bounds.contains(m._latlng)) {
-					fg.removeLayer(m);
-				}
-			}
-
-		});
-
-		this._forceLayout();
-
-		//Update opacities
-		this._topClusterLevel._recursivelyBecomeVisible(bounds, newZoomLevel);
-		//TODO Maybe? Update markers in _recursivelyBecomeVisible
-		fg.eachLayer(function (n) {
-			if (!(n instanceof L.MarkerCluster) && n._icon) {
-				n.setOpacity(1);
-			}
-		});
-
-		//update the positions of the just added clusters/markers
-		this._topClusterLevel._recursively(bounds, previousZoomLevel, newZoomLevel, function (c) {
-			c._recursivelyRestoreChildPositions(newZoomLevel);
-		});
-
-		//Remove the old clusters and close the zoom animation
-		this._enqueue(function () {
-			//update the positions of the just added clusters/markers
-			this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
-				fg.removeLayer(c);
-				c.setOpacity(1);
-			});
-
-			this._animationEnd();
-		});
-	},
-
-	_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
-		this._animationZoomOutSingle(this._topClusterLevel, previousZoomLevel - 1, newZoomLevel);
-
-		//Need to add markers for those that weren't on the map before but are now
-		this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
-		//Remove markers that were on the map before but won't be now
-		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel, this._getExpandedVisibleBounds());
-	},
-	_animationZoomOutSingle: function (cluster, previousZoomLevel, newZoomLevel) {
-		var bounds = this._getExpandedVisibleBounds();
-
-		//Animate all of the markers in the clusters to move to their cluster center point
-		cluster._recursivelyAnimateChildrenInAndAddSelfToMap(bounds, previousZoomLevel + 1, newZoomLevel);
-
-		var me = this;
-
-		//Update the opacity (If we immediately set it they won't animate)
-		this._forceLayout();
-		cluster._recursivelyBecomeVisible(bounds, newZoomLevel);
-
-		//TODO: Maybe use the transition timing stuff to make this more reliable
-		//When the animations are done, tidy up
-		this._enqueue(function () {
-
-			//This cluster stopped being a cluster before the timeout fired
-			if (cluster._childCount === 1) {
-				var m = cluster._markers[0];
-				//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
-				m.setLatLng(m.getLatLng());
-				if (m.setOpacity) {
-					m.setOpacity(1);
-				}
-			} else {
-				cluster._recursively(bounds, newZoomLevel, 0, function (c) {
-					c._recursivelyRemoveChildrenFromMap(bounds, previousZoomLevel + 1);
-				});
-			}
-			me._animationEnd();
-		});
-	},
-	_animationAddLayer: function (layer, newCluster) {
-		var me = this,
-			fg = this._featureGroup;
-
-		fg.addLayer(layer);
-		if (newCluster !== layer) {
-			if (newCluster._childCount > 2) { //Was already a cluster
-
-				newCluster._updateIcon();
-				this._forceLayout();
-				this._animationStart();
-
-				layer._setPos(this._map.latLngToLayerPoint(newCluster.getLatLng()));
-				layer.setOpacity(0);
-
-				this._enqueue(function () {
-					fg.removeLayer(layer);
-					layer.setOpacity(1);
-
-					me._animationEnd();
-				});
-
-			} else { //Just became a cluster
-				this._forceLayout();
-
-				me._animationStart();
-				me._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._map.getZoom());
-			}
-		}
-	},
-
-	//Force a browser layout of stuff in the map
-	// Should apply the current opacity and location to all elements so we can update them again for an animation
-	_forceLayout: function () {
-		//In my testing this works, infact offsetWidth of any element seems to work.
-		//Could loop all this._layers and do this for each _icon if it stops working
-
-		L.Util.falseFn(document.body.offsetWidth);
-	}
-});
+L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? L.MarkerClusterGroupAnimationMixins.WithoutAnimation : L.MarkerClusterGroupAnimationMixins.WithAnimation);
 
 L.markerClusterGroup = function (options) {
 	return new L.MarkerClusterGroup(options);
