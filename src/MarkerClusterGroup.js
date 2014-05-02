@@ -5,41 +5,41 @@
 L.MarkerClusterGroupAnimationMixins = {
 	WithoutAnimation: {
 		//Non Animated versions of everything
-		_animationStart: function () {
+		_animationStartNonAnimated: function () {
 			//Do nothing...
 		},
-		_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
+		_animationZoomInNonAnimated: function (previousZoomLevel, newZoomLevel) {
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel);
 			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
 
 			//We didn't actually animate, but we use this event to mean "clustering animations have finished"
 			this.fire('animationend');
 		},
-		_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
+		_animationZoomOutNonAnimated: function (previousZoomLevel, newZoomLevel) {
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel);
 			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
 
 			//We didn't actually animate, but we use this event to mean "clustering animations have finished"
 			this.fire('animationend');
 		},
-		_animationAddLayer: function (layer, newCluster) {
+		_animationAddLayerNonAnimated: function (layer, newCluster) {
 			this._animationAddLayerNonAnimated(layer, newCluster);
 		}
 	},
 	WithAnimation: {
 		//Animated versions here
-		_animationStart: function () {
+		_animationStartAnimated: function () {
 			this._map._mapPane.className += ' leaflet-cluster-anim';
 			this._inZoomAnimation++;
 		},
-		_animationEnd: function () {
+		_animationEndAnimated: function () {
 			if (this._map) {
 				this._map._mapPane.className = this._map._mapPane.className.replace(' leaflet-cluster-anim', '');
 			}
 			this._inZoomAnimation--;
 			this.fire('animationend');
 		},
-		_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
+		_animationZoomInAnimated: function (previousZoomLevel, newZoomLevel) {
 			var bounds = this._getExpandedVisibleBounds(),
 			    fg = this._featureGroup,
 			    i;
@@ -98,11 +98,11 @@ L.MarkerClusterGroupAnimationMixins = {
 					c.setOpacity(1);
 				});
 
-				this._animationEnd();
+				this._animationEndAnimated();
 			});
 		},
 
-		_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
+		_animationZoomOutAnimated: function (previousZoomLevel, newZoomLevel) {
 			this._animationZoomOutSingle(this._topClusterLevel, previousZoomLevel - 1, newZoomLevel);
 
 			//Need to add markers for those that weren't on the map before but are now
@@ -110,7 +110,7 @@ L.MarkerClusterGroupAnimationMixins = {
 			//Remove markers that were on the map before but won't be now
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel, this._getExpandedVisibleBounds());
 		},
-		_animationZoomOutSingle: function (cluster, previousZoomLevel, newZoomLevel) {
+		_animationZoomOutSingleAnimated: function (cluster, previousZoomLevel, newZoomLevel) {
 			var bounds = this._getExpandedVisibleBounds();
 
 			//Animate all of the markers in the clusters to move to their cluster center point
@@ -139,10 +139,10 @@ L.MarkerClusterGroupAnimationMixins = {
 						c._recursivelyRemoveChildrenFromMap(bounds, previousZoomLevel + 1);
 					});
 				}
-				me._animationEnd();
+				me._animationEndAnimated();
 			});
 		},
-		_animationAddLayer: function (layer, newCluster) {
+		_animationAddLayerAnimated: function (layer, newCluster) {
 			var me = this,
 				fg = this._featureGroup;
 
@@ -161,14 +161,14 @@ L.MarkerClusterGroupAnimationMixins = {
 						fg.removeLayer(layer);
 						layer.setOpacity(1);
 
-						me._animationEnd();
+						me._animationEndAnimated();
 					});
 
 				} else { //Just became a cluster
 					this._forceLayout();
 
-					me._animationStart();
-					me._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._map.getZoom());
+					me._animationStartAnimated();
+					me._animationZoomOutSingleAnimated(newCluster, this._map.getMaxZoom(), this._map.getZoom());
 				}
 			}
 		},
@@ -201,9 +201,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		// is the default behaviour for performance reasons.
 		removeOutsideVisibleBounds: true,
 
-		//Whether to animate adding markers after adding the MarkerClusterGroup to the map
+		// Whether to animate adding markers after adding the MarkerClusterGroup to the map
 		// If you are adding individual markers set to true, if adding bulk markers leave false for massive performance gains.
 		animateAddingMarkers: false,
+
+		// Whether to animate spliting/merging MarkerCluster on the map when after changing zoom level
+		animateSplitingMergingMarkers: true,
 
 		//Increase to increase the distance away that spiderfied markers appear from the center
 		spiderfyDistanceMultiplier: 1,
@@ -1081,10 +1084,43 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		} else {
 			newCluster._updateIcon();
 		}
+	},
+
+	_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
+		if (options.animateSplitingMergingMarkers){
+			this._animationZoomInAnimated(previousZoomLevel, newZoomLevel);
+		} else {
+			this._animationZoomInNonAnimated(previousZoomLevel, newZoomLevel);
+		}
+	},
+
+	_animationStart: function () {
+		if (options.animateSplitingMergingMarkers){
+			this._animationStartAnimated();
+		} else {
+			this._animationStartNonAnimated();
+		}
+	},
+
+	_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
+		if (options.animateSplitingMergingMarkers){
+			this._animationZoomOutAnimated(previousZoomLevel, newZoomLevel);
+		} else {
+			this._animationZoomOutNonAnimated(previousZoomLevel, newZoomLevel);
+		}
+	},
+
+	_animationAddLayer: function (layer, newCluster) {
+		if (options.animateSplitingMergingMarkers){
+			this._animationAddLayerAnimated(layer, newCluster);
+		} else {
+			this._animationAddLayerNonAnimated(layer, newCluster);
+		}
 	}
 });
 
-L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? L.MarkerClusterGroupAnimationMixins.WithoutAnimation : L.MarkerClusterGroupAnimationMixins.WithAnimation);
+L.MarkerClusterGroup.include(L.MarkerClusterGroupAnimationMixins.WithoutAnimation);
+L.MarkerClusterGroup.include(L.MarkerClusterGroupAnimationMixins.WithAnimation);
 
 L.markerClusterGroup = function (options) {
 	return new L.MarkerClusterGroup(options);
