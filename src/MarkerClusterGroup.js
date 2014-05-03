@@ -21,9 +21,6 @@ L.MarkerClusterGroupAnimationMixins = {
 
 			//We didn't actually animate, but we use this event to mean "clustering animations have finished"
 			this.fire('animationend');
-		},
-		_animationAddLayerNonAnimated: function (layer, newCluster) {
-			this._animationAddLayerNonAnimated(layer, newCluster);
 		}
 	},
 	WithAnimation: {
