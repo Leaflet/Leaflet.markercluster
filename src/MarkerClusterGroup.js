@@ -182,7 +182,7 @@ L.MarkerClusterGroupAnimationMixins = {
 			L.Util.falseFn(document.body.offsetWidth);
 		}
 	}
-}
+};
 
 L.MarkerClusterGroup = L.FeatureGroup.extend({
 
@@ -1087,7 +1087,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
-		if (options.animateSplitingMergingMarkers){
+		if (this.options.animateSplitingMergingMarkers) {
 			this._animationZoomInAnimated(previousZoomLevel, newZoomLevel);
 		} else {
 			this._animationZoomInNonAnimated(previousZoomLevel, newZoomLevel);
@@ -1095,7 +1095,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_animationStart: function () {
-		if (options.animateSplitingMergingMarkers){
+		if (this.options.animateSplitingMergingMarkers) {
 			this._animationStartAnimated();
 		} else {
 			this._animationStartNonAnimated();
@@ -1103,7 +1103,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
-		if (options.animateSplitingMergingMarkers){
+		if (this.options.animateSplitingMergingMarkers) {
 			this._animationZoomOutAnimated(previousZoomLevel, newZoomLevel);
 		} else {
 			this._animationZoomOutNonAnimated(previousZoomLevel, newZoomLevel);
@@ -1111,7 +1111,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_animationAddLayer: function (layer, newCluster) {
-		if (options.animateSplitingMergingMarkers){
+		if (this.options.animateSplitingMergingMarkers) {
 			this._animationAddLayerAnimated(layer, newCluster);
 		} else {
 			this._animationAddLayerNonAnimated(layer, newCluster);
