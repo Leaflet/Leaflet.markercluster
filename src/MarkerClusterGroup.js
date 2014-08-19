@@ -33,7 +33,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		chunkProgress: null, // progress callback: function(processed, total, elapsed) (e.g. for a progress indicator)
 
 		//Options to pass to the L.Polygon constructor
-		polygonOptions: {}
+		polygonOptions: {},
+		
+		// Determine whether the lines drawn when spiderfied should go to the actual position of the objects or the center of the cluster
+		lineToActualPosition: false,
 	},
 
 	initialize: function (options) {
