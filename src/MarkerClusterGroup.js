@@ -801,10 +801,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				gridClusters[zoom].addObject(newCluster, this._map.project(newCluster._cLatLng, zoom));
 				closest.__parent = newCluster;
 				layer.__parent = newCluster;
-				
-				if (!parent) {
-					parent = closest.__parent;
-				}
+
 				//First create any new intermediate parent clusters that don't exist
 				var lastParent = newCluster;
 				for (z = zoom - 1; z > parent._zoom; z--) {
