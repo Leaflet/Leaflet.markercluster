@@ -142,7 +142,10 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			m._spiderLeg = leg;
 		}
 		this.setOpacity(0.3);
-		group.fire('spiderfied');
+		group.fire('spiderfied', {
+            cluster: this,
+            markers: childMarkers
+        });
 	},
 
 	_animationUnspiderfy: function () {
@@ -256,7 +259,10 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 		setTimeout(function () {
 			group._animationEnd();
-			group.fire('spiderfied');
+			group.fire('spiderfied', {
+                cluster: me,
+                markers: childMarkers
+            });
 		}, 200);
 	},
 
