@@ -51,7 +51,11 @@ L.MarkerCluster.include({
 	},
 
 	_generatePointsCircle: function (count, centerPt) {
-		var circumference = this._group.options.spiderfyDistanceMultiplier * this._circleFootSeparation * (2 + count),
+		var distanceMultiplier = typeof(this._group.options.spiderfyDistanceMultiplier)=='function' ?
+	                                    this._group.options.spiderfyDistanceMultiplier(count)
+	                                    : this._group.options.spiderfyDistanceMultiplier;
+		
+		var circumference = distanceMultiplier * this._circleFootSeparation * (2 + count),
 			legLength = circumference / this._2PI,  //radius from circumference
 			angleStep = this._2PI / count,
 			res = [],
@@ -68,8 +72,12 @@ L.MarkerCluster.include({
 	},
 
 	_generatePointsSpiral: function (count, centerPt) {
-		var legLength = this._group.options.spiderfyDistanceMultiplier * this._spiralLengthStart,
-			separation = this._group.options.spiderfyDistanceMultiplier * this._spiralFootSeparation,
+		var distanceMultiplier = typeof(this._group.options.spiderfyDistanceMultiplier)=='function' ?
+	                                    this._group.options.spiderfyDistanceMultiplier(count)
+	                                    : this._group.options.spiderfyDistanceMultiplier;
+		
+		var legLength = distanceMultiplier * this._spiralLengthStart,
+			separation = distanceMultiplier * this._spiralFootSeparation,
 			lengthFactor = this._group.options.spiderfyDistanceMultiplier * this._spiralLengthFactor,
 			angle = 0,
 			res = [],
