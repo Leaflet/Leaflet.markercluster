@@ -78,7 +78,7 @@ L.MarkerCluster.include({
 		
 		var legLength = distanceMultiplier * this._spiralLengthStart,
 			separation = distanceMultiplier * this._spiralFootSeparation,
-			lengthFactor = this._group.options.spiderfyDistanceMultiplier * this._spiralLengthFactor,
+			lengthFactor = distanceMultiplier * this._spiralLengthFactor,
 			angle = 0,
 			res = [],
 			i;
