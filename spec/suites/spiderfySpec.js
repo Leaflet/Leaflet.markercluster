@@ -1,5 +1,6 @@
 ﻿describe('spiderfy', function () {
 	var map, div, clock;
+
 	beforeEach(function () {
 		clock = sinon.useFakeTimers();
 
@@ -15,6 +16,7 @@
 			[2, 2]
 		]));
 	});
+
 	afterEach(function () {
 		clock.restore();
 		document.body.removeChild(div);
@@ -141,4 +143,5 @@
 			clock.tick(200);
 		});
 	});
+
 });
