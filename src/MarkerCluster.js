@@ -37,6 +37,26 @@ L.MarkerCluster = L.Marker.extend({
 		return storageArray;
 	},
 
+	// Searches through self and all decendants for a given marker.  Returns the cluster that directly contains it.
+	getClusterDirectlyContaining: function(marker){
+		// If this cluster directly contains the marker, return this.
+		for (var i = this._markers.length - 1; i >= 0; i--) {
+			if(this._markers[i] === marker){
+				return this;
+			}
+		}
+		// If not, recurse through children clusters.
+		for (var j = this._childClusters.length - 1; j >= 0; j--) {
+			var cluster = this._childClusters[j].getClusterDirectlyContaining(marker);
+			// If the child cluster returns itself, return it.
+			if(cluster != null){
+				return cluster;
+			}
+		}
+		// If this cluster doesn't have the marker, and none of it's decendant have the marker, return null;
+		return null;
+	},
+
 	//Returns the count of how many child markers we have
 	getChildCount: function () {
 		return this._childCount;
