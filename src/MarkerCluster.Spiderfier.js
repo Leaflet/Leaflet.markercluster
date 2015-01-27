@@ -86,8 +86,9 @@ L.MarkerCluster.include({
 	},
 
 	_noanimationUnspiderfy: function () {
-		if(!this._group._spiderfied)
+		if (!this._group._spiderfied) {
 			return;
+		}
 
 		var group = this._group,
 			map = group._map,
@@ -131,10 +132,11 @@ L.MarkerCluster.include({
 
 		this._group._spiderfied = this;
 
-		if(childMarkers == undefined)
+		if (childMarkers === undefined) {
 			childMarkers = this.getAllChildMarkers();
+		}
 
-		if(positions == undefined){
+		if (positions === undefined) {
 			if (childMarkers.length >= this._circleSpiralSwitchover) {
 				positions = this._generatePointsSpiral(childMarkers.length, center);
 			} else {
@@ -440,20 +442,20 @@ L.MarkerClusterGroup.include({
 		this._spideredMarkers = [];
 	},
 
-	_preserveUnspiderfy: function(){
-		if(this._spiderfied){
+	_preserveUnspiderfy: function () {
+		if (this._spiderfied) {
 			this._spideredMarkers = [];
 			this._spideredMarkers = this._spiderfied.getAllChildMarkers();
 			this._spiderfied._noanimationUnspiderfy();
 		}
 	},
 
-	_restoreSpiderfy: function(){
-		if(this._spideredMarkers.length > 0){
+	_restoreSpiderfy: function () {
+		if (this._spideredMarkers.length > 0) {
 			// Find the cluster that contains the spideredMarkers at the proper zoom level.
-			for(var i = this._spideredMarkers.length - 1; i >= 0; i--){
+			for (var i = this._spideredMarkers.length - 1; i >= 0; i--) {
 				var cluster = this._topClusterLevel.getClusterDirectlyContaining(this._spideredMarkers[i]);
-				if(cluster != null && cluster._zoom === this._zoom){
+				if (cluster !== null && cluster._zoom === this._zoom) {
 					cluster._noanimationSpiderfy();
 					break;
 				}

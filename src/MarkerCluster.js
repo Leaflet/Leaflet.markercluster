@@ -38,10 +38,10 @@ L.MarkerCluster = L.Marker.extend({
 	},
 
 	// Searches through self and all decendants for a given marker.  Returns the cluster that directly contains it.
-	getClusterDirectlyContaining: function(marker){
+	getClusterDirectlyContaining: function (marker) {
 		// If this cluster directly contains the marker, return this.
 		for (var i = this._markers.length - 1; i >= 0; i--) {
-			if(this._markers[i] === marker){
+			if (this._markers[i] === marker) {
 				return this;
 			}
 		}
@@ -49,7 +49,7 @@ L.MarkerCluster = L.Marker.extend({
 		for (var j = this._childClusters.length - 1; j >= 0; j--) {
 			var cluster = this._childClusters[j].getClusterDirectlyContaining(marker);
 			// If the child cluster returns itself, return it.
-			if(cluster != null){
+			if (cluster !== null) {
 				return cluster;
 			}
 		}
