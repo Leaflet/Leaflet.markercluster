@@ -256,6 +256,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			fg = this._featureGroup,
 			npg = this._nonPointGroup;
 
+		if (this._unspiderfy) {
+			this._unspiderfy();
+		}
+
 		if (!this._map) {
 			for (i = 0, l = layersArray.length; i < l; i++) {
 				m = layersArray[i];
@@ -660,7 +664,15 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	_zoomOrSpiderfy: function (e) {
 		var map = this._map;
-		if (map.getMaxZoom() === map.getZoom()) {
+		if (e.layer._bounds._northEast.equals(e.layer._bounds._southWest)) {
+			if (this.options.spiderfyOnMaxZoom) {
+				if (this.options.spiderfyDisabled) {
+					e.layer.explodeCluster();
+				} else {
+					e.layer.spiderfy();
+				}
+			}
+		} else if (map.getMaxZoom() === map.getZoom()) {
 			if (this.options.spiderfyOnMaxZoom) {
 				e.layer.spiderfy();
 			}
@@ -1744,6 +1756,26 @@ L.MarkerCluster.include({
 
 	_circleSpiralSwitchover: 9, //show spiral instead of circle from this marker count upwards.
 								// 0 -> always spiral; Infinity -> always circle
+
+	explodeCluster: function () {
+		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
+			return;
+		}
+
+		var childMarkers = this.getAllChildMarkers(),
+			group = this._group,
+			map = group._map,
+			positions = [];
+
+		this._group._unspiderfy();
+		this._group._spiderfied = this;
+
+		for (var index in childMarkers) {
+			positions.push(map.latLngToLayerPoint(childMarkers[index]._latlng));
+		}
+
+		this._animationSpiderfy(childMarkers, positions);
+	},
 
 	spiderfy: function () {
 		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
