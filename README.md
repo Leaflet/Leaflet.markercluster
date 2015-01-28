@@ -69,6 +69,7 @@ Other options
 * **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster
 * **spiderfyDistanceMultiplier**: Increase from 1 to increase the distance away from the center that spiderfied markers are placed. Use if you are using big marker icons (Default:1)
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
+* **iconHtmlClass**: Specify a custom HTML class name for cluster icons.  Default is 'marker-cluster'.
 
 ## Events
 If you register for click, mouseover, etc events just related to Markers in the cluster.
