@@ -1,4 +1,5 @@
 var fs = require('fs'),
+    path = require('path'),
     jshint = require('jshint'),
     UglifyJS = require('uglify-js'),
 
@@ -12,7 +13,7 @@ function lintFiles(files) {
 
 	for (i = 0, len = files.length; i < len; i++) {
 
-		jshint.JSHINT(fs.readFileSync(files[i], 'utf8'), hintrc, i ? {L: true} : null);
+		jshint.JSHINT(fs.readFileSync(files[i], 'utf8'), hintrc, i ? {L: true, define : true} : null);
 		errors = jshint.JSHINT.errors;
 
 		for (j = 0, len2 = errors.length; j < len2; j++) {
@@ -102,9 +103,25 @@ function loadSilently(path) {
 }
 
 function combineFiles(files) {
+  var exportable = [
+      'MarkerCluster',
+      'MarkerClusterGroup',
+      'DistanceGrid'
+    ],
+    umdTemplate = fs.readFileSync(__dirname + '/umd.template', 'utf8');
 	var content = '';
 	for (var i = 0, len = files.length; i < len; i++) {
-		content += fs.readFileSync(files[i], 'utf8') + '\n\n';
+
+    var source = fs.readFileSync(files[i], 'utf8'),
+      exportName = path.basename(files[i], '.js');
+
+    if (exportable.indexOf(exportName) >= 0) {
+      source = umdTemplate
+        .replace(/\{\{exportName\}\}/g, exportName)
+        .replace(/\{\{exportSource\}\}/, source);
+    }
+
+		content += source + '\n\n';
 	}
 	return content;
 }
