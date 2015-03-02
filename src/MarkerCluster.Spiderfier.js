@@ -111,7 +111,8 @@ L.MarkerCluster.include({
 				delete m._spiderLeg;
 			}
 		}
-
+		
+		group.fire('unspiderfied');
 		group._spiderfied = null;
 	}
 });
@@ -341,6 +342,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 				delete m._spiderLeg;
 			}
 			group._animationEnd();
+			group.fire('unspiderfied');
 		}, 200);
 	}
 });
