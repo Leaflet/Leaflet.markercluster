@@ -86,7 +86,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//If we have already clustered we'll need to add this one to a cluster
 
 		if (this._unspiderfy) {
-			this._unspiderfy();
+			this._preserveUnspiderfy();
 		}
 
 		this._addLayer(layer, this._maxZoom);
@@ -107,6 +107,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				this._animationAddLayerNonAnimated(layer, visibleLayer);
 			}
 		}
+
+		this._restoreSpiderfy();
+
 		return this;
 	},
 
@@ -139,7 +142,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 
 		if (this._unspiderfy) {
-			this._unspiderfy();
+			this._preserveUnspiderfy();
 			this._unspiderfyLayer(layer);
 		}
 
@@ -152,6 +155,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				layer.setOpacity(1);
 			}
 		}
+
+		this._restoreSpiderfy();
 
 		return this;
 	},
@@ -250,10 +255,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var i, l, m,
 			fg = this._featureGroup,
 			npg = this._nonPointGroup;
-
-		if (this._unspiderfy) {
-			this._unspiderfy();
-		}
 
 		if (!this._map) {
 			for (i = 0, l = layersArray.length; i < l; i++) {

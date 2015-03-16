@@ -86,6 +86,10 @@ L.MarkerCluster.include({
 	},
 
 	_noanimationUnspiderfy: function () {
+		if (!this._group._spiderfied) {
+			return;
+		}
+
 		var group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
@@ -113,16 +117,33 @@ L.MarkerCluster.include({
 		}
 
 		group._spiderfied = null;
-	}
-});
+	},
 
-L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
-	//Non Animated versions of everything
-	_animationSpiderfy: function (childMarkers, positions) {
+	_noanimationSpiderfy: function (childMarkers, positions) {
+		if (this._group._spiderfied === this) {
+			return;
+		}
+
 		var group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			i, m, leg, newPos;
+			i, m, leg, newPos,
+			center = map.latLngToLayerPoint(this._latlng);
+
+		this._group._spiderfied = this;
+
+		if (childMarkers === undefined) {
+			childMarkers = this.getAllChildMarkers();
+		}
+
+		if (positions === undefined) {
+			if (childMarkers.length >= this._circleSpiralSwitchover) {
+				positions = this._generatePointsSpiral(childMarkers.length, center);
+			} else {
+				center.y += 10; //Otherwise circles look wrong
+				positions = this._generatePointsCircle(childMarkers.length, center);
+			}
+		}
 
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			newPos = map.layerPointToLatLng(positions[i]);
@@ -130,19 +151,31 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 			m._preSpiderfyLatlng = m._latlng;
 			m.setLatLng(newPos);
+
+			if (m.setOpacity) {
+				m.setOpacity(1);
+			}
+
+			leg = new L.Polyline([this._latlng, newPos], { weight: 1.5, color: '#222' });
+			map.addLayer(leg);
+			m._spiderLeg = leg;
+
 			if (m.setZIndexOffset) {
 				m.setZIndexOffset(1000000); //Make these appear on top of EVERYTHING
 			}
 
 			fg.addLayer(m);
 
-
-			leg = new L.Polyline([this._latlng, newPos], { weight: 1.5, color: '#222' });
-			map.addLayer(leg);
-			m._spiderLeg = leg;
 		}
 		this.setOpacity(0.3);
 		group.fire('spiderfied');
+	}
+});
+
+L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
+	//Non Animated versions of everything
+	_animationSpiderfy: function (childMarkers, positions) {
+		this._noanimationSpiderfy(childMarkers, positions);
 	},
 
 	_animationUnspiderfy: function () {
@@ -293,7 +326,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			}
 
 			//Animate the spider legs back in
-			if (svg) {
+			if (svg && m._spiderLeg._path.childNodes.length > 0) {
 				a = m._spiderLeg._path.childNodes[0];
 				a.setAttribute('to', a.getAttribute('from'));
 				a.setAttribute('from', 0);
@@ -349,6 +382,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 L.MarkerClusterGroup.include({
 	//The MarkerCluster currently spiderfied (if any)
 	_spiderfied: null,
+	_spideredMarkers: [],
 
 	_spiderfierOnAdd: function () {
 		this._map.on('click', this._unspiderfyWrapper, this);
@@ -404,6 +438,28 @@ L.MarkerClusterGroup.include({
 	_unspiderfy: function (zoomDetails) {
 		if (this._spiderfied) {
 			this._spiderfied.unspiderfy(zoomDetails);
+		}
+		this._spideredMarkers = [];
+	},
+
+	_preserveUnspiderfy: function () {
+		if (this._spiderfied) {
+			this._spideredMarkers = [];
+			this._spideredMarkers = this._spiderfied.getAllChildMarkers();
+			this._spiderfied._noanimationUnspiderfy();
+		}
+	},
+
+	_restoreSpiderfy: function () {
+		if (this._spideredMarkers.length > 0) {
+			// Find the cluster that contains the spideredMarkers at the proper zoom level.
+			for (var i = this._spideredMarkers.length - 1; i >= 0; i--) {
+				var cluster = this._topClusterLevel.getClusterDirectlyContaining(this._spideredMarkers[i]);
+				if (cluster !== null && cluster._zoom === this._zoom) {
+					cluster._noanimationSpiderfy();
+					break;
+				}
+			}
 		}
 	},
 
