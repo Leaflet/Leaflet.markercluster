@@ -120,6 +120,13 @@ var visibleOne = markerClusterGroup.getVisibleParent(myMarker);
 console.log(visibleOne.getLatLng());
 ```
 
+### Getting the  parent of a marker (visible or not)
+If you have a marker in your MarkerClusterGroup and you want to get the parent of it (Either itself or a cluster it is contained in).
+```
+var parent  = markerClusterGroup.getParent(myMarker);
+console.log(parent.getLatLng());
+```
+
 ### Adding and removing Markers
 addLayer, removeLayer and clearLayers are supported and they should work for most uses.
 
