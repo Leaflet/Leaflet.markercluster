@@ -12,6 +12,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		showCoverageOnHover: true,
 		zoomToBoundsOnClick: true,
 		singleMarkerMode: false,
+		mapCenterOffset: false,
 
 		disableClusteringAtZoom: null,
 

@@ -20,6 +20,16 @@
     padding: 2px;
 }
 
+#sidebar {
+    background-color: rgba(0, 0, 0, 0.3);
+    position: fixed;
+    left: 8px;
+    height: 602px;
+    width: 200px;
+    top: 8px;
+    z-index: 5;
+}
+
 #progress-bar {
     width: 0;
     height: 100%;
