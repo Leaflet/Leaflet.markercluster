@@ -113,6 +113,27 @@ L.MarkerCluster.include({
 		}
 
 		group._spiderfied = null;
+	},
+	
+	_findClosestMarker: function (markers, markersIndex, position) {
+		var distance,
+			closestDistance = null,
+			closestIndex;
+
+		//Loop through markers with indexes in markers index
+		for (var i = 0; i < markersIndex.length; i++) {
+			//Get the distance between the marker and the position
+			distance = markers[markersIndex[i]]._latlng.distanceTo(position);
+
+			//Check if this is the closest marker so far
+			if (closestDistance === null || distance < closestDistance) {
+				//Set the closest distance and index
+				closestDistance = distance;
+				closestIndex = i;
+			}
+		}
+		//Remove the index of closest marker and return it
+		return markersIndex.splice(closestIndex, 1)[0];
 	}
 });
 
@@ -122,11 +143,30 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 		var group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			i, m, leg, newPos;
+			childMarkersIndex = [],
+			i, m, leg, newPos, markerIndex, centerLatlng;
 
-		for (i = childMarkers.length - 1; i >= 0; i--) {
+		if (this._group.options.lineToActualPosition) {
+			//Put our markers index in an array, so we can track which have been used
+			for (i = 0; i < childMarkers.length; i++) {
+				childMarkersIndex.push(i);
+			}
+		}
+
+		for (i = 0; i < positions.length; i++) {
 			newPos = map.layerPointToLatLng(positions[i]);
-			m = childMarkers[i];
+			if (this._group.options.lineToActualPosition) {
+				//Get the closest marker to our current spiderfy position
+				markerIndex = this._findClosestMarker(childMarkers, childMarkersIndex, newPos);
+				m = childMarkers[markerIndex];
+
+				//Set the lat long to the true location of the item
+				centerLatlng = m._latlng;
+			} else {
+				m = childMarkers[i];
+				//Set the lat long to the center of the cluster location
+				centerLatlng = this._latlng;
+			}
 
 			m._preSpiderfyLatlng = m._latlng;
 			m.setLatLng(newPos);
@@ -137,7 +177,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			fg.addLayer(m);
 
 
-			leg = new L.Polyline([this._latlng, newPos], { weight: 1.5, color: '#222' });
+			leg = new L.Polyline([centerLatlng, newPos], { weight: 1.5, color: '#222' });
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 		}
@@ -160,7 +200,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			map = group._map,
 			fg = group._featureGroup,
 			thisLayerPos = map.latLngToLayerPoint(this._latlng),
-			i, m, leg, newPos;
+			childMarkersIndex = [],
+			i, m, leg, newPos, markerIndex, centerLatlng;
 
 		//Add markers to map hidden at our center point
 		for (i = childMarkers.length - 1; i >= 0; i--) {
@@ -186,10 +227,27 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 		var initialLegOpacity = L.Path.SVG ? 0 : 0.3,
 			xmlns = L.Path.SVG_NS;
 
+		if (this._group.options.lineToActualPosition) {
+			//Put our markers index in an array, so we can track which have been used
+			for (i = 0; i < childMarkers.length; i++) {
+				childMarkersIndex.push(i);
+			}
+		}
 
-		for (i = childMarkers.length - 1; i >= 0; i--) {
+		for (i = 0; i < positions.length; i++) {
 			newPos = map.layerPointToLatLng(positions[i]);
-			m = childMarkers[i];
+			if (this._group.options.lineToActualPosition) {
+				//Get the closest marker to our current spiderfy position
+				markerIndex = this._findClosestMarker(childMarkers, childMarkersIndex, newPos);
+				m = childMarkers[markerIndex];
+
+				//Set the lat long to the true location of the item
+				centerLatlng = m._latlng;
+			} else {
+				m = childMarkers[i];
+				//Set the lat long to the center of the cluster location
+				centerLatlng = me._latlng;
+			}
 
 			//Move marker to new position
 			m._preSpiderfyLatlng = m._latlng;
@@ -201,7 +259,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 
 			//Add Legs.
-			leg = new L.Polyline([me._latlng, newPos], { weight: 1.5, color: '#222', opacity: initialLegOpacity });
+			leg = new L.Polyline([centerLatlng, newPos], { weight: 1.5, color: '#222', opacity: initialLegOpacity });
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 
