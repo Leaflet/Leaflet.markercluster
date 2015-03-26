@@ -1,6 +1,6 @@
 {
     "name": "leaflet.markercluster",
-    "version": "0.4.0",
+    "version": "0.4.0-hotfix.1",
     "homepage": "https://github.com/Leaflet/Leaflet.markercluster",
     "authors": [
         "Dave Leaver <danzel@localhost.geek.nz>"
