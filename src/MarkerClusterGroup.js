@@ -6,6 +6,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	options: {
 		maxClusterRadius: 80, //A cluster will cover at most this many pixels from its center
+		clusterAspectRatio: 1, // Horizontal radis = radius * sqrt(ratio); vertical = radius / sqrt(ratio)
 		iconCreateFunction: null,
 
 		spiderfyOnMaxZoom: true,
@@ -762,8 +763,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= 0; zoom--) {
-			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
-			this._gridUnclustered[zoom] = new L.DistanceGrid(radiusFn(zoom));
+			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom), this.options.clusterAspectRatio);
+			this._gridUnclustered[zoom] = new L.DistanceGrid(radiusFn(zoom), this.options.clusterAspectRatio);
 		}
 
 		this._topClusterLevel = new L.MarkerCluster(this, -1);

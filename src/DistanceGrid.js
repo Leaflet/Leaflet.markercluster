@@ -1,9 +1,11 @@
 
-L.DistanceGrid = function (cellSize) {
+L.DistanceGrid = function (cellSize, ratio) {
 	this._cellSize = cellSize;
+	this._aspectRatio = ratio;
+	this._invAspectRatio = 1 / ratio;
 	this._sqCellSize = cellSize * cellSize;
 	this._grid = {};
-	this._objectPoint = { };
+	this._objectPoint = {};
 };
 
 L.DistanceGrid.prototype = {
@@ -111,6 +113,6 @@ L.DistanceGrid.prototype = {
 	_sqDist: function (p, p2) {
 		var dx = p2.x - p.x,
 		    dy = p2.y - p.y;
-		return dx * dx + dy * dy;
+		return dx * dx * this._invAspectRatio + dy * dy * this._aspectRatio;
 	}
 };
