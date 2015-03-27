@@ -30,12 +30,14 @@ L.MarkerCluster.include({
 
 		//TODO Maybe: childMarkers order by distance to center
 
-		if (childMarkers.length >= this._circleSpiralSwitchover) {
-			positions = this._generatePointsSpiral(childMarkers.length, center);
-		} else {
-			center.y += 10; //Otherwise circles look wrong
-			positions = this._generatePointsCircle(childMarkers.length, center);
-		}
+    if (childMarkers.length >= this._circleSpiralSwitchover) {
+      positions = this._generatePointsSpiral(childMarkers.length, center);
+    } else if (this._group.options.spiderfyLinear) { // checks for linear spiderfy
+      positions = this._generatePointsLine(childMarkers.length, center);
+    } else {
+      center.y += 10; //Otherwise circles look wrong
+      positions = this._generatePointsCircle(childMarkers.length, center);
+    }
 
 		this._animationSpiderfy(childMarkers, positions);
 	},
@@ -84,6 +86,24 @@ L.MarkerCluster.include({
 		}
 		return res;
 	},
+
+	_generatePointsLine: function (count, centerPt) {
+    var distanceFromCenter = this._group.options.spiderfyLinearDistance,
+        markerDistance = this._group.options.spiderfyLinearSeparation,
+        lineLength = markerDistance * (count - 1),
+        lineStart = centerPt.y - lineLength / 2,
+        res = [],
+        i;
+
+    res.length = count;
+
+    for (i = count - 1; i >= 0; i--) {
+      res[i] = new L.Point(centerPt.x + distanceFromCenter, lineStart + markerDistance * i);
+    }
+
+    return res;
+    
+  },
 
 	_noanimationUnspiderfy: function () {
 		var group = this._group,

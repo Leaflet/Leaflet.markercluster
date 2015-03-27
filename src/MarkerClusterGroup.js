@@ -26,6 +26,11 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Increase to increase the distance away that spiderfied markers appear from the center
 		spiderfyDistanceMultiplier: 1,
 
+		// Make it possible to create linear set of markers on spiderfy
+    spiderfyLinear: false,
+    spiderfyLinearDistance: 30, // negative numbers will go to the left of cluster
+    spiderfyLinearSeparation: 45, // works with leaflet default marker
+
 		// Make it possible to specify a polyline options on a spider leg
 		spiderLegPolylineOptions: { weight: 1.5, color: '#222' },
 
