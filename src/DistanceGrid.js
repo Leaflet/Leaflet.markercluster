@@ -114,9 +114,9 @@ L.DistanceGrid.prototype = {
 		if (obj.feature) {
 			return obj.feature.properties;
 		} else if (obj._markers.length > 0) {
-			return findAChild(obj._markers[0]);
+			return this._findAChild(obj._markers[0]);
 		} else {
-			return findAChild(obj._childClusters[0]);
+			return this._findAChild(obj._childClusters[0]);
 		}
 	},
 
