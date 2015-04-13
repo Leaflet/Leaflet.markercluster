@@ -6,6 +6,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	options: {
 		maxClusterRadius: 80, //A cluster will cover at most this many pixels from its center
+		groupByCommonValues: null, //Pass a fieldname from feature.properties(Example: ZipCode) The field will be used to limit which markers can cluster. 
 		iconCreateFunction: null,
 
 		spiderfyOnMaxZoom: true,
@@ -773,6 +774,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_addLayer: function (layer, zoom) {
 		var gridClusters = this._gridClusters,
 		    gridUnclustered = this._gridUnclustered,
+		    GroupByVal = this.options.GroupByCommonValues,
+		    filter = [GroupByVal, layer.feature.properties[GroupByVal]],
 		    markerPoint, z;
 
 		if (this.options.singleMarkerMode) {
@@ -791,7 +794,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			markerPoint = this._map.project(layer.getLatLng(), zoom); // calculate pixel position
 
 			//Try find a cluster close by
-			var closest = gridClusters[zoom].getNearObject(markerPoint);
+			var closest = gridClusters[zoom].getNearObject(markerPoint, filter);
 			if (closest) {
 				closest._addChild(layer);
 				layer.__parent = closest;
@@ -799,7 +802,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			}
 
 			//Try find a marker close by to form a new cluster with
-			closest = gridUnclustered[zoom].getNearObject(markerPoint);
+			closest = gridUnclustered[zoom].getNearObject(markerPoint, filter);
 			if (closest) {
 				var parent = closest.__parent;
 				if (parent) {
