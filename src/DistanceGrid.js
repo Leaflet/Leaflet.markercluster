@@ -95,7 +95,7 @@ L.DistanceGrid.prototype = {
 							obj = cell[k];
 							dist = this._sqDist(objectPoint[L.Util.stamp(obj)], point);
 							
-							l = findAChild(obj);
+							l = this._findAChild(obj);
 							
 							if (l[filter[0]] === filter[1] && dist < closestDistSq) {
 								closestDistSq = dist;
@@ -110,13 +110,13 @@ L.DistanceGrid.prototype = {
 		return closest;
 	},
 	
-	findAChild: function (obj) {
+	_findAChild: function (obj) {
 		if (obj.feature) {
 			return obj.feature.properties;
-		} if (obj._markers.length>0){
+		} else if (obj._markers.length > 0) {
 			return findAChild(obj._markers[0]);
 		} else {
-			return findAChild(obj._childClusters[0]); 
+			return findAChild(obj._childClusters[0]);
 		}
 	},
 
