@@ -139,9 +139,9 @@ Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=1843
 				maxPt = maxLatPt;
 			} else {
 				minPt = minLngPt;
-				maxPt = maxLngPt;			
+				maxPt = maxLngPt;
 			}
-			
+
 			var ch = [].concat(this.buildConvexHull([minPt, maxPt], latLngs),
 								this.buildConvexHull([maxPt, minPt], latLngs));
 			return ch;
