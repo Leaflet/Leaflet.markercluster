@@ -107,12 +107,12 @@ Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=1843
 		 */
 		getConvexHull: function (latLngs) {
 			// find first baseline
-                	var maxLat = false, minLat = false,
-			   	maxLng = false, minLng = false,
-			    	maxLatPt = null, minLatPt = null,
-			    	maxLngPt = null, minLngPt = null,
-			    	maxPt = null, minPt = null,
-			    	i;
+			var maxLat = false, minLat = false,
+				maxLng = false, minLng = false,
+				maxLatPt = null, minLatPt = null,
+				maxLngPt = null, minLngPt = null,
+				maxPt = null, minPt = null,
+				i;
 
 			for (i = latLngs.length - 1; i >= 0; i--) {
 				var pt = latLngs[i];
@@ -125,20 +125,20 @@ Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=1843
 					minLat = pt.lat;
 				}
 				if (maxLng === false || pt.lng > maxLng) {
-				        maxLngPt = pt;
+					maxLngPt = pt;
 					maxLng = pt.lng;
 				}
 				if (minLng === false || pt.lng < minLng) {
-				        minLngPt = pt;
+					minLngPt = pt;
 					minLng = pt.lng;
 				}
 			}
 			
 			if (minLat !== maxLat) {
-			      	minPt = minLatPt;
+				minPt = minLatPt;
 				maxPt = maxLatPt;
 			} else {
-			        minPt = minLngPt;
+				minPt = minLngPt;
 				maxPt = maxLngPt;			
 			}
 			
