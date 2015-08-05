@@ -9,51 +9,74 @@ L.DistanceGrid = function (cellSize) {
 L.DistanceGrid.prototype = {
 
 	addObject: function (obj, point) {
-		var x = Math.floor(point.x / this._cellSize),
-		    y = Math.floor(point.y / this._cellSize),
+		var x = this._getCoord(point.x),
+		    y = this._getCoord(point.y),
 		    grid = this._grid,
 		    row = grid[y] = grid[y] || {},
 		    cell = row[x] = row[x] || [],
 		    stamp = L.Util.stamp(obj);
 
-		this._objectPoint[stamp] = {
-            obj: obj,
-            x: point.x,
-            y: point.y
-        };
+		this._objectPoint[stamp] = point;
 
-		cell.push(stamp);
+		cell.push(obj);
+	},
+
+	updateObject: function (obj, point) {
+		this.removeObject(obj);
+		this.addObject(obj, point);
 	},
 
 	//Returns true if the object was found
 	removeObject: function (obj, point) {
-		var x = Math.floor(point.x / this._cellSize),
-		    y = Math.floor(point.y / this._cellSize),
+		var x = this._getCoord(point.x),
+		    y = this._getCoord(point.y),
 		    grid = this._grid,
 		    row = grid[y] = grid[y] || {},
 		    cell = row[x] = row[x] || [],
-		    stamp = L.Util.stamp(obj),
-            objectPoint = this._objectPoint,
 		    i, len;
 
+		delete this._objectPoint[L.Util.stamp(obj)];
+
 		for (i = 0, len = cell.length; i < len; i++) {
-			if (objectPoint[cell[i]].obj === obj) {
+			if (cell[i] === obj) {
+
+				cell.splice(i, 1);
+
 				if (len === 1) {
 					delete row[x];
-				} else {
-                    cell.splice(i, 1);
-                }
-                // delete this._objectPoint[stamp];
-                this._objectPoint[stamp] = null;
+				}
+
 				return true;
+			}
+		}
+
+	},
+
+	eachObject: function (fn, context) {
+		var i, j, k, len, row, cell, removed,
+		    grid = this._grid;
+
+		for (i in grid) {
+			row = grid[i];
+
+			for (j in row) {
+				cell = row[j];
+
+				for (k = 0, len = cell.length; k < len; k++) {
+					removed = fn.call(context, cell[k]);
+					if (removed) {
+						k--;
+						len--;
+					}
+				}
 			}
 		}
 	},
 
 	getNearObject: function (point) {
-		var x = Math.floor(point.x / this._cellSize),
-		    y = Math.floor(point.y / this._cellSize),
-		    i, j, k, row, cell, len, dist,
+		var x = this._getCoord(point.x),
+		    y = this._getCoord(point.y),
+		    i, j, k, row, cell, len, obj, dist,
 		    objectPoint = this._objectPoint,
 		    closestDistSq = this._sqCellSize,
 		    closest = null;
@@ -67,13 +90,11 @@ L.DistanceGrid.prototype = {
 					if (cell) {
 
 						for (k = 0, len = cell.length; k < len; k++) {
-                            if (cell[k]) {
-                                var item = objectPoint[cell[k]];
-                                dist = this._sqDist(item, point);
-                                if (dist < closestDistSq) {
-                                    closestDistSq = dist;
-                                    closest = item.obj;
-                                }
+							obj = cell[k];
+							dist = this._sqDist(objectPoint[L.Util.stamp(obj)], point);
+							if (dist < closestDistSq) {
+								closestDistSq = dist;
+								closest = obj;
 							}
 						}
 					}
@@ -81,6 +102,10 @@ L.DistanceGrid.prototype = {
 			}
 		}
 		return closest;
+	},
+
+	_getCoord: function (x) {
+		return Math.floor(x / this._cellSize);
 	},
 
 	_sqDist: function (p, p2) {
