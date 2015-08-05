@@ -270,7 +270,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				this._unspiderfyLayer(m);
 			}
 		}
-		
+
 		for (i = 0, l = layersArray.length; i < l; i++) {
 			m = layersArray[i];
 
@@ -278,7 +278,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				npg.removeLayer(m);
 				continue;
 			}
-			
+
 			this._removeLayer(m, true, true);
 
 			if (fg.hasLayer(m)) {
