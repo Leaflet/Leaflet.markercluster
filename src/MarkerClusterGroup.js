@@ -263,17 +263,20 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			return this;
 		}
 
+		if (this._unspiderfy) {
+			this._unspiderfy();
+			for (i = 0, l = layersArray.length; i < l; i++) {
+				m = layersArray[i];
+				this._unspiderfyLayer(m);
+			}
+		}
+		
 		for (i = 0, l = layersArray.length; i < l; i++) {
 			m = layersArray[i];
 
 			if (!m.__parent) {
 				npg.removeLayer(m);
 				continue;
-			}
-
-			if (this._unspiderfy) {
-				this._unspiderfy();
-				this._unspiderfyLayer(m);
 			}
 			
 			this._removeLayer(m, true, true);
