@@ -9,16 +9,20 @@ L.DistanceGrid = function (cellSize) {
 L.DistanceGrid.prototype = {
 
 	addObject: function (obj, point) {
-		var x = this._getCoord(point.x),
-		    y = this._getCoord(point.y),
+		var x = Math.floor(point.x / this._cellSize),
+		    y = Math.floor(point.y / this._cellSize),
 		    grid = this._grid,
 		    row = grid[y] = grid[y] || {},
 		    cell = row[x] = row[x] || [],
 		    stamp = L.Util.stamp(obj);
 
-		this._objectPoint[stamp] = point;
+		this._objectPoint[stamp] = {
+            obj: obj,
+            x: point.x,
+            y: point.y
+        };
 
-		cell.push(obj);
+		cell.push(stamp);
 	},
 
 	updateObject: function (obj, point) {
@@ -28,24 +32,23 @@ L.DistanceGrid.prototype = {
 
 	//Returns true if the object was found
 	removeObject: function (obj, point) {
-		var x = this._getCoord(point.x),
-		    y = this._getCoord(point.y),
+		var x = Math.floor(point.x / this._cellSize),
+		    y = Math.floor(point.y / this._cellSize),
 		    grid = this._grid,
 		    row = grid[y] = grid[y] || {},
 		    cell = row[x] = row[x] || [],
+		    stamp = L.Util.stamp(obj),
+            objectPoint = this._objectPoint,
 		    i, len;
 
-		delete this._objectPoint[L.Util.stamp(obj)];
-
 		for (i = 0, len = cell.length; i < len; i++) {
-			if (cell[i] === obj) {
-
-				cell.splice(i, 1);
-
+			if (objectPoint[cell[i]].obj === obj) {
 				if (len === 1) {
 					delete row[x];
-				}
-
+				} else {
+                    cell.splice(i, 1);
+                }
+                this._objectPoint[stamp] = null;
 				return true;
 			}
 		}
@@ -74,9 +77,9 @@ L.DistanceGrid.prototype = {
 	},
 
 	getNearObject: function (point) {
-		var x = this._getCoord(point.x),
-		    y = this._getCoord(point.y),
-		    i, j, k, row, cell, len, obj, dist,
+		var x = Math.floor(point.x / this._cellSize),
+		    y = Math.floor(point.y / this._cellSize),
+		    i, j, k, row, cell, len, dist,
 		    objectPoint = this._objectPoint,
 		    closestDistSq = this._sqCellSize,
 		    closest = null;
@@ -90,11 +93,13 @@ L.DistanceGrid.prototype = {
 					if (cell) {
 
 						for (k = 0, len = cell.length; k < len; k++) {
-							obj = cell[k];
-							dist = this._sqDist(objectPoint[L.Util.stamp(obj)], point);
-							if (dist < closestDistSq) {
-								closestDistSq = dist;
-								closest = obj;
+                            if (cell[k]) {
+                                var item = objectPoint[cell[k]];
+                                dist = this._sqDist(item, point);
+                                if (dist < closestDistSq) {
+                                    closestDistSq = dist;
+                                    closest = item.obj;
+                                }
 							}
 						}
 					}
@@ -102,10 +107,6 @@ L.DistanceGrid.prototype = {
 			}
 		}
 		return closest;
-	},
-
-	_getCoord: function (x) {
-		return Math.floor(x / this._cellSize);
 	},
 
 	_sqDist: function (p, p2) {
