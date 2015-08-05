@@ -1,7 +1,36 @@
+var SimpleBounds = function (arr) {
+    this.min = {
+        x: Number.MAX_VALUE,
+        y: Number.MAX_VALUE
+    };
+    this.max = {
+        x: -Number.MAX_VALUE,
+        y: -Number.MAX_VALUE
+    };
+    this.extend = function (x, y) {
+        if (x < this.min.x) { this.min.x = x; }
+        if (x > this.max.x) { this.max.x = x; }
+        if (y < this.min.y) { this.min.y = y; }
+        if (y > this.max.y) { this.max.y = y; }
+        return this;
+    };
+    this.extendArray = function (arr) {
+        if (!arr) { return this; }
+        for (var i = 0, len = arr.length; i < len; i++) {
+            this.extend(arr[i][0], arr[i][1]);
+        }
+        return this;
+    };
+    this.extendBounds = function (bounds) {
+        return this.extendArray([[bounds.min.x, bounds.min.y], [bounds.max.x, bounds.max.y]]);
+    };
+    this.extendArray(arr);
+};
+    
 L.MarkerCluster = L.Marker.extend({
 	initialize: function (group, zoom, a, b) {
 
-		L.Marker.prototype.initialize.call(this, a ? (a._cLatLng || a.getLatLng()) : new L.LatLng(0, 0), { icon: this });
+		L.Marker.prototype.initialize.call(this, a ? (a._cLatLng || a.getLatLng()) : new L.LatLng(0, 0), {icon: this});
 
 
 		this._group = group;
@@ -11,8 +40,6 @@ L.MarkerCluster = L.Marker.extend({
 		this._childClusters = [];
 		this._childCount = 0;
 		this._iconNeedsUpdate = true;
-
-		this._bounds = new L.LatLngBounds();
 
 		if (a) {
 			this._addChild(a);
@@ -70,9 +97,32 @@ L.MarkerCluster = L.Marker.extend({
 		}
 	},
 
-	getBounds: function () {
-		var bounds = new L.LatLngBounds();
-		bounds.extend(this._bounds);
+	getBoundsLatLngBounds: function (clear) {
+		if (this._bounds && !clear) { return this._bounds; }
+		var bounds = this.getBounds(clear),
+            min = bounds.min,
+            max = bounds.max;
+		this._bounds = new L.LatLngBounds([min.y, min.x], [max.y, max.x]);
+        return this._bounds;
+	},
+
+	getBounds: function (clear) {
+		if (this._boundsGmx && !clear) { return this._boundsGmx; }
+		var markers = this._markers,
+			childClusters = this._childClusters,
+			i,
+            bounds = new SimpleBounds();
+
+		for (i = markers.length - 1; i >= 0; i--) {
+            var marker = markers[i],
+                addedLatLng = marker._wLatLng || marker._latlng;
+
+            bounds.extend(addedLatLng.lng, addedLatLng.lat);
+		}
+		for (i = childClusters.length - 1; i >= 0; i--) {
+            bounds.extendBounds(childClusters[i].getBounds());
+		}
+		this._boundsGmx = bounds;
 		return bounds;
 	},
 
@@ -99,7 +149,7 @@ L.MarkerCluster = L.Marker.extend({
 	_addChild: function (new1, isNotificationFromChild) {
 
 		this._iconNeedsUpdate = true;
-		this._expandBounds(new1);
+		this._setWeightedLatlng(new1);
 
 		if (new1 instanceof L.MarkerCluster) {
 			if (!isNotificationFromChild) {
@@ -111,7 +161,7 @@ L.MarkerCluster = L.Marker.extend({
 			if (!isNotificationFromChild) {
 				this._markers.push(new1);
 			}
-			this._childCount++;
+            ++this._childCount;
 		}
 
 		if (this.__parent) {
@@ -119,31 +169,23 @@ L.MarkerCluster = L.Marker.extend({
 		}
 	},
 
-	//Expand our bounds and tell our parent to
-	_expandBounds: function (marker) {
-		var addedCount,
-		    addedLatLng = marker._wLatLng || marker._latlng;
-
-		if (marker instanceof L.MarkerCluster) {
-			this._bounds.extend(marker._bounds);
-			addedCount = marker._childCount;
-		} else {
-			this._bounds.extend(addedLatLng);
-			addedCount = 1;
-		}
+    //Calculate weighted latlng for display and cluster center
+	_setWeightedLatlng: function (marker) {
+		var addedLatLng = marker._wLatLng || marker._latlng;
 
 		if (!this._cLatLng) {
 			// when clustering, take position of the first point as the cluster center
 			this._cLatLng = marker._cLatLng || addedLatLng;
 		}
 
-		// when showing clusters, take weighted average of all points as cluster center
-		var totalCount = this._childCount + addedCount;
-
 		//Calculate weighted latlng for display
 		if (!this._wLatLng) {
 			this._latlng = this._wLatLng = new L.LatLng(addedLatLng.lat, addedLatLng.lng);
 		} else {
+
+            // when showing clusters, take weighted average of all points as cluster center
+            var addedCount = marker instanceof L.MarkerCluster ? marker._childCount : 1,
+                totalCount = this._childCount + addedCount;
 			this._wLatLng.lat = (addedLatLng.lat * addedCount + this._wLatLng.lat * this._childCount) / totalCount;
 			this._wLatLng.lng = (addedLatLng.lng * addedCount + this._wLatLng.lng * this._childCount) / totalCount;
 		}
@@ -319,7 +361,8 @@ L.MarkerCluster = L.Marker.extend({
 		if (zoomLevelToStart > zoom) { //Still going down to required depth, just recurse to child clusters
 			for (i = childClusters.length - 1; i >= 0; i--) {
 				c = childClusters[i];
-				if (boundsToApplyTo.intersects(c._bounds)) {
+
+				if (boundsToApplyTo.intersects(c.getBoundsLatLngBounds())) {
 					c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
 				}
 			}
@@ -336,7 +379,7 @@ L.MarkerCluster = L.Marker.extend({
 			if (zoomLevelToStop > zoom) {
 				for (i = childClusters.length - 1; i >= 0; i--) {
 					c = childClusters[i];
-					if (boundsToApplyTo.intersects(c._bounds)) {
+					if (boundsToApplyTo.intersects(c.getBoundsLatLngBounds())) {
 						c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
 					}
 				}
@@ -349,14 +392,15 @@ L.MarkerCluster = L.Marker.extend({
 			childClusters = this._childClusters,
 			i;
 
-		this._bounds = new L.LatLngBounds();
-		delete this._wLatLng;
+		this._bounds = null;
+		this._boundsGmx = null;
+		this._wLatLng = null;
 
 		for (i = markers.length - 1; i >= 0; i--) {
-			this._expandBounds(markers[i]);
+			this._setWeightedLatlng(markers[i]);
 		}
 		for (i = childClusters.length - 1; i >= 0; i--) {
-			this._expandBounds(childClusters[i]);
+			this._setWeightedLatlng(childClusters[i]);
 		}
 	},
 
