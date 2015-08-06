@@ -7,24 +7,26 @@ var SimpleBounds = function (arr) {
         x: -Number.MAX_VALUE,
         y: -Number.MAX_VALUE
     };
-    this.extend = function (x, y) {
+    this.extendArray(arr);
+};
+SimpleBounds.prototype = {
+    extend: function (x, y) {
         if (x < this.min.x) { this.min.x = x; }
         if (x > this.max.x) { this.max.x = x; }
         if (y < this.min.y) { this.min.y = y; }
         if (y > this.max.y) { this.max.y = y; }
         return this;
-    };
-    this.extendArray = function (arr) {
+    },
+    extendArray: function (arr) {
         if (!arr) { return this; }
         for (var i = 0, len = arr.length; i < len; i++) {
             this.extend(arr[i][0], arr[i][1]);
         }
         return this;
-    };
-    this.extendBounds = function (bounds) {
+    },
+    extendBounds: function (bounds) {
         return this.extendArray([[bounds.min.x, bounds.min.y], [bounds.max.x, bounds.max.y]]);
-    };
-    this.extendArray(arr);
+    }
 };
     
 L.MarkerCluster = L.Marker.extend({
