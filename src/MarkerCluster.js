@@ -101,15 +101,15 @@ L.MarkerCluster = L.Marker.extend({
 
 	getBoundsLatLngBounds: function (clear) {
 		if (this._bounds && !clear) { return this._bounds; }
-		var bounds = this.getBounds(clear),
+		var bounds = this.getBounds(!clear),
             min = bounds.min,
             max = bounds.max;
 		this._bounds = new L.LatLngBounds([min.y, min.x], [max.y, max.x]);
         return this._bounds;
 	},
 
-	getBounds: function (clear) {
-		if (this._boundsGmx && !clear) { return this._boundsGmx; }
+	getBounds: function (notClear) {
+		if (this._boundsGmx && notClear) { return this._boundsGmx; }
 		var markers = this._markers,
 			childClusters = this._childClusters,
 			i,
