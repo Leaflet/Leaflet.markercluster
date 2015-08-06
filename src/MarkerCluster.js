@@ -101,14 +101,14 @@ L.MarkerCluster = L.Marker.extend({
 
 	getBoundsLatLngBounds: function (clear) {
 		if (this._bounds && !clear) { return this._bounds; }
-		var bounds = this.getBounds(!clear),
+		var bounds = this.getSimpleBounds(!clear),
             min = bounds.min,
             max = bounds.max;
 		this._bounds = new L.LatLngBounds([min.y, min.x], [max.y, max.x]);
         return this._bounds;
 	},
 
-	getBounds: function (notClear) {
+	getSimpleBounds: function (notClear) {
 		if (this._boundsGmx && notClear) { return this._boundsGmx; }
 		var markers = this._markers,
 			childClusters = this._childClusters,
@@ -122,10 +122,19 @@ L.MarkerCluster = L.Marker.extend({
             bounds.extend(addedLatLng.lng, addedLatLng.lat);
 		}
 		for (i = childClusters.length - 1; i >= 0; i--) {
-            bounds.extendBounds(childClusters[i].getBounds());
+            bounds.extendBounds(childClusters[i].getSimpleBounds());
 		}
 		this._boundsGmx = bounds;
 		return bounds;
+	},
+
+	getBounds: function () {
+		var sbounds = this.getSimpleBounds();
+        if (
+            sbounds.min.y !== Number.MAX_VALUE || sbounds.min.x !== Number.MAX_VALUE || sbounds.max.x !== -Number.MAX_VALUE || sbounds.max.y !== -Number.MAX_VALUE
+        ) {
+            return new L.LatLngBounds([sbounds.min.y, sbounds.min.x], [sbounds.max.y, sbounds.max.x]);
+        }
 	},
 
 	_updateIcon: function () {

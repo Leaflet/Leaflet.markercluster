@@ -333,7 +333,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var bounds = new L.LatLngBounds();
 
 		if (this._topClusterLevel) {
-			bounds.extend(this._topClusterLevel._bounds);
+			bounds.extend(this._topClusterLevel.getBounds());
 		}
 
 		for (var i = this._needsClustering.length - 1; i >= 0; i--) {
