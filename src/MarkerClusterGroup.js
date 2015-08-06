@@ -254,10 +254,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			fg = this._featureGroup,
 			npg = this._nonPointGroup;
 
-		if (this._unspiderfy) {
-			this._unspiderfy();
-		}
-
 		if (!this._map) {
 			for (i = 0, l = layersArray.length; i < l; i++) {
 				m = layersArray[i];
@@ -265,6 +261,14 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				npg.removeLayer(m);
 			}
 			return this;
+		}
+
+		if (this._unspiderfy) {
+			this._unspiderfy();
+			for (i = 0, l = layersArray.length; i < l; i++) {
+				m = layersArray[i];
+				this._unspiderfyLayer(m);
+			}
 		}
 
 		for (i = 0, l = layersArray.length; i < l; i++) {
