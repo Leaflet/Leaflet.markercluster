@@ -549,10 +549,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Remove the marker from distance clusters it might be in
 		if (removeFromDistanceGrid) {
-            var markerPoint = map.project(marker.getLatLng(), this._maxZoom + 1);
 			for (var z = this._maxZoom; z >= 0; z--) {
-				markerPoint._divideBy(2);
-                if (!gridUnclustered[z].removeObject(marker, markerPoint)) {
+				if (!gridUnclustered[z].removeObject(marker, map.project(marker.getLatLng(), z))) {
 					break;
 				}
 			}
@@ -775,7 +773,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_addLayer: function (layer, zoom) {
 		var gridClusters = this._gridClusters,
 		    gridUnclustered = this._gridUnclustered,
-		    z;
+		    markerPoint, z;
 
 		if (this.options.singleMarkerMode) {
 			layer.options.icon = this.options.iconCreateFunction({
@@ -788,10 +786,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			});
 		}
 
-		// Find the lowest zoom level to slot this one in
-		var markerPoint = this._map.project(layer.getLatLng(), zoom + 1); // calculate pixel position
+		//Find the lowest zoom level to slot this one in
 		for (; zoom >= 0; zoom--) {
-            markerPoint._divideBy(2);
+			markerPoint = this._map.project(layer.getLatLng(), zoom); // calculate pixel position
+
 			//Try find a cluster close by
 			var closest = gridClusters[zoom].getNearObject(markerPoint);
 			if (closest) {
