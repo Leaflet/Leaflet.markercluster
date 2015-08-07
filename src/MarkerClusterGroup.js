@@ -379,7 +379,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var result = null;
 
 		this.eachLayer(function (l) {
-			if (L.stamp(l) === id) {
+			if (L.stamp(l) == id) {
 				result = l;
 			}
 		});
