@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Leaflet debug page</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.css" />
+	<script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<script src="realworld.50000.1.js"></script>
+
+</head>
+<body>
+
+	<div id="map"></div>
+	<span></span>
+	<script type="text/javascript">
+
+        L.LatLngBounds.prototype.extend = function (obj) { // (LatLng) or (LatLngBounds) or ([lat, lng])
+            var sw = this._southWest,
+                ne = this._northEast,
+                sw2, ne2;
+
+            if (L.Util.isArray(obj)) {
+                sw2 = ne2 = {lat: Number(obj[0]), lng: Number(obj[1])};
+            } else if (obj instanceof L.LatLng) {
+                sw2 = obj;
+                ne2 = obj;
+
+            } else if (obj instanceof L.LatLngBounds) {
+                sw2 = obj._southWest;
+                ne2 = obj._northEast;
+
+                if (!sw2 || !ne2) { return this; }
+
+            } else {
+                return obj ? this.extend(L.latLng(obj) || L.latLngBounds(obj)) : this;
+            }
+
+            if (!sw && !ne) {
+                this._southWest = new L.LatLng(sw2.lat, sw2.lng);
+                this._northEast = new L.LatLng(ne2.lat, ne2.lng);
+            } else {
+                sw.lat = Math.min(sw2.lat, sw.lat);
+                sw.lng = Math.min(sw2.lng, sw.lng);
+                ne.lat = Math.max(ne2.lat, ne.lat);
+                ne.lng = Math.max(ne2.lng, ne.lng);
+            }
+
+            return this;
+        };
+        function testLatLng(arrayFlag) {
+            var start = Date.now();
+            var bounds = new L.LatLngBounds();
+            for (var j = 0; j < 50; j++) {
+                for (var i = 0; i < addressPoints.length; i++) {
+                    var a = addressPoints[i];
+                    if (arrayFlag) {
+                        bounds.extend(a);
+                    } else {
+                        var latLng = L.latLng(a[0], a[1]);
+                        bounds.extend(latLng);
+                    }
+                }
+            }
+            return [Date.now() - start, bounds];
+        }
+        var t1 = testLatLng();
+        var str = '<br>L.latLng test: ' + t1[0];
+        var t2 = testLatLng(true);
+        str += '<br>array test   : ' + t2[0];
+        document.getElementById('map').innerHTML = str;
+        console.log('L.latLng test', t1);
+        console.log('array test   ', t2);
+	</script>
+</body>
+</html>
