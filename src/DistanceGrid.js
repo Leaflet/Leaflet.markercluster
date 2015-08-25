@@ -91,10 +91,12 @@ L.DistanceGrid.prototype = {
 
 						for (k = 0, len = cell.length; k < len; k++) {
 							obj = cell[k];
-							dist = this._sqDist(objectPoint[L.Util.stamp(obj)], point);
-							if (dist < closestDistSq) {
-								closestDistSq = dist;
-								closest = obj;
+							if (objectPoint[L.Util.stamp(obj)]) {
+								dist = this._sqDist(objectPoint[L.Util.stamp(obj)], point);
+								if (dist < closestDistSq) {
+									closestDistSq = dist;
+									closest = obj;
+								}
 							}
 						}
 					}
