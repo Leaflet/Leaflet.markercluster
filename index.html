@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Leaflet MarkerClusters Test</title>
+    <link rel="stylesheet" href="leaflet.css" />
+    <link rel="stylesheet" href="MarkerCluster.css" />
+    <link rel="stylesheet" href="MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="leaflet.label.css" />
+
+    <style>
+        #map {
+            height: 900px;
+            width: 900px;
+        }
+
+        .marker-cluster {
+            background-color: rgba(220, 220, 220, 0.6);
+        }
+
+        .marker-state {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            margin: -25px 0 0 -25px;
+
+        }
+
+        .marker-state div {
+            width: 30px;
+            height: 30px;
+            border-radius: 30px;
+            background-clip: padding-box;
+            border: 3px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 32px;
+        }
+
+        .marker-state span {
+            margin: -23px 0 0 35px;
+            display: inline-block;
+            text-align: left;
+            line-height: 15px;
+            vertical-align: top;
+        }
+
+        .marker-counties-cluster {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            margin: -25px 0 0 -25px;
+        }
+
+        .marker-counties-cluster div {
+            background-clip: padding-box;
+            width: 25px;
+            height: 25px;
+            border-radius: 5px;
+            border: 3px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 27px;
+        }
+
+        .marker-county {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            line-height: 40px;
+            margin: -20px 0 0 -20px;
+
+        }
+
+        .marker-county div {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            background-clip: padding-box;
+            border: 2px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 22px;
+        }
+
+        .marker-county span {
+            margin: -18px 0 0 25px;
+            display: inline-block;
+            text-align: left;
+            line-height: 15px;
+            vertical-align: top;
+        }
+
+        .marker-cities-cluster {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            line-height: 40px;
+            margin: -20px 0 0 -20px;
+        }
+
+        .marker-cities-cluster div {
+            background-clip: padding-box;
+            width: 20px;
+            height: 20px;
+            border-radius: 20px;
+            border: 3px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 22px;
+        }
+
+        .marker-city {
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            line-height: 30px;
+            margin: -15px 0 0 -15px;
+        }
+
+        .marker-city div {
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+            border: 1px solid black;
+            display: inline-block;
+            vertical-align:middle;
+        }
+
+        .marker-city span {
+            margin: -2px 0 0 15px;
+            display: inline-block;
+            text-align: left;
+            line-height: 15px;
+            vertical-align: top;
+        }
+
+        .cluster {
+        }
+
+        .cluster div {
+            min-width: 20px;
+            padding: 5px;
+            text-align: center;
+            border-radius: 15px;
+            font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        }
+
+        .cluster span {
+            /*line-height: 30px;*/
+        }
+
+        .cluster0 {
+            background-color: rgba(181, 226, 140, 0.6);
+        }
+
+        .cluster0  div {
+            background-color: rgba(110, 204, 57, 0.6);
+        }
+
+        .cluster1 {
+            background-color: rgba(241, 211, 87, 0.6);
+        }
+
+        .cluster1  div {
+            background-color: rgba(240, 194, 12, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <h1>Leaflet Marker Clusters Test</h1>
+    <input id="radius" type="number" value="80" /><label for="radius">Radius</label>
+
+    <div id="map"></div>
+
+    <script src="data_usa.js"></script>
+
+    <script src="leaflet-src.js"></script>
+    <script src="leaflet.markercluster-src.js"></script>
+    <script src="leaflet.label-src.js"></script>
+    <script src="clustertest.js"></script>
+</body>
+</html>

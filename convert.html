@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Convert</title>
+</head>
+<body>
+    <h1>Convert</h1>
+
+    <textarea id="result" cols="100" rows="30">Result...</textarea>
+
+    <script src="papaparse.js"></script>
+
+    <script src="data_usa_raw.js"></script>
+
+    <script type="application/javascript">
+        var i,
+                temp,
+                stateRegExp = /([^;]+);US\-([A-Z]{2})\s;([0-9.]+)°(?:N|S)\s([0-9.]+)°(?:W|E)/gi,
+                result = {
+                    "USA": {
+                        lat: 39.5,
+                        lng: -98.35,
+                        states: {}
+                    }
+                },
+                countiesData = Papa.parse(counties, {header: true}),
+                countyData,
+                countiesPerCode = {},
+                link = result.USA.states,
+                state,
+                citiesData = Papa.parse(cities, {header: true}),
+                citiesCountiesData = Papa.parse(citiesCounties, {header: true}),
+                citiesCountiesPerCityCode = {},
+                citiesGood = 0;
+
+        // STATES
+        for (i = 0; i < states.length; i += 1) {
+            temp = stateRegExp.exec(states[i]);
+            if (temp) {
+                link[temp[2]] = {
+                    stateName: temp[1].trim(),
+                    lat: parseFloat(temp[3]),
+                    lng: -parseFloat(temp[4]),
+                    stateCounties: []
+                };
+                countiesPerCode[temp[2]] = {};
+                citiesCountiesPerCityCode[temp[2]] = {};
+            }
+            // For some reason, need to execute it a 2nd time to reset it????
+            temp = stateRegExp.exec(states[i]);
+        }
+        console.log("Number of States found: " + result.USA.states.length + " / " + states.length);
+
+        function getOneCountyCode(countyCodeStr) {
+            var pos = countyCodeStr.indexOf(",");
+
+            if (pos >= 1) {
+                return countyCodeStr.substring(0, pos);
+            } else if (pos === 0) {
+                return getOneCountyCode(countyCodeStr.substring(pos));
+            }
+
+            return countyCodeStr;
+        }
+
+        // COUNTIES
+        // CAUTION: the "FIPS 6-4(County)" in county is unique PER STATE only!
+        // countiesData headers: stateCode,countyName,countyCode,countyType,lat,lng,dummy
+        console.log("Counties: " + countiesData.data.length);
+        for (i = 0; i < countiesData.data.length; i += 1) {
+            countyData = countiesData.data[i];
+
+            if (link.hasOwnProperty(countyData.stateCode) &&
+                    countiesPerCode.hasOwnProperty(countyData.stateCode)) {
+                state = link[countyData.stateCode];
+                // Sanitize data.
+                countyData = {
+                    code: parseInt(countyData.countyCode),
+                    name: countyData.countyName,
+                    type: countyData.countyType,
+                    lat: parseFloat(countyData.lat),
+                    lng: parseFloat(countyData.lng),
+                    stateCode: countyData.stateCode,
+                    cities: []
+                };
+
+                state.stateCounties.push(countyData);
+                //countiesPerCode[countyData.stateCode][countyData.code] = state.stateCounties[state.stateCounties.length - 1];
+                countiesPerCode[countyData.stateCode][countyData.code] = countyData.cities;
+                state = null;
+            } else {
+                console.log("Warning: could not find State " + countyData.stateCode);
+            }
+        }
+
+        // CITIES
+        // CAUTION, the "FIPS 55-3(City)" (Place Code) in statecity and statecountycity files are unique PER STATE only!
+        // cities headers: cityState,cityName,cityCode,cityGNIS,cityType,lat,lng,dummy
+        // citiesCounties headers: countyCityState,cityName,cityCode,countyCode,dummy
+
+        // cities headers: cityCode,cityGNIS,cityType,lat,lng,dummy
+        // citiesCounties headers: cityName,cityCode,countyCode,dummy CAUTION: countyCode may contain several codes, separated by comma!
+        console.log("Cities with coordinates: " + citiesData.data.length + " / cities with county: " + citiesCountiesData.data.length);
+        for (i = 0; i < citiesCountiesData.data.length; i += 1) {
+            countyData = citiesCountiesData.data[i];
+            state = countyData.countyCityState;
+
+            // sanitize
+            countyData.countyCode = parseInt(getOneCountyCode(countyData.countyCode));
+
+            if (countiesPerCode.hasOwnProperty(state) &&
+                    countiesPerCode[state].hasOwnProperty(countyData.countyCode)) {
+                citiesCountiesPerCityCode[state][countyData.cityCode] = countyData; //citiesCountiesData.data[i];
+            } else {
+                console.log("Warning: could not find County Code " + countyData.countyCode + " or State Code " + state);
+            }
+            countyData = null;
+            state = null;
+        }
+        for (i = 0; i < citiesData.data.length; i += 1) {
+            countyData = citiesData.data[i];
+            state = countyData.cityState;
+
+            if (!citiesCountiesPerCityCode.hasOwnProperty(state)) {
+                console.log("Warning: could not find State " + state + " in citiesCountiesPerCityCode for line " + JSON.stringify(countyData));
+            } else if (!citiesCountiesPerCityCode[state].hasOwnProperty(countyData.cityCode)) {
+                console.log("Warning: could not find City Code " + countyData.cityCode + " in citiesCountiesPerCityCode[state] for line " +
+                        JSON.stringify(countyData));
+            } else if (!countiesPerCode.hasOwnProperty(state)) {
+                console.log("Warning: could not find State " + state + " in countiesPerCode for line " + JSON.stringify(countyData));
+            } else if (!countiesPerCode[state].hasOwnProperty(citiesCountiesPerCityCode[state][countyData.cityCode].countyCode)) {
+                console.log("Warning: could not find County Code " + citiesCountiesPerCityCode[state][countyData.cityCode].countyCode +
+                        " in countiesPerCode[state] for line " + JSON.stringify(countyData));
+            } else {
+                temp = citiesCountiesPerCityCode[state][countyData.cityCode];
+                state = countiesPerCode[state][temp.countyCode];
+                // Sanitize data.
+                countyData = {
+                    code: parseInt(countyData.cityCode),
+                    GNIS: parseInt(countyData.cityGNIS),
+                    name: temp.cityName,
+                    type: countyData.cityType,
+                    lat: parseFloat(countyData.lat),
+                    lng: parseFloat(countyData.lng)
+                };
+
+                //state.cities.push(countyData);
+                state.push(countyData);
+                citiesGood += 1;
+            }
+
+            /*if (citiesCountiesPerCityCode.hasOwnProperty(state) &&
+                    citiesCountiesPerCityCode[state].hasOwnProperty(countyData.cityCode) &&
+                    countiesPerCode.hasOwnProperty(state) &&
+                    countiesPerCode[state].hasOwnProperty(citiesCountiesPerCityCode[state][countyData.cityCode].countyCode)) {
+                temp = citiesCountiesPerCityCode[state][countyData.cityCode];
+                state = countiesPerCode[state][temp.countyCode];
+                // Sanitize data.
+                countyData = {
+                    code: parseInt(countyData.cityCode),
+                    GNIS: parseInt(countyData.cityGNIS),
+                    name: temp.cityName,
+                    type: countyData.cityType,
+                    lat: parseFloat(countyData.lat),
+                    lng: parseFloat(countyData.lng)
+                };
+
+                state.cities.push(countyData);
+                citiesGood += 1;
+            } else {
+                console.log("Warning: could not find City " + countyData.cityCode + " and/or County " +
+                        (citiesCountiesPerCityCode.hasOwnProperty(countyData.cityCode) ? citiesCountiesPerCityCode[countyData.cityCode].countyCode : "(cityCounty not found)"));
+            }*/
+            state = null;
+            temp = null;
+        }
+        console.log("Correctly attributed cities: " + citiesGood + " / Cities with coordinates: " + citiesData.data.length + " / cities with county: " + citiesCountiesData.data.length);
+
+        // RESULT
+        document.getElementById("result").innerHTML = JSON.stringify(result, null, 1);
+
+    </script>
+</body>
+</html>
