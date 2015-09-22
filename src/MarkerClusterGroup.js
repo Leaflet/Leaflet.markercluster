@@ -260,7 +260,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				m = layersArray[i];
 				this._arraySplice(this._needsClustering, m);
 				npg.removeLayer(m);
-				if (!this._arraySplice(this._needsClustering, m) && this.hasLayer(m)) {
+				if (this.hasLayer(m)) {
 					this._needsRemoving.push(m);
 				}
 			}
