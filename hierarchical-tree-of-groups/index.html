@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo of Hierarchical Tree of Leaflet Marker Cluster Groups</title>
+    <link rel="stylesheet" href="leaflet.css" />
+    <link rel="stylesheet" href="MarkerCluster.css" />
+    <link rel="stylesheet" href="MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="leaflet.label.css" />
+
+    <style>
+
+        .marker-country {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            margin: -25px 0 0 -25px;
+
+        }
+
+        .marker-country div {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            background-clip: padding-box;
+            border: 2px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 22px;
+        }
+
+        .marker-country span {
+            margin: -17px 0 0 27px;
+            display: inline-block;
+            text-align: left;
+            line-height: 15px;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+
+        .marker-states-cluster {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            margin: -25px 0 0 -25px;
+        }
+
+        .marker-states-cluster div {
+            background-clip: padding-box;
+            width: 25px;
+            height: 25px;
+            border-radius: 25px;
+            border: 5px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 27px;
+        }
+
+        .marker-state {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            margin: -25px 0 0 -25px;
+
+        }
+
+        .marker-state div {
+            width: 25px;
+            height: 25px;
+            border-radius: 25px;
+            background-clip: padding-box;
+            border: 3px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 27px;
+        }
+
+        .marker-state span {
+            margin: -20px 0 0 32px;
+            display: inline-block;
+            text-align: left;
+            line-height: 15px;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+
+        .marker-counties-cluster {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            margin: -25px 0 0 -25px;
+        }
+
+        .marker-counties-cluster div {
+            background-clip: padding-box;
+            width: 25px;
+            height: 25px;
+            border-radius: 5px;
+            border: 3px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 27px;
+        }
+
+        .marker-county {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            line-height: 40px;
+            margin: -20px 0 0 -20px;
+
+        }
+
+        .marker-county div {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            background-clip: padding-box;
+            border: 2px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 22px;
+        }
+
+        .marker-county span {
+            margin: -18px 0 0 25px;
+            display: inline-block;
+            text-align: left;
+            line-height: 15px;
+            vertical-align: top;
+        }
+
+        .marker-cities-cluster {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            line-height: 40px;
+            margin: -20px 0 0 -20px;
+        }
+
+        .marker-cities-cluster div {
+            background-clip: padding-box;
+            width: 20px;
+            height: 20px;
+            border-radius: 20px;
+            border: 3px solid black;
+            display: inline-block;
+            vertical-align:middle;
+            line-height: 22px;
+        }
+
+        .marker-city {
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            line-height: 30px;
+            margin: -15px 0 0 -15px;
+        }
+
+        .marker-city div {
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+            border: 1px solid black;
+            display: inline-block;
+            vertical-align:middle;
+        }
+
+        .marker-city span {
+            margin: -2px 0 0 15px;
+            display: inline-block;
+            text-align: left;
+            line-height: 15px;
+            vertical-align: top;
+        }
+
+        .country-USA::before {content: url("flags/23px-Flag_of_the_United_States.svg.png");}
+
+        .state-AL::before {content: url("flags/23px-Flag_of_Alabama.svg.png");}
+        .state-AK::before {content: url("flags/21px-Flag_of_Alaska.svg.png");}
+        .state-AZ::before {content: url("flags/23px-Flag_of_Arizona.svg.png");}
+        .state-AR::before {content: url("flags/23px-Flag_of_Arkansas.svg.png");}
+        .state-CA::before {content: url("flags/23px-Flag_of_California.svg.png");}
+        .state-CO::before {content: url("flags/23px-Flag_of_Colorado.svg.png");}
+        .state-CT::before {content: url("flags/20px-Flag_of_Connecticut.svg.png");}
+        .state-DE::before {content: url("flags/23px-Flag_of_Delaware.svg.png");}
+        .state-DC::before {content: url("flags/23px-Flag_of_WashingtonDC.svg.png");}
+        .state-FL::before {content: url("flags/23px-Flag_of_Florida.svg.png");}
+        .state-GA::before {content: url("flags/23px-Flag_of_Georgia_%28U.S._state%29.svg.png");}
+        .state-HI::before {content: url("flags/23px-Flag_of_Hawaii.svg.png");}
+        .state-ID::before {content: url("flags/19px-Flag_of_Idaho.svg.png");}
+        .state-IL::before {content: url("flags/23px-Flag_of_Illinois.svg.png");}
+        .state-IN::before {content: url("flags/23px-Flag_of_Indiana.svg.png");}
+        .state-IA::before {content: url("flags/22px-Flag_of_Iowa.svg.png");}
+        .state-KS::before {content: url("flags/23px-Flag_of_Kansas.svg.png");}
+        .state-KY::before {content: url("flags/23px-Flag_of_Kentucky.svg.png");}
+        .state-LA::before {content: url("flags/23px-Flag_of_Louisiana.svg.png");}
+        .state-ME::before {content: url("flags/23px-Flag_of_Maine.svg.png");}
+        .state-MD::before {content: url("flags/23px-Flag_of_Maryland.svg.png");}
+        .state-MA::before {content: url("flags/23px-Flag_of_Massachusetts.svg.png");}
+        .state-MI::before {content: url("flags/23px-Flag_of_Michigan.svg.png");}
+        .state-MN::before {content: url("flags/23px-Flag_of_Minnesota.svg.png");}
+        .state-MS::before {content: url("flags/23px-Flag_of_Mississippi.svg.png");}
+        .state-MO::before {content: url("flags/23px-Flag_of_Missouri.svg.png");}
+        .state-MT::before {content: url("flags/23px-Flag_of_Montana.svg.png");}
+        .state-NE::before {content: url("flags/23px-Flag_of_Nebraska.svg.png");}
+        .state-NV::before {content: url("flags/23px-Flag_of_Nevada.svg.png");}
+        .state-NH::before {content: url("flags/23px-Flag_of_New_Hampshire.svg.png");}
+        .state-NJ::before {content: url("flags/23px-Flag_of_New_Jersey.svg.png");}
+        .state-NM::before {content: url("flags/23px-Flag_of_New_Mexico.svg.png");}
+        .state-NY::before {content: url("flags/23px-Flag_of_New_York.svg.png");}
+        .state-NC::before {content: url("flags/23px-Flag_of_North_Carolina.svg.png");}
+        .state-ND::before {content: url("flags/21px-Flag_of_North_Dakota.svg.png");}
+        .state-OH::before {content: url("flags/23px-Flag_of_Ohio.svg.png");}
+        .state-OK::before {content: url("flags/23px-Flag_of_Oklahoma.svg.png");}
+        .state-OR::before {content: url("flags/23px-Flag_of_Oregon.svg.png");}
+        .state-PA::before {content: url("flags/23px-Flag_of_Pennsylvania.svg.png");}
+        .state-RI::before {content: url("flags/19px-Flag_of_Rhode_Island.svg.png");}
+        .state-SC::before {content: url("flags/23px-Flag_of_South_Carolina.svg.png");}
+        .state-SD::before {content: url("flags/23px-Flag_of_South_Dakota.svg.png");}
+        .state-TN::before {content: url("flags/23px-Flag_of_Tennessee.svg.png");}
+        .state-TX::before {content: url("flags/23px-Flag_of_Texas.svg.png");}
+        .state-UT::before {content: url("flags/23px-Flag_of_Utah.svg.png");}
+        .state-VT::before {content: url("flags/23px-Flag_of_Vermont.svg.png");}
+        .state-VA::before {content: url("flags/22px-Flag_of_Virginia.svg.png");}
+        .state-WA::before {content: url("flags/23px-Flag_of_Washington.svg.png");}
+        .state-WV::before {content: url("flags/23px-Flag_of_West_Virginia.svg.png");}
+        .state-WI::before {content: url("flags/23px-Flag_of_Wisconsin.svg.png");}
+        .state-WY::before {content: url("flags/22px-Flag_of_Wyoming.svg.png");}
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        h1 {
+            margin-left: 1em;
+            margen-right: 1em;
+        }
+
+        #leftPane {
+            position: fixed;
+            height: 100%;
+            width: 50%;
+        }
+
+        #map {
+            width: 100%;
+            height: 200px;
+        }
+
+        #zoomInfo {
+            padding: .5em;
+        }
+
+        #options {
+            padding: .5em;
+        }
+
+        #rightPane {
+            margin-left: 50%;
+            padding: 1em .5em 1em 1em;
+        }
+
+        code {
+            color: brown;
+        }
+
+    </style>
+</head>
+<body>
+<div id="leftPane">
+    <h1 id="pageTitle">Demo of Hierarchical Tree of Leaflet Marker Cluster Groups</h1>
+
+    <div id="map"></div>
+
+    <div id="zoomInfo">Zoom level: <span id="zoomLevel">4</span></div>
+
+    <form id="options">
+        <label for="forceSingletonPosition">
+            <input type="checkbox" id="forceSingletonPosition" checked="checked" />
+            Force singleton cluster position to the conventional geographic center
+        </label>
+        <br />
+
+        <label for="wrapCoordinates">
+            <input type="checkbox" id="wrapCoordinates" checked="checked" />
+            Wrap coordinates of points far West of Alaska (from somewhere in the
+            170's degrees of longitude to below -180 degrees), so that they can
+            cluster with other points.
+        </label>
+        <br />
+
+        <label for="addCities">
+            <input type="checkbox" id="addCities" />
+            Include Cities in the data (CAUTION: because of the amount of data,
+            the processing time may be a few dozens of seconds, please be
+            patient if you check this option; allow the script to continue if
+            prompted)
+        </label>
+        <br />
+
+        <button id="submit" type="submit">Update map</button>
+    </form>
+</div>
+<div id="rightPane">
+    <div id="explanations">
+        <h2>Explanations</h2>
+        <p>The data is structured in a hierarchical tree made of 4 levels:</p>
+        <ol>
+            <li>Big Square: Country (1 – USA)</li>
+            <li>Big Disks: States (51 – including Washington DC)</li>
+            <li>Medium Squares: Counties (3,143 – including cities and boroughs
+                that are at the same level as counties)</li>
+            <li>Small Disks: Cities (29,155*) (note: not displaying this level
+                by default, because of the required processing time. If you
+                wish to add it, tick the corresponding box in the options above
+                and submit)</li>
+        </ol>
+        <p>
+            Each level has the above number of Marker Cluster Groups or Markers.
+            That is, there is 1 group for the country, 51 groups for the States,
+            3,143 groups for the counties, and finally 29,155 markers for the
+            cities.
+        </p>
+        <p>
+            Each Group is nested in a Group of the upper level, but it can cluster only
+            with sibling Groups (i.e. from the same level) which share the same parent Group, and only once it has
+            clustered down to a single cluster** (called &quot;singleton&quot;).
+            See for example the
+            <a class="mapSetView" href="" title="Set the map view to West side of Oklahoma"
+               data-lat="36.7473255" data-lng="-100.9834555" data-zoom="7"
+                    >West side of Oklahoma</a> (in the middle of USA,
+            just above Texas): there are a few cities and counties very close to Texas
+            cities and counties, but they are note allowed to cluster with them, because they
+            do not belong to the same Group.
+        </p>
+        <p>
+            Each State group receives a random hue (type of color) at page
+            initialization (so if you want to play and get different colors,
+            just reload the page).
+        </p>
+        <p>
+            Each county receives random saturation and lightness values, but
+            inherit from its State hue. So all counties in a given State have a
+            similar color as the State.
+        </p>
+        <p>
+            Each city in a county receives the exact color (hue, saturation and
+            lightness) as its county.
+        </p>
+
+        <h2>The code</h2>
+        <p>
+            This code is far from bullet proof, it is more like a proof of
+            concept. It assumes that the data structure will not change after
+            Marker Cluster Groups are nested in another one (no more
+            <code>addLayer</code> or <code>removeLayer</code>), otherwise it
+            would break the parent Group, by breaking the singleton cluster
+            detection.
+        </p>
+        <p>
+            Because I have made most of the checks in <code>addLayer</code>
+            rather than in <code>_addLayer</code> (internal method), it is
+            necessary to have a Group added on the map before nesting other
+            Groups into it. Otherwise, they will be appended to
+            <code>_NeedsClustering</code> array, then they will be passed
+            straight to <code>_addLayer</code> once the Group is added to the
+            map, hence bypassing my checks. Definitely I made a mistake there.
+        </p>
+        <p>
+            Groups are removed from the map before being nested in their parent
+            group, otherwise the markers may get stuck.
+        </p>
+        <p>
+            There is a bug with events on markers and clusters that are
+            initially visible. I did not have time to look for the root cause,
+            so the simple work around I use is to disable the initial display
+            (but still have the parent group on the map), then remove the group
+            from the map and add it back.
+        </p>
+        <p>
+            I added a method (<code>group.replaceSingletonLatLng()</code>) to
+            force the position of the singleton cluster to given coordinates
+            (specified in <code>options.center</code>), instead of the weighted
+            average of all children positions. It is called once on the top
+            group before adding it back to the map. It may be useful to avoid
+            a singleton cluster being displayed in a place too far away from the
+            conventional position of an administrative area. For example, if
+            that area is not convex, and many children are on the extremities,
+            the weighted average position may be outside of the administrative
+            area. In the case of USA, because of Alaska and Hawaii, the weighted
+            average position is
+            <a class="mapSetView" href=""
+               title="Set the map view to USA singleton cluster (please also update the map without forcing singleton clusters position)"
+               data-lat="31.4661" data-lng="-128.1486" data-zoom="0"
+                >somewhere offshore the West coast</a>, in the
+            Pacific Ocean! With this method, we can force the singleton cluster
+            at a known position.
+        </p>
+        <p>
+            I also tried to implement an option
+            (<code>forceSingletonClusterAtZoom</code>) to force a group to cluster all
+            its children in a singleton cluster at a specified zoom level. The
+            idea would be to make sure all groups are displayed as singletons at
+            the same zoom level. For example, we could have all States shown
+            with their flag (not considering overlapping that would happen on
+            the East coast...). But this option breaks if sub-groups are not at
+            least singleton clusters themselves at that zoom level. Look for
+            example Alaska (the big State on the far North West...): at zoom
+            level 3, there is still a
+            <a class="mapSetView" href=""
+               title="Set the map view to Point Hope (please also update the map with cities included)"
+               data-lat="68.343731" data-lng="-166.669369" data-zoom="3"
+                >single city displayed (Point Hope)</a>, so its parent
+            county (North Slope) is not a singleton, and I cannot gather it into
+            the Alaska State with my current code. Maybe with more time I could
+            try to overcome this issue. However, forcing a clustering may badly
+            impair the user experience, because we could fall in a situation
+            where we still have a cluster for highly distant children, beyond
+            the viewport. In that case, MarkerCluster algorithm behaves badly
+            because it never shows the children when the user zooms on the
+            cluster, since they are outside the visible bounds. Same thing if
+            the user clicks on the cluster: it will try to zoom until the
+            children are shown, which may never happen! This option is still
+            used nevertheless to implement the single cluster trick (see note
+            **).
+        </p>
+        <p>
+            On the opposite, it is very possible to use the option
+            <code>disableClusteringAtZoom</code> from the original MarkerCluster
+            plugin. That way, you can force a given level not to cluster, until
+            all children become singletons. The drawback is that this condition
+            may happen for low zoom levels, when many other children are already
+            heavily overlapping... Yes, I am thinking about Alaska again :-)
+        </p>
+
+        <h2>Notes</h2>
+        <ul>
+            <li>
+                * Displayed cities are those from OpenGeocode with geographic
+                coordinates and for which the first associated county (sometimes
+                a city is associated with more than 1 county) also has
+                geographic coordinates.
+            </li>
+            <li>
+                ** In the case of a group that has only 1 child, normally it
+                never &quot;clusters&quot; with the initial version of MarkerCluster.
+                In an early version of this code, I allowed the single child to cluster with
+                any group of the upper level, as if it were already its own
+                parent (that is, a city alone in its county could have clustered
+                with other full counties at zoom level max - 1 or above). But
+                this may look strange because it is still rendered as a single
+                object of lower level (for example, a city marker that clusters
+                with a full county), so I tried to implement forcing a cluster
+                to be made, and keep it only at the zoom level just above the
+                level it clusters with other groups. You can have a look at
+                <a class="mapSetView" href=""
+                   title="Set the map view to Washington DC"
+                   data-lat="38.904103" data-lng="-77.017229" data-zoom="7"
+                        >Washington DC</a> (District of Columbia, somewhere North East) for
+                example: it clusters with Delaware State at zoom 6. At zoom 7,
+                it is rendered as a State. At zoom 8 and below, it is rendered as a
+                county. If you have displayed Cities, this actually occurs 1
+                zoom level below: it clusters with Delaware at zoom 5, it is a
+                State at zoom 6, a county at zoom 7 and at zoom 8 and below, it
+                is a city. This is due to Delaware cities which force
+                that State to appear only at zoom level 6, hence it can cluster
+                with District of Columbia State only at zoom 5. This is slightly
+                different from <code>options.singleMarkerMode</code>, because
+                the latter simply replaces the icon by one similar to clusters,
+                for all zoom levels, whereas here I want only the same icon for
+                1 zoom level, just before it clusters.
+            </li>
+            <li>
+                ** It may happen that a group (nested or not) never clusters to
+                a singleton cluster. Typically for Alaska: when coordinates are
+                not wrapped, a city
+                (<a class="mapSetView" href=""
+                   title="Set the map view to Attu Station (please update the map without wrapping coordinates)"
+                   data-lat="352.880248" data-lng="173.256076" data-zoom="0"
+                    >Attu Station</a>) and its county (Aleutians West) are on longitude somewhere in
+                the 170's degrees, hence they are never within 80 pixels of another
+                city of its county or another county of Alaska, even at zoom level 0. I
+                tried to force nevertheless the whole State to cluster (see
+                explanation about <code>forceSingletonClusterAtZoom</code>), but this
+                would probably require a more complex algorithm than what I have
+                done. The simple workaround for now is to wrap the coordinates.
+            </li>
+        </ul>
+
+        <h2>Sources of data</h2>
+        <ul>
+            <li>
+                USA and States: <a href="https://en.wikipedia.org/wiki/Main_Page" target="_blank"
+                                        >Wikipedia</a>
+                (<a href="https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States" target="_blank"
+                    >List of states and territories of the United States</a>
+                and
+                <a href="https://en.wikipedia.org/wiki/Geographic_centers_of_the_United_States" target="_blank"
+                        >Geographic centers of the United States</a>,
+                license CC-BY-SA 3.0 Unported)
+            </li>
+            <li>Counties and cities: <a href="http://opengeocode.org" target="_blank">OpenGeocode</a> (public domain)</li>
+            <li>Map and tiles: <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>, license ODbL.</li>
+        </ul>
+    </div>
+</div>
+
+    <script src="data_usa.js"></script>
+
+    <script src="leaflet-src.js"></script>
+    <script src="leaflet.markercluster-src-hierarchicalTree.js"></script>
+    <script src="leaflet.label-src.js"></script>
+    <script src="clustertest.js"></script>
+</body>
+</html>
