@@ -41,6 +41,27 @@
 		expect(group.getLayers().length).to.be(0);
 	});
 
+	it('removes all the layer given to it even if the group is not on the map', function () {
+
+		var group = new L.MarkerClusterGroup();
+		var markers = [
+			new L.Marker([1.5, 1.5]),
+			new L.Marker([1.5, 1.5]),
+			new L.Marker([1.5, 1.5])
+		];
+
+		map.addLayer(group);
+		group.addLayers(markers);
+		map.removeLayer(group);
+		group.removeLayers(markers);
+		map.addLayer(group);
+
+		expect(group.hasLayer(markers[0])).to.be(false);
+		expect(group.hasLayer(markers[1])).to.be(false);
+		expect(group.hasLayer(markers[2])).to.be(false);
+
+		expect(group.getLayers().length).to.be(0);
+	});
 
 	it('doesnt break if we are spiderfied', function () {
 
