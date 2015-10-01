@@ -6,6 +6,7 @@
  * Should cover issues #561, #555, #535 and #498.
  */
 
+
 L.MarkerClusterGroup.include({
 	/**
 	 * Updates all clusters (and their icon) which are parents of the given marker(s).
