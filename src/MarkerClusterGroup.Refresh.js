@@ -3,21 +3,24 @@
  * markers' icon options and refreshing their icon and their parent clusters
  * accordingly (case where their iconCreateFunction uses data of childMarkers
  * to make up the cluster icon).
- * Should cover issues #561, #555, #535 and #498.
+ * Should cover issues #563, #561, #555, #535 and #498.
  */
 
 
 L.MarkerClusterGroup.include({
 	/**
 	 * Updates all clusters (and their icon) which are parents of the given marker(s).
-	 * @param layers L.MarkerClusterGroup|L.LayerGroup|Array(L.Marker)|L.Marker
-	 * list of markers (or single marker) whose parent clusters need update.
+	 * @param layers L.MarkerClusterGroup|L.LayerGroup|Array(L.Marker)|Map(L.Marker)|
+	 * L.MarkerCluster|L.Marker list of markers (or single marker) whose parent
+	 * clusters need to be updated.
 	 */
 	refreshClustersOf: function (layers) {
 		if (layers instanceof L.MarkerClusterGroup) {
-			layers = layers.getAllChildMarkers();
+			layers = layers._topClusterLevel.getAllChildMarkers();
 		} else if (layers instanceof L.LayerGroup) {
 			layers = layers._layers;
+		} else if (layers instanceof L.MarkerCluster) {
+			layers = layers.getAllChildMarkers();
 		} else if (layers instanceof L.Marker) {
 			layers = [layers];
 		}
@@ -66,12 +69,24 @@ L.Marker.include({
 	/**
 	 * Updates the given options in the marker's icon and refreshes the marker.
 	 * @param options map object of icon options.
+	 * @param directlyRefreshClusters boolean true to trigger MCG.refreshClustersOf()
+	 * right away with this single marker.
 	 */
-	refreshIconWithOptions: function (options) {
+	refreshIconWithOptions: function (options, directlyRefreshClusters) {
 		var icon = this.options.icon;
 
 		L.setOptions(icon, options);
 
 		this.setIcon(icon);
+
+		// Shortcut to refresh the associated MCG clusters right away.
+		// To be used when refreshing a single marker.
+		// Otherwise, better use MCG.refreshClustersOf() once at the end with
+		// the list of modified markers.
+		if (directlyRefreshClusters && this.__parent) {
+			this.__parent._group.refreshClustersOf(this);
+		}
+
+		return this;
 	}
 });
