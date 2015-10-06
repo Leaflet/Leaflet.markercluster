@@ -11,11 +11,14 @@ L.MarkerClusterGroup.include({
 	/**
 	 * Updates all clusters (and their icon) which are parents of the given marker(s).
 	 * @param layers L.MarkerClusterGroup|L.LayerGroup|Array(L.Marker)|Map(L.Marker)|
-	 * L.MarkerCluster|L.Marker list of markers (or single marker) whose parent
-	 * clusters need to be updated.
+	 * L.MarkerCluster|L.Marker (optional) list of markers (or single marker) whose parent
+	 * clusters need to be updated. If not provided, retrieves all child markers of this.
+	 * @returns {L.MarkerClusterGroup}
 	 */
-	refreshClustersOf: function (layers) {
-		if (layers instanceof L.MarkerClusterGroup) {
+	refreshClusters: function (layers) {
+		if (!layers) {
+			layers = this._topClusterLevel.getAllChildMarkers();
+		} else if (layers instanceof L.MarkerClusterGroup) {
 			layers = layers._topClusterLevel.getAllChildMarkers();
 		} else if (layers instanceof L.LayerGroup) {
 			layers = layers._layers;
@@ -23,9 +26,11 @@ L.MarkerClusterGroup.include({
 			layers = layers.getAllChildMarkers();
 		} else if (layers instanceof L.Marker) {
 			layers = [layers];
-		}
+		} // else: must be an Array(L.Marker)|Map(L.Marker)
 		this._flagParentsIconsNeedUpdate(layers);
 		this._refreshClustersIcons();
+
+		return this;
 	},
 
 	/**
@@ -37,12 +42,12 @@ L.MarkerClusterGroup.include({
 		var parent;
 
 		// Assumes layers is an Array or an Object whose prototype is non-enumerable.
-		for (id in layers) {
+		for (var id in layers) {
 			// Flag parent clusters' icon as "dirty", all the way up.
-			// Dummy process that flags multiple times upper parents, but still
+			// Dumb process that flags multiple times upper parents, but still
 			// much more efficient than trying to be smart and make short lists,
 			// at least in the case of a hierarchy following a power law:
-			// http://jsperf.com/flag-nodes-in-power-hierarchy
+			// http://jsperf.com/flag-nodes-in-power-hierarchy/2
 			parent = layers[id].__parent;
 			while (parent) {
 				parent._iconNeedsUpdate = true;
@@ -69,10 +74,11 @@ L.Marker.include({
 	/**
 	 * Updates the given options in the marker's icon and refreshes the marker.
 	 * @param options map object of icon options.
-	 * @param directlyRefreshClusters boolean true to trigger MCG.refreshClustersOf()
-	 * right away with this single marker.
+	 * @param directlyRefreshClusters boolean (optional) true to trigger
+	 * MCG.refreshClustersOf() right away with this single marker.
+	 * @returns {L.Marker}
 	 */
-	refreshIconWithOptions: function (options, directlyRefreshClusters) {
+	refreshIconOptions: function (options, directlyRefreshClusters) {
 		var icon = this.options.icon;
 
 		L.setOptions(icon, options);
@@ -81,10 +87,10 @@ L.Marker.include({
 
 		// Shortcut to refresh the associated MCG clusters right away.
 		// To be used when refreshing a single marker.
-		// Otherwise, better use MCG.refreshClustersOf() once at the end with
+		// Otherwise, better use MCG.refreshClusters() once at the end with
 		// the list of modified markers.
 		if (directlyRefreshClusters && this.__parent) {
-			this.__parent._group.refreshClustersOf(this);
+			this.__parent._group.refreshClusters(this);
 		}
 
 		return this;
