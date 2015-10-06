@@ -55,16 +55,16 @@
 
 		// First go to some zoom levels so that Leaflet initializes clusters icons.
 		expect(marker1cluster10._iconNeedsUpdate).to.be.ok();
-		map.setZoom(10);
+		map.setZoom(10, {animate: false});
 		expect(marker1cluster10._iconNeedsUpdate).to.not.be.ok();
 
 		expect(marker1cluster2._iconNeedsUpdate).to.be.ok();
-		map.setZoom(2);
+		map.setZoom(2, {animate: false});
 		expect(marker1cluster2._iconNeedsUpdate).to.not.be.ok();
 
 		// Finish on an intermediate zoom level.
 		expect(marker1cluster5._iconNeedsUpdate).to.be.ok();
-		map.setZoom(5);
+		map.setZoom(5, {animate: false});
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 
 		// Run any animation.
@@ -111,7 +111,7 @@
 
 		// First go to some zoom levels so that Leaflet initializes clusters icons.
 		expect(marker1cluster9._iconNeedsUpdate).to.be.ok();
-		map.setZoom(9);
+		map.setZoom(9, {animate: false});
 		expect(marker1cluster9._iconNeedsUpdate).to.not.be.ok();
 
 		expect(marker1cluster9._icon.className).to.contain("original");
@@ -170,7 +170,7 @@
 		expect(marker1cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.be.ok();
-		map.setZoom(3);
+		map.setZoom(3, {animate: false});
 		expect(marker1cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
@@ -179,7 +179,7 @@
 		expect(marker1cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.be.ok();
-		map.setZoom(5);
+		map.setZoom(5, {animate: false});
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.not.be.ok();
@@ -241,7 +241,7 @@
 		expect(marker1cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.be.ok();
-		map.setZoom(3);
+		map.setZoom(3, {animate: false});
 		expect(marker1cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
@@ -250,7 +250,7 @@
 		expect(marker1cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.be.ok();
-		map.setZoom(5);
+		map.setZoom(5, {animate: false});
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.not.be.ok();
@@ -312,7 +312,7 @@
 		expect(marker1cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.be.ok();
-		map.setZoom(3);
+		map.setZoom(3, {animate: false});
 		expect(marker1cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
@@ -321,7 +321,7 @@
 		expect(marker1cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.be.ok();
-		map.setZoom(5);
+		map.setZoom(5, {animate: false});
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.not.be.ok();
@@ -385,7 +385,7 @@
 		expect(marker1cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.be.ok();
-		map.setZoom(3);
+		map.setZoom(3, {animate: false});
 		expect(marker1cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
@@ -394,7 +394,7 @@
 		expect(marker1cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.be.ok();
-		map.setZoom(5);
+		map.setZoom(5, {animate: false});
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.not.be.ok();
@@ -460,7 +460,7 @@
 		expect(marker1cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.be.ok();
-		map.setZoom(3);
+		map.setZoom(3, {animate: false});
 		expect(marker1cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
@@ -469,7 +469,7 @@
 		expect(marker1cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.be.ok();
-		map.setZoom(5);
+		map.setZoom(5, {animate: false});
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.not.be.ok();
@@ -534,7 +534,7 @@
 		expect(marker1cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.be.ok();
-		map.setZoom(3);
+		map.setZoom(3, {animate: false});
 		expect(marker1cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
@@ -543,7 +543,7 @@
 		expect(marker1cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.be.ok();
-		map.setZoom(5);
+		map.setZoom(5, {animate: false});
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster5._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster5._iconNeedsUpdate).to.not.be.ok();
