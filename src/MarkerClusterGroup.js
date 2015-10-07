@@ -46,10 +46,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 
 		this._featureGroup = L.featureGroup();
-		this._featureGroup.on(L.FeatureGroup.EVENTS, this._propagateEvent, this);
+		this._featureGroup.addEventParent(this);
 
 		this._nonPointGroup = L.featureGroup();
-		this._nonPointGroup.on(L.FeatureGroup.EVENTS, this._propagateEvent, this);
+		this._nonPointGroup.addEventParent(this);
 
 		this._inZoomAnimation = 0;
 		this._needsClustering = [];
@@ -148,6 +148,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Remove the marker from clusters
 		this._removeLayer(layer, true);
+
+		layer.off('move', this._childMarkerMoved, this);
 
 		if (this._featureGroup.hasLayer(layer)) {
 			this._featureGroup.removeLayer(layer);
@@ -324,6 +326,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._nonPointGroup.clearLayers();
 
 		this.eachLayer(function (marker) {
+			marker.off('move', this._childMarkerMoved, this);
 			delete marker.__parent;
 		});
 
@@ -470,8 +473,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			throw "Map has no maxZoom specified";
 		}
 
-		this._featureGroup.onAdd(map);
-		this._nonPointGroup.onAdd(map);
+		this._featureGroup.addTo(map);
+		this._nonPointGroup.addTo(map);
 
 		if (!this._gridClusters) {
 			this._generateInitialClusters();
@@ -520,8 +523,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Clean up all the layers we added to the map
 		this._hideCoverage();
-		this._featureGroup.onRemove(map);
-		this._nonPointGroup.onRemove(map);
+		this._featureGroup.remove();
+		this._nonPointGroup.remove();
 
 		this._featureGroup.clearLayers();
 
@@ -544,6 +547,17 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				return true;
 			}
 		}
+	},
+
+	_childMarkerMoved: function (e) {
+		if (!this._ignoreMove) {
+			e.target._latlng = e.oldLatLng;
+			this.removeLayer(e.target);
+
+			e.target._latlng = e.latlng;
+			this.addLayer(e.target);
+		}
+		return;
 	},
 
 	//Internal function for removing a marker from everything.
@@ -620,16 +634,22 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		return false;
 	},
 
-	_propagateEvent: function (e) {
-		if (e.layer instanceof L.MarkerCluster) {
+	//Override L.Evented.fire
+	fire: function (type, data, propagate) {
+		if (data && data.layer instanceof L.MarkerCluster) {
 			//Prevent multiple clustermouseover/off events if the icon is made up of stacked divs (Doesn't work in ie <= 8, no relatedTarget)
-			if (e.originalEvent && this._isOrIsParent(e.layer._icon, e.originalEvent.relatedTarget)) {
+			if (data.originalEvent && this._isOrIsParent(data.layer._icon, data.originalEvent.relatedTarget)) {
 				return;
 			}
-			e.type = 'cluster' + e.type;
+			type = 'cluster' + type;
 		}
 
-		this.fire(e.type, e);
+		L.FeatureGroup.prototype.fire.call(this, type, data, propagate);
+	},
+
+	//Override L.Evented.listens
+	listens: function (type, propagate) {
+		return L.FeatureGroup.prototype.listens.call(this, type, propagate) || L.FeatureGroup.prototype.listens.call(this, 'cluster' + type, propagate);
 	},
 
 	//Default functionality
@@ -730,7 +750,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 		this._mergeSplitClusters();
 
-		this._zoom = this._map._zoom;
+		this._zoom = Math.round(this._map._zoom);
 		this._currentShownBounds = this._getExpandedVisibleBounds();
 	},
 
@@ -742,7 +762,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var newBounds = this._getExpandedVisibleBounds();
 
 		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._zoom, newBounds);
-		this._topClusterLevel._recursivelyAddChildrenToMap(null, this._map._zoom, newBounds);
+		this._topClusterLevel._recursivelyAddChildrenToMap(null, Math.round(this._map._zoom), newBounds);
 
 		this._currentShownBounds = newBounds;
 		return;
@@ -792,6 +812,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				}
 			});
 		}
+
+		layer.on('move', this._childMarkerMoved, this);
 
 		//Find the lowest zoom level to slot this one in
 		for (; zoom >= 0; zoom--) {
@@ -866,21 +888,22 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	//Merge and split any existing clusters that are too big or small
 	_mergeSplitClusters: function () {
+		var mapZoom = Math.round(this._map._zoom);
 
 		//Incase we are starting to split before the animation finished
 		this._processQueue();
 
-		if (this._zoom < this._map._zoom && this._currentShownBounds.intersects(this._getExpandedVisibleBounds())) { //Zoom in, split
+		if (this._zoom < mapZoom && this._currentShownBounds.contains(this._getExpandedVisibleBounds())) { //Zoom in, split
 			this._animationStart();
 			//Remove clusters now off screen
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._zoom, this._getExpandedVisibleBounds());
 
-			this._animationZoomIn(this._zoom, this._map._zoom);
+			this._animationZoomIn(this._zoom, mapZoom);
 
-		} else if (this._zoom > this._map._zoom) { //Zoom out, merge
+		} else if (this._zoom > mapZoom) { //Zoom out, merge
 			this._animationStart();
 
-			this._animationZoomOut(this._zoom, this._map._zoom);
+			this._animationZoomOut(this._zoom, mapZoom);
 		} else {
 			this._moveEnd();
 		}
@@ -962,6 +985,8 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 		    fg = this._featureGroup,
 		    i;
 
+		this._ignoreMove = true;
+
 		//Add all children of current clusters to map and remove those clusters from map
 		this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
 			var startPos = c._latlng,
@@ -1008,6 +1033,8 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			c._recursivelyRestoreChildPositions(newZoomLevel);
 		});
 
+		this._ignoreMove = false;
+
 		//Remove the old clusters and close the zoom animation
 		this._enqueue(function () {
 			//update the positions of the just added clusters/markers
@@ -1048,7 +1075,9 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			if (cluster._childCount === 1) {
 				var m = cluster._markers[0];
 				//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
+				this._ignoreMove = true;
 				m.setLatLng(m.getLatLng());
+				this._ignoreMove = false;
 				if (m.clusterShow) {
 					m.clusterShow();
 				}
