@@ -3,8 +3,8 @@
 <head>
 	<title>Leaflet debug page</title>
 
-	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.css" />
-	<script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
+	<link href="https://leafletjs-cdn.s3.amazonaws.com/content/build/master/leaflet.css" rel="stylesheet" type="text/css" />
+	<script src="https://leafletjs-cdn.s3.amazonaws.com/content/build/master/leaflet.js"></script>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="screen.css" />
 
@@ -20,12 +20,12 @@
 	<span>Mouse over a cluster to see the bounds of its children and click a cluster to zoom to those bounds</span>
 	<script type="text/javascript">
 
-		var cloudmadeUrl = 'http://{s}.tile.cloudmade.com/BC9A493B41014CAABB98F0471D759707/997/256/{z}/{x}/{y}.png',
-			cloudmadeAttribution = 'Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade, Points &copy 2012 LINZ',
-			cloudmade = L.tileLayer(cloudmadeUrl, {maxZoom: 17, attribution: cloudmadeAttribution}),
+		var positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
+			}),
 			latlng = L.latLng(0.78, 102.37);
 
-		var map = L.map('map', {center: latlng, zoom: 7, layers: [cloudmade]});
+		var map = L.map('map', {center: latlng, zoom: 7, layers: [positron]});
 
 		
 		var geojson = L.geoJson(geojsonSample, {
