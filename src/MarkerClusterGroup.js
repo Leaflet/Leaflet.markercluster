@@ -26,6 +26,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Increase to increase the distance away that spiderfied markers appear from the center
 		spiderfyDistanceMultiplier: 1,
 
+		// Make it possible to specify a polyline options on a spider leg
+		spiderLegPolylineOptions: { weight: 1.5, color: '#222' },
+
 		// When bulk adding layers, adds markers in chunks. Means addLayers may not add all the layers in the call, others will be loaded during setTimeouts
 		chunkedLoading: false,
 		chunkInterval: 200, // process markers for a maximum of ~ n milliseconds (then trigger the chunkProgress callback)
@@ -150,8 +153,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		if (this._featureGroup.hasLayer(layer)) {
 			this._featureGroup.removeLayer(layer);
-			if (layer.setOpacity) {
-				layer.setOpacity(1);
+			if (layer.clusterShow) {
+				layer.clusterShow();
 			}
 		}
 
@@ -258,8 +261,19 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				m = layersArray[i];
 				this._arraySplice(this._needsClustering, m);
 				npg.removeLayer(m);
+				if (this.hasLayer(m)) {
+					this._needsRemoving.push(m);
+				}
 			}
 			return this;
+		}
+
+		if (this._unspiderfy) {
+			this._unspiderfy();
+			for (i = 0, l = layersArray.length; i < l; i++) {
+				m = layersArray[i];
+				this._unspiderfyLayer(m);
+			}
 		}
 
 		for (i = 0, l = layersArray.length; i < l; i++) {
@@ -274,8 +288,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 			if (fg.hasLayer(m)) {
 				fg.removeLayer(m);
-				if (m.setOpacity) {
-					m.setOpacity(1);
+				if (m.clusterShow) {
+					m.clusterShow();
 				}
 			}
 		}
@@ -327,12 +341,13 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Override FeatureGroup.getBounds as it doesn't work
 	getBounds: function () {
 		var bounds = new L.LatLngBounds();
+
 		if (this._topClusterLevel) {
 			bounds.extend(this._topClusterLevel._bounds);
-		} else {
-			for (var i = this._needsClustering.length - 1; i >= 0; i--) {
-				bounds.extend(this._needsClustering[i].getLatLng());
-			}
+		}
+
+		for (var i = this._needsClustering.length - 1; i >= 0; i--) {
+			bounds.extend(this._needsClustering[i].getLatLng());
 		}
 
 		bounds.extend(this._nonPointGroup.getBounds());
@@ -425,16 +440,27 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		};
 
 		if (layer._icon && this._map.getBounds().contains(layer.getLatLng())) {
+			//Layer is visible ond on screen, immediate return
 			callback();
 		} else if (layer.__parent._zoom < this._map.getZoom()) {
-			//Layer should be visible now but isn't on screen, just pan over to it
+			//Layer should be visible at this zoom level. It must not be on screen so just pan over to it
 			this._map.on('moveend', showMarker, this);
 			this._map.panTo(layer.getLatLng());
 		} else {
+			var moveStart = function () {
+				this._map.off('movestart', moveStart, this);
+				moveStart = null;
+			};
+
+			this._map.on('movestart', moveStart, this);
 			this._map.on('moveend', showMarker, this);
 			this.on('animationend', showMarker, this);
-			this._map.setView(layer.getLatLng(), layer.__parent._zoom + 1);
 			layer.__parent.zoomToBounds();
+
+			if (moveStart) {
+				//Never started moving, must already be there, probably need clustering however
+				showMarker.call(this);
+			}
 		}
 	},
 
@@ -663,7 +689,11 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	_zoomOrSpiderfy: function (e) {
 		var map = this._map;
-		if (map.getMaxZoom() === map.getZoom()) {
+		if (e.layer._bounds._northEast.equals(e.layer._bounds._southWest)) {
+			if (this.options.spiderfyOnMaxZoom) {
+				e.layer.spiderfy();
+			}
+		} else if (map.getMaxZoom() === map.getZoom()) {
 			if (this.options.spiderfyOnMaxZoom) {
 				e.layer.spiderfy();
 			}
@@ -882,7 +912,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Gets the maps visible bounds expanded in each direction by the size of the screen (so the user cannot see an area we do not cover in one pan)
 	_getExpandedVisibleBounds: function () {
 		if (!this.options.removeOutsideVisibleBounds) {
-			return this.getBounds();
+			return this._map.getBounds();
 		}
 
 		var map = this._map,
@@ -972,7 +1002,7 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 				c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
 			} else {
 				//Fade out old cluster
-				c.setOpacity(0);
+				c.clusterHide();
 				c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
 			}
 
@@ -994,7 +1024,7 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 		//TODO Maybe? Update markers in _recursivelyBecomeVisible
 		fg.eachLayer(function (n) {
 			if (!(n instanceof L.MarkerCluster) && n._icon) {
-				n.setOpacity(1);
+				n.clusterShow();
 			}
 		});
 
@@ -1010,7 +1040,7 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			//update the positions of the just added clusters/markers
 			this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
 				fg.removeLayer(c);
-				c.setOpacity(1);
+				c.clusterShow();
 			});
 
 			this._animationEnd();
@@ -1048,8 +1078,8 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 				this._ignoreMove = true;
 				m.setLatLng(m.getLatLng());
 				this._ignoreMove = false;
-				if (m.setOpacity) {
-					m.setOpacity(1);
+				if (m.clusterShow) {
+					m.clusterShow();
 				}
 			} else {
 				cluster._recursively(bounds, newZoomLevel, 0, function (c) {
@@ -1072,11 +1102,11 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 				this._animationStart();
 
 				layer._setPos(this._map.latLngToLayerPoint(newCluster.getLatLng()));
-				layer.setOpacity(0);
+				layer.clusterHide();
 
 				this._enqueue(function () {
 					fg.removeLayer(layer);
-					layer.setOpacity(1);
+					layer.clusterShow();
 
 					me._animationEnd();
 				});

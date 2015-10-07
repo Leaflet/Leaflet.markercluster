@@ -19,13 +19,10 @@
 <body>
 
 	<div id="map"></div>
-	<button id="doit">setView</button><br/>
-	<span>Bug <a href="https://github.com/danzel/Leaflet.markercluster/issues/63">#63</a>. Zoom down on the very left side untill markers are visible. Click the button. Scroll to the left in one go, those markers should be in clusters but the actual markers will still be visible.</span><br/>
+	<button id="doit">open popup</button><br/>
+	<span>Bug <a href="https://github.com/danzel/Leaflet.markercluster/issues/286">#286 (from @Grsmto)</a>. Click the button. The cluster should spiderfy and show the popup, old behaviour did nothing.</span><br/>
 	<span id="time"></span>
 	<script type="text/javascript">
-
-		//Mobile does different bounds to desktop, makes the bug easier to reproduce
-		L.Browser.mobile = true;
 
 		var tiles = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 				maxZoom: 18,
@@ -33,35 +30,25 @@
 			}),
 			latlng = new L.LatLng(50.5, 30.51);
 
-		var map = new L.Map('map', {center: latlng, zoom: 15, layers: [tiles]});
+		var map = new L.Map('map', {center: latlng, zoom: 18, layers: [tiles]});
 
 		var markers = new L.MarkerClusterGroup();
 		var markersList = [];
-
-		function getRandomLatLng(map) {
-			var bounds = map.getBounds(),
-				southWest = bounds.getSouthWest(),
-				northEast = bounds.getNorthEast(),
-				lngSpan = northEast.lng - southWest.lng,
-				latSpan = northEast.lat - southWest.lat;
-
-			return new L.LatLng(
-					southWest.lat + latSpan * Math.random(),
-					southWest.lng + lngSpan * Math.random());
+		
+		for (var i = 0; i < 3; i++) {
+			var m = new L.Marker(latlng);
+			m.bindPopup('asdasd' + i);
+			markersList.push(m);
+			markers.addLayer(m);
 		}
 
-		function populate(length) {
-			for (var i = 0; i < length; i++) {
-				var m = new L.Marker(getRandomLatLng(map));
-				markers.addLayer(m);
-			}
-		}
-
-		populate(1000);
 		map.addLayer(markers);
 
 		L.DomUtil.get('doit').onclick = function () {
-			map.setView(new L.LatLng(50.5, 30.525), 15);
+			//debugger;
+			markers.zoomToShowLayer(markersList[0], function () {
+				markersList[0].openPopup();
+			});
 		};
 
 	</script>

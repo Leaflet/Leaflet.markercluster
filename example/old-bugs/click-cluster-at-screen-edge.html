@@ -19,42 +19,39 @@
 <body>
 
 	<div id="map"></div>
-	<span>Bug <a href="https://github.com/danzel/Leaflet.markercluster/issues/64">#64</a>. Nothing should appear on the map.</span><br/>
+	<span>Bug <a href="https://github.com/leaflet/Leaflet.markercluster/issues/344">#344</a>. Click the cluster at the screen edge. Map will zoom to it and its markers will appear, but it will not disappear.</span><br/>
 	<span id="time"></span>
 	<script type="text/javascript">
 
+		var iconCreateFunction = function (cluster) {
+			var childCount = cluster.getChildCount();
+
+			var c = ' marker-cluster-';
+			if (childCount < 10) {
+				c += 'small';
+			} else if (childCount < 100) {
+				c += 'medium';
+			} else {
+				c += 'large';
+			}
+
+			return new L.DivIcon({ html: '<div><span>' + childCount + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(270, 270)  });
+		};
+		
 		var tiles = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 				maxZoom: 18,
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 			}),
-			latlng = new L.LatLng(50.5, 30.51);
+			latlng = new L.LatLng(54.18815548107151, 6.1083984375);
 
-		var map = new L.Map('map', {center: latlng, zoom: 15, layers: [tiles]});
+		var map = new L.Map('map', {center: latlng, zoom: 5, layers: [tiles]});
 
-		var markers = new L.MarkerClusterGroup();
+		var markers = new L.MarkerClusterGroup({ iconCreateFunction: iconCreateFunction });
+		var markersList = [];
 
-		function getRandomLatLng(map) {
-			var bounds = map.getBounds(),
-				southWest = bounds.getSouthWest(),
-				northEast = bounds.getNorthEast(),
-				lngSpan = northEast.lng - southWest.lng,
-				latSpan = northEast.lat - southWest.lat;
+		markers.addLayer(new L.Marker([41.969073, 5]));
+		markers.addLayer(new L.Marker([41.969073, 7]));
 
-			return new L.LatLng(
-					southWest.lat + latSpan * Math.random(),
-					southWest.lng + lngSpan * Math.random());
-		}
-
-		function populate(length) {
-			var list = [], i;
-			for (i = 0; i < length; i++) {
-				var m = new L.Marker(getRandomLatLng(map));
-				markers.addLayer(m);
-				markers.removeLayer(m);
-			}
-		}
-
-		populate(1000);
 		map.addLayer(markers);
 
 	</script>

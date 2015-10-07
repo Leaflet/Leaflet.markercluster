@@ -141,8 +141,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 			fg.addLayer(m);
 
-
-			leg = new L.Polyline([this._latlng, newPos], { weight: 1.5, color: '#222' });
+			var legOptions = this._group.options.spiderLegPolylineOptions;
+			leg = new L.Polyline([this._latlng, newPos], legOptions);
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 		}
@@ -179,7 +179,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			//If it is a marker, add it now and we'll animate it out
 			if (m.setOpacity) {
 				m.setZIndexOffset(1000000); //Make these appear on top of EVERYTHING
-				m.setOpacity(0);
+				m.clusterHide();
 			
 				fg.addLayer(m);
 
@@ -204,12 +204,17 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			m.setLatLng(newPos);
 			
 			if (m.setOpacity) {
-				m.setOpacity(1);
+				m.clusterShow();
 			}
 
 
-			//Add Legs. Force the SVG renderer so we can animate
-			leg = new L.Polyline([me._latlng, newPos], { weight: 1.5, color: '#222', opacity: initialLegOpacity });
+			//Add Legs.
+			var legOptions = this._group.options.spiderLegPolylineOptions;
+			if (legOptions.opacity === undefined) {
+				legOptions.opacity = initialLegOpacity;
+			}
+			leg = new L.Polyline([me._latlng, newPos], legOptions);
+
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 
@@ -293,7 +298,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			//Hack override the location to be our center
 			if (m.setOpacity) {
 				m._setPos(thisLayerPos);
-				m.setOpacity(0);
+				m.clusterHide();
 			} else {
 				fg.removeLayer(m);
 			}
@@ -337,7 +342,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 
 				if (m.setOpacity) {
-					m.setOpacity(1);
+					m.clusterShow();
 					m.setZIndexOffset(0);
 				}
 
