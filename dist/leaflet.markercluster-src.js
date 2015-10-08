@@ -31,9 +31,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Increase to increase the distance away that spiderfied markers appear from the center
 		spiderfyDistanceMultiplier: 1,
 
-		// Make it possible to specify a polyline options on a spider leg
-		spiderLegPolylineOptions: { weight: 1.5, color: '#222' },
-
 		// When bulk adding layers, adds markers in chunks. Means addLayers may not add all the layers in the call, others will be loaded during setTimeouts
 		chunkedLoading: false,
 		chunkInterval: 200, // process markers for a maximum of ~ n milliseconds (then trigger the chunkProgress callback)
@@ -156,8 +153,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		if (this._featureGroup.hasLayer(layer)) {
 			this._featureGroup.removeLayer(layer);
-			if (layer.clusterShow) {
-				layer.clusterShow();
+			if (layer.setOpacity) {
+				layer.setOpacity(1);
 			}
 		}
 
@@ -264,19 +261,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				m = layersArray[i];
 				this._arraySplice(this._needsClustering, m);
 				npg.removeLayer(m);
-				if (this.hasLayer(m)) {
-					this._needsRemoving.push(m);
-				}
 			}
 			return this;
-		}
-
-		if (this._unspiderfy) {
-			this._unspiderfy();
-			for (i = 0, l = layersArray.length; i < l; i++) {
-				m = layersArray[i];
-				this._unspiderfyLayer(m);
-			}
 		}
 
 		for (i = 0, l = layersArray.length; i < l; i++) {
@@ -291,8 +277,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 			if (fg.hasLayer(m)) {
 				fg.removeLayer(m);
-				if (m.clusterShow) {
-					m.clusterShow();
+				if (m.setOpacity) {
+					m.setOpacity(1);
 				}
 			}
 		}
@@ -674,11 +660,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	_zoomOrSpiderfy: function (e) {
 		var map = this._map;
-		if (e.layer._bounds._northEast.equals(e.layer._bounds._southWest)) {
-			if (this.options.spiderfyOnMaxZoom) {
-				e.layer.spiderfy();
-			}
-		} else if (map.getMaxZoom() === map.getZoom()) {
+		if (map.getMaxZoom() === map.getZoom()) {
 			if (this.options.spiderfyOnMaxZoom) {
 				e.layer.spiderfy();
 			}
@@ -982,7 +964,7 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 				c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
 			} else {
 				//Fade out old cluster
-				c.clusterHide();
+				c.setOpacity(0);
 				c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
 			}
 
@@ -1004,7 +986,7 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 		//TODO Maybe? Update markers in _recursivelyBecomeVisible
 		fg.eachLayer(function (n) {
 			if (!(n instanceof L.MarkerCluster) && n._icon) {
-				n.clusterShow();
+				n.setOpacity(1);
 			}
 		});
 
@@ -1018,7 +1000,7 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 			//update the positions of the just added clusters/markers
 			this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function (c) {
 				fg.removeLayer(c);
-				c.clusterShow();
+				c.setOpacity(1);
 			});
 
 			this._animationEnd();
@@ -1054,8 +1036,8 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 				var m = cluster._markers[0];
 				//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
 				m.setLatLng(m.getLatLng());
-				if (m.clusterShow) {
-					m.clusterShow();
+				if (m.setOpacity) {
+					m.setOpacity(1);
 				}
 			} else {
 				cluster._recursively(bounds, newZoomLevel, 0, function (c) {
@@ -1078,11 +1060,11 @@ L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 				this._animationStart();
 
 				layer._setPos(this._map.latLngToLayerPoint(newCluster.getLatLng()));
-				layer.clusterHide();
+				layer.setOpacity(0);
 
 				this._enqueue(function () {
 					fg.removeLayer(layer);
-					layer.clusterShow();
+					layer.setOpacity(1);
 
 					me._animationEnd();
 				});
@@ -1282,7 +1264,7 @@ L.MarkerCluster = L.Marker.extend({
 					//Only do it if the icon is still on the map
 					if (m._icon) {
 						m._setPos(center);
-						m.clusterHide();
+						m.setOpacity(0);
 					}
 				}
 			},
@@ -1293,7 +1275,7 @@ L.MarkerCluster = L.Marker.extend({
 					cm = childClusters[j];
 					if (cm._icon) {
 						cm._setPos(center);
-						cm.clusterHide();
+						cm.setOpacity(0);
 					}
 				}
 			}
@@ -1308,10 +1290,10 @@ L.MarkerCluster = L.Marker.extend({
 				//TODO: depthToAnimateIn affects _isSingleParent, if there is a multizoom we may/may not be.
 				//As a hack we only do a animation free zoom on a single level zoom, if someone does multiple levels then we always animate
 				if (c._isSingleParent() && previousZoomLevel - 1 === newZoomLevel) {
-					c.clusterShow();
+					c.setOpacity(1);
 					c._recursivelyRemoveChildrenFromMap(bounds, previousZoomLevel); //Immediately remove our children as we are replacing them. TODO previousBounds not bounds
 				} else {
-					c.clusterHide();
+					c.setOpacity(0);
 				}
 
 				c._addToMap();
@@ -1321,7 +1303,7 @@ L.MarkerCluster = L.Marker.extend({
 
 	_recursivelyBecomeVisible: function (bounds, zoomLevel) {
 		this._recursively(bounds, 0, zoomLevel, null, function (c) {
-			c.clusterShow();
+			c.setOpacity(1);
 		});
 	},
 
@@ -1344,8 +1326,8 @@ L.MarkerCluster = L.Marker.extend({
 						nm._backupLatlng = nm.getLatLng();
 
 						nm.setLatLng(startPos);
-						if (nm.clusterHide) {
-							nm.clusterHide();
+						if (nm.setOpacity) {
+							nm.setOpacity(0);
 						}
 					}
 
@@ -1397,8 +1379,8 @@ L.MarkerCluster = L.Marker.extend({
 					m = c._markers[i];
 					if (!exceptBounds || !exceptBounds.contains(m._latlng)) {
 						c._group._featureGroup.removeLayer(m);
-						if (m.clusterShow) {
-							m.clusterShow();
+						if (m.setOpacity) {
+							m.setOpacity(1);
 						}
 					}
 				}
@@ -1409,8 +1391,8 @@ L.MarkerCluster = L.Marker.extend({
 					m = c._childClusters[i];
 					if (!exceptBounds || !exceptBounds.contains(m._latlng)) {
 						c._group._featureGroup.removeLayer(m);
-						if (m.clusterShow) {
-							m.clusterShow();
+						if (m.setOpacity) {
+							m.setOpacity(1);
 						}
 					}
 				}
@@ -1427,7 +1409,7 @@ L.MarkerCluster = L.Marker.extend({
 	_recursively: function (boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel) {
 		var childClusters = this._childClusters,
 		    zoom = this._zoom,
-		    i, c;
+			i, c;
 
 		if (zoomLevelToStart > zoom) { //Still going down to required depth, just recurse to child clusters
 			for (i = childClusters.length - 1; i >= 0; i--) {
@@ -1480,34 +1462,6 @@ L.MarkerCluster = L.Marker.extend({
 		return this._childClusters.length > 0 && this._childClusters[0]._childCount === this._childCount;
 	}
 });
-
-
-
-/*
-* Extends L.Marker to include two extra methods: clusterHide and clusterShow.
-* 
-* They work as setOpacity(0) and setOpacity(1) respectively, but
-* they will remember the marker's opacity when hiding and showing it again.
-* 
-*/
-
-
-L.Marker.include({
-	
-	clusterHide: function () {
-		this.options.opacityWhenUnclustered = this.options.opacity || 1;
-		return this.setOpacity(0);
-	},
-	
-	clusterShow: function () {
-		var ret = this.setOpacity(this.options.opacity || this.options.opacityWhenUnclustered);
-		delete this.options.opacityWhenUnclustered;
-		return ret;
-	}
-	
-});
-
-
 
 
 
@@ -1738,40 +1692,20 @@ Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=1843
 		getConvexHull: function (latLngs) {
 			// find first baseline
 			var maxLat = false, minLat = false,
-				maxLng = false, minLng = false,
-				maxLatPt = null, minLatPt = null,
-				maxLngPt = null, minLngPt = null,
 				maxPt = null, minPt = null,
 				i;
 
 			for (i = latLngs.length - 1; i >= 0; i--) {
 				var pt = latLngs[i];
 				if (maxLat === false || pt.lat > maxLat) {
-					maxLatPt = pt;
+					maxPt = pt;
 					maxLat = pt.lat;
 				}
 				if (minLat === false || pt.lat < minLat) {
-					minLatPt = pt;
+					minPt = pt;
 					minLat = pt.lat;
 				}
-				if (maxLng === false || pt.lng > maxLng) {
-					maxLngPt = pt;
-					maxLng = pt.lng;
-				}
-				if (minLng === false || pt.lng < minLng) {
-					minLngPt = pt;
-					minLng = pt.lng;
-				}
 			}
-			
-			if (minLat !== maxLat) {
-				minPt = minLatPt;
-				maxPt = maxLatPt;
-			} else {
-				minPt = minLngPt;
-				maxPt = maxLngPt;
-			}
-
 			var ch = [].concat(this.buildConvexHull([minPt, maxPt], latLngs),
 								this.buildConvexHull([maxPt, minPt], latLngs));
 			return ch;
@@ -1933,8 +1867,8 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 			fg.addLayer(m);
 
-			var legOptions = this._group.options.spiderLegPolylineOptions;
-			leg = new L.Polyline([this._latlng, newPos], legOptions);
+
+			leg = new L.Polyline([this._latlng, newPos], { weight: 1.5, color: '#222' });
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 		}
@@ -1966,7 +1900,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			//If it is a marker, add it now and we'll animate it out
 			if (m.setOpacity) {
 				m.setZIndexOffset(1000000); //Make these appear on top of EVERYTHING
-				m.clusterHide();
+				m.setOpacity(0);
 			
 				fg.addLayer(m);
 
@@ -1993,16 +1927,12 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			m.setLatLng(newPos);
 			
 			if (m.setOpacity) {
-				m.clusterShow();
+				m.setOpacity(1);
 			}
 
 
 			//Add Legs.
-			var legOptions = this._group.options.spiderLegPolylineOptions;
-			if (legOptions.opacity === undefined) {
-				legOptions.opacity = initialLegOpacity;
-			}
-			leg = new L.Polyline([me._latlng, newPos], legOptions);
+			leg = new L.Polyline([me._latlng, newPos], { weight: 1.5, color: '#222', opacity: initialLegOpacity });
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 
@@ -2088,7 +2018,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 			//Hack override the location to be our center
 			if (m.setOpacity) {
 				m._setPos(thisLayerPos);
-				m.clusterHide();
+				m.setOpacity(0);
 			} else {
 				fg.removeLayer(m);
 			}
@@ -2130,7 +2060,7 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 
 
 				if (m.setOpacity) {
-					m.clusterShow();
+					m.setOpacity(1);
 					m.setZIndexOffset(0);
 				}
 
@@ -2226,106 +2156,6 @@ L.MarkerClusterGroup.include({
 			this._map.removeLayer(layer._spiderLeg);
 			delete layer._spiderLeg;
 		}
-	}
-});
-
-
-/**
- * Adds 1 public method to MCG and 1 to L.Marker to facilitate changing
- * markers' icon options and refreshing their icon and their parent clusters
- * accordingly (case where their iconCreateFunction uses data of childMarkers
- * to make up the cluster icon).
- * Should cover issues #563, #561, #555, #535 and #498.
- */
-
-
-L.MarkerClusterGroup.include({
-	/**
-	 * Updates all clusters (and their icon) which are parents of the given marker(s).
-	 * @param layers L.MarkerClusterGroup|L.LayerGroup|Array(L.Marker)|Map(L.Marker)|
-	 * L.MarkerCluster|L.Marker (optional) list of markers (or single marker) whose parent
-	 * clusters need to be updated. If not provided, retrieves all child markers of this.
-	 * @returns {L.MarkerClusterGroup}
-	 */
-	refreshClusters: function (layers) {
-		if (!layers) {
-			layers = this._topClusterLevel.getAllChildMarkers();
-		} else if (layers instanceof L.MarkerClusterGroup) {
-			layers = layers._topClusterLevel.getAllChildMarkers();
-		} else if (layers instanceof L.LayerGroup) {
-			layers = layers._layers;
-		} else if (layers instanceof L.MarkerCluster) {
-			layers = layers.getAllChildMarkers();
-		} else if (layers instanceof L.Marker) {
-			layers = [layers];
-		} // else: must be an Array(L.Marker)|Map(L.Marker)
-		this._flagParentsIconsNeedUpdate(layers);
-		this._refreshClustersIcons();
-
-		return this;
-	},
-
-	/**
-	 * Simply flags all parent clusters of the given markers as having a "dirty" icon.
-	 * @param layers Array(L.Marker)|Map(L.Marker) list of markers.
-	 * @private
-	 */
-	_flagParentsIconsNeedUpdate: function (layers) {
-		var parent;
-
-		// Assumes layers is an Array or an Object whose prototype is non-enumerable.
-		for (var id in layers) {
-			// Flag parent clusters' icon as "dirty", all the way up.
-			// Dumb process that flags multiple times upper parents, but still
-			// much more efficient than trying to be smart and make short lists,
-			// at least in the case of a hierarchy following a power law:
-			// http://jsperf.com/flag-nodes-in-power-hierarchy/2
-			parent = layers[id].__parent;
-			while (parent) {
-				parent._iconNeedsUpdate = true;
-				parent = parent.__parent;
-			}
-		}
-	},
-
-	/**
-	 * Refreshes the icon of all "dirty" visible clusters.
-	 * Non-visible "dirty" clusters will be updated when they are added to the map.
-	 * @private
-	 */
-	_refreshClustersIcons: function () {
-		this._featureGroup.eachLayer(function (c) {
-			if (c instanceof L.MarkerCluster && c._iconNeedsUpdate) {
-				c._updateIcon();
-			}
-		});
-	}
-});
-
-L.Marker.include({
-	/**
-	 * Updates the given options in the marker's icon and refreshes the marker.
-	 * @param options map object of icon options.
-	 * @param directlyRefreshClusters boolean (optional) true to trigger
-	 * MCG.refreshClustersOf() right away with this single marker.
-	 * @returns {L.Marker}
-	 */
-	refreshIconOptions: function (options, directlyRefreshClusters) {
-		var icon = this.options.icon;
-
-		L.setOptions(icon, options);
-
-		this.setIcon(icon);
-
-		// Shortcut to refresh the associated MCG clusters right away.
-		// To be used when refreshing a single marker.
-		// Otherwise, better use MCG.refreshClusters() once at the end with
-		// the list of modified markers.
-		if (directlyRefreshClusters && this.__parent) {
-			this.__parent._group.refreshClusters(this);
-		}
-
-		return this;
 	}
 });
 
