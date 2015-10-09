@@ -416,6 +416,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	//Zoom down to show the given layer (spiderfying if necessary) then calls the callback
 	zoomToShowLayer: function (layer, callback) {
+		
+		if (typeof callback !== 'function') {
+			callback = function () {};
+		}
 
 		var showMarker = function () {
 			if ((layer._icon || layer.__parent._icon) && !this._inZoomAnimation) {
@@ -425,12 +429,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				if (layer._icon) {
 					callback();
 				} else if (layer.__parent._icon) {
-					var afterSpiderfy = function () {
-						this.off('spiderfied', afterSpiderfy, this);
-						callback();
-					};
-
-					this.on('spiderfied', afterSpiderfy, this);
+					this.once('spiderfied', callback, this);
 					layer.__parent.spiderfy();
 				}
 			}
