@@ -21,8 +21,8 @@ Or check out the [custom example](http://leaflet.github.com/Leaflet.markercluste
 Create a new MarkerClusterGroup, add your markers to it, then add it to the map
 
 ```javascript
-var markers = new L.MarkerClusterGroup();
-markers.addLayer(new L.Marker(getRandomLatLng(map)));
+var markers = L.markerClusterGroup();
+markers.addLayer(L.marker(getRandomLatLng(map)));
 ... Add more layers ...
 map.addLayer(markers);
 ```
@@ -37,7 +37,7 @@ By default the Clusterer enables some nice defaults for you:
 
 You can disable any of these as you want in the options when you create the MarkerClusterGroup:
 ```javascript
-var markers = new L.MarkerClusterGroup({ spiderfyOnMaxZoom: false, showCoverageOnHover: false, zoomToBoundsOnClick: false });
+var markers = L.markerClusterGroup({ spiderfyOnMaxZoom: false, showCoverageOnHover: false, zoomToBoundsOnClick: false });
 ```
 
 ### Customising the Clustered Markers
@@ -47,9 +47,9 @@ You do not need to include the .Default css if you go this way.
 You are passed a MarkerCluster object, you'll probably want to use getChildCount() or getAllChildMarkers() to work out the icon to show
 
 ```javascript
-var markers = new L.MarkerClusterGroup({
+var markers = L.markerClusterGroup({
 	iconCreateFunction: function(cluster) {
-		return new L.DivIcon({ html: '<b>' + cluster.getChildCount() + '</b>' });
+		return L.divIcon({ html: '<b>' + cluster.getChildCount() + '</b>' });
 	}
 });
 ```
@@ -99,7 +99,7 @@ When you receive an event from a cluster you can query it for the bounds.
 See [example/marker-clustering-convexhull.html](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-convexhull.html) for a working example.
 ```javascript
 markers.on('clusterclick', function (a) {
-	map.addLayer(new L.Polygon(a.layer.getConvexHull()));
+	map.addLayer(L.polygon(a.layer.getConvexHull()));
 });
 ```
 
