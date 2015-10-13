@@ -3,7 +3,6 @@
  * markers' icon options and refreshing their icon and their parent clusters
  * accordingly (case where their iconCreateFunction uses data of childMarkers
  * to make up the cluster icon).
- * Should cover issues #563, #561, #555, #535 and #498.
  */
 
 
