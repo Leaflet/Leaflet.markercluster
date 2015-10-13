@@ -116,9 +116,33 @@ markers.on('clusterclick', function (a) {
 ### Getting the visible parent of a marker
 If you have a marker in your MarkerClusterGroup and you want to get the visible parent of it (Either itself or a cluster it is contained in that is currently visible on the map).
 This will return null if the marker and its parent clusters are not visible currently (they are not near the visible viewpoint)
-```
+```javascript
 var visibleOne = markerClusterGroup.getVisibleParent(myMarker);
 console.log(visibleOne.getLatLng());
+```
+
+### Refreshing the clusters icon
+If you have [customized](#customising-the-clustered-markers) the clusters icon to use some data from the contained markers, and later that data changes, use this method to force a refresh of the cluster icons.
+You can use the method:
+- without arguments to force all cluster icons in the Marker Cluster Group to be re-drawn.
+- with an array or a mapping of markers to force only their parent clusters to be re-drawn.
+- with an L.MarkerClusterGroup, L.LayerGroup, or L.MarkerCluster. The method will look for all markers in these objects. Make sure they contain only markers which are also within this Marker Cluster Group.
+- with a single marker.
+```javascript
+markers.refreshClusters();
+markers.refreshClusters([myMarker0, myMarker33]);
+markers.refreshClusters({id_0: myMarker0, id_any: myMarker33]);
+markers.refreshClusters(markers); // a Marker Cluster Group that contains all or a sub-set of this markers.
+markers.refreshClusters(myLayerGroup);
+markers.refreshClusters(myMarkerCluster);
+markers.refreshClusters(myMarker);
+```
+
+The plugin also adds a method on L.Marker to easily update the underlying icon options and refresh the icon.
+If passing a second argument that evaluates to `true`, the method will also trigger a `refreshCluster` on the parent MarkerClusterGroup for that single marker.
+```javascript
+myMarker.refreshIconOptions(optionsMap); // Use as many times as required to update markers, before calling refreshClusters.
+myMarker.refreshIconOptions(optionsMap, true); // Refreshes the marker's parent clusters right away.
 ```
 
 ### Adding and removing Markers
