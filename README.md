@@ -142,10 +142,10 @@ If passing a second argument that evaluates to `true`, the method will also trig
 ```javascript
 // Use as many times as required to update markers,
 // then call refreshClusters once finished.
-for (i in markersArray) {
-	markersArray[i].refreshIconOptions(newOptionsMap);
+for (i in markersSubArray) {
+	markersSubArray[i].refreshIconOptions(newOptionsMappingArray[i]);
 }
-markers.refreshClusters(group);
+markers.refreshClusters(markersSubArray);
 
 // If updating only one marker, pass true to
 // refresh this marker's parent clusters right away.
