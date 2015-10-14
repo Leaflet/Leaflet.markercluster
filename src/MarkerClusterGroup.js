@@ -888,19 +888,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Gets the maps visible bounds expanded in each direction by the size of the screen (so the user cannot see an area we do not cover in one pan)
 	_getExpandedVisibleBounds: function () {
 		if (!this.options.removeOutsideVisibleBounds) {
+			return this._mapBoundsInfinite;
+		} else if (L.Browser.mobile) {
 			return this._map.getBounds();
 		}
 
-		var map = this._map,
-			bounds = map.getBounds(),
-			sw = bounds._southWest,
-			ne = bounds._northEast,
-			latDiff = L.Browser.mobile ? 0 : Math.abs(sw.lat - ne.lat),
-			lngDiff = L.Browser.mobile ? 0 : Math.abs(sw.lng - ne.lng);
-
-		return new L.LatLngBounds(
-			new L.LatLng(sw.lat - latDiff, sw.lng - lngDiff, true),
-			new L.LatLng(ne.lat + latDiff, ne.lng + lngDiff, true));
+		return this._map.getBounds().pad(1); // Padding expands the bounds by its own dimensions but scaled with the given factor.
 	},
 
 	//Shared animation code
@@ -917,6 +910,11 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			newCluster._updateIcon();
 		}
 	}
+});
+
+// Constant bounds used in case option "removeOutsideVisibleBounds" is set to false.
+L.MarkerClusterGroup.include({
+	_mapBoundsInfinite: new L.LatLngBounds(new L.LatLng(-Infinity, -Infinity), new L.LatLng(Infinity, Infinity))
 });
 
 L.MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
