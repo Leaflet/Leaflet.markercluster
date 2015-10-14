@@ -63,12 +63,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._queue = [];
 
 		// Hook the appropriate animation methods.
-		//var animationMode = this.options.animate ? this._withAnimation : this._noAnimation;
 		L.extend(this, this.options.animate ? this._withAnimation : this._noAnimation);
-		/*this._animationStart = animationMode._animationStart;
-		this._animationZoomIn = animationMode._animationZoomIn;
-		this._animationZoomOut = animationMode._animationZoomOut;
-		this._animationAddLayer = animationMode._animationAddLayer;*/
+		// Remember which MarkerCluster class to instantiate (animated or not).
 		this._markerCluster = this.options.animate ? L.MarkerCluster : L.MarkerClusterNonAnimated;
 	},
 
