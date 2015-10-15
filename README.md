@@ -61,6 +61,7 @@ Enabled by default (boolean options):
 * **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
 * **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are physically located at the same latitude and longitude.*)
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
+* **animate**: Child markers and clusters smoothly split from / merge into clusters when zooming in / out. Also commands spiderfy animations. Defaults to false if `L.DomUtil.TRANSITION` is empty. If false, option `animateAddingMarkers` has no effect.
 
 Other options
 * **animateAddingMarkers**: If set to true then adding individual markers to the MarkerClusterGroup after it has been added to the map will add the marker and animate it in to the cluster. Defaults to false as this gives better performance when bulk adding markers. addLayers does not support this, only addLayer with individual Markers.
