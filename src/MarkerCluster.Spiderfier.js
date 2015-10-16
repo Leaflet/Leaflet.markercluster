@@ -116,7 +116,7 @@ L.MarkerCluster.include({
 	}
 });
 
-L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
+L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 	//Non Animated versions of everything
 	_animationSpiderfy: function (childMarkers, positions) {
 		var group = this._group,
@@ -148,7 +148,9 @@ L.MarkerCluster.include(!L.DomUtil.TRANSITION ? {
 	_animationUnspiderfy: function () {
 		this._noanimationUnspiderfy();
 	}
-} : {
+});
+
+L.MarkerCluster.include({
 	//Animated versions here
 	SVG_ANIMATION: (function () {
 		return document.createElementNS('http://www.w3.org/2000/svg', 'animate').toString().indexOf('SVGAnimate') > -1;
