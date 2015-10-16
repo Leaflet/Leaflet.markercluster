@@ -19,8 +19,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		// is the default behaviour for performance reasons.
 		removeOutsideVisibleBounds: true,
 
-		// Set to false to disable all animations. If false, option animateAddingMarkers below has no effect.
-		animate: L.DomUtil.TRANSITION,
+		// Set to false to disable all animations (zoom and spiderfy).
+		// If false, option animateAddingMarkers below has no effect.
+		// If L.DomUtil.TRANSITION is false, this option has no effect (no animation is possible).
+		animate: true,
 
 		//Whether to animate adding markers after adding the MarkerClusterGroup to the map
 		// If you are adding individual markers set to true, if adding bulk markers leave false for massive performance gains.
@@ -63,9 +65,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._queue = [];
 
 		// Hook the appropriate animation methods.
-		L.extend(this, this.options.animate ? this._withAnimation : this._noAnimation);
+		var animate = !!L.DomUtil.TRANSITION && this.options.animate;
+		L.extend(this, animate ? this._withAnimation : this._noAnimation);
 		// Remember which MarkerCluster class to instantiate (animated or not).
-		this._markerCluster = this.options.animate ? L.MarkerCluster : L.MarkerClusterNonAnimated;
+		this._markerCluster = animate ? L.MarkerCluster : L.MarkerClusterNonAnimated;
 	},
 
 	addLayer: function (layer) {
@@ -780,8 +783,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this._gridUnclustered[zoom] = new L.DistanceGrid(radiusFn(zoom));
 		}
 
+		// Instantiate the appropriate L.MarkerCluster class (animated or not).
 		this._topClusterLevel = new this._markerCluster(this, -1);
-		//this._topClusterLevel = new L.MarkerCluster(this, -1);
 	},
 
 	//Zoom: Zoom to start adding at (Pass this._maxZoom to start at the bottom)
@@ -824,7 +827,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				//Create new cluster with these 2 in it
 
 				var newCluster = new this._markerCluster(this, zoom, closest, layer);
-				//var newCluster = new L.MarkerCluster(this, zoom, closest, layer);
 				gridClusters[zoom].addObject(newCluster, this._map.project(newCluster._cLatLng, zoom));
 				closest.__parent = newCluster;
 				layer.__parent = newCluster;
@@ -833,7 +835,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				var lastParent = newCluster;
 				for (z = zoom - 1; z > parent._zoom; z--) {
 					lastParent = new this._markerCluster(this, z, lastParent);
-					//lastParent = new L.MarkerCluster(this, z, lastParent);
 					gridClusters[z].addObject(lastParent, this._map.project(closest.getLatLng(), z));
 				}
 				parent._addChild(lastParent);
@@ -899,19 +900,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Gets the maps visible bounds expanded in each direction by the size of the screen (so the user cannot see an area we do not cover in one pan)
 	_getExpandedVisibleBounds: function () {
 		if (!this.options.removeOutsideVisibleBounds) {
+			return this._mapBoundsInfinite;
+		} else if (L.Browser.mobile) {
 			return this._map.getBounds();
 		}
 
-		var map = this._map,
-			bounds = map.getBounds(),
-			sw = bounds._southWest,
-			ne = bounds._northEast,
-			latDiff = L.Browser.mobile ? 0 : Math.abs(sw.lat - ne.lat),
-			lngDiff = L.Browser.mobile ? 0 : Math.abs(sw.lng - ne.lng);
-
-		return new L.LatLngBounds(
-			new L.LatLng(sw.lat - latDiff, sw.lng - lngDiff, true),
-			new L.LatLng(ne.lat + latDiff, ne.lng + lngDiff, true));
+		return this._map.getBounds().pad(1); // Padding expands the bounds by its own dimensions but scaled with the given factor.
 	},
 
 	//Shared animation code
@@ -928,6 +922,11 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			newCluster._updateIcon();
 		}
 	}
+});
+
+// Constant bounds used in case option "removeOutsideVisibleBounds" is set to false.
+L.MarkerClusterGroup.include({
+	_mapBoundsInfinite: new L.LatLngBounds(new L.LatLng(-Infinity, -Infinity), new L.LatLng(Infinity, Infinity))
 });
 
 L.MarkerClusterGroup.include({

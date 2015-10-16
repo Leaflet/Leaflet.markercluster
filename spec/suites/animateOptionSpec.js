@@ -3,7 +3,8 @@ describe('animate option', function () {
 	/**
 	 * Wrapper for Mocha's `it` function, to avoid using `beforeEach` and `afterEach`
 	 * which create problems with PhantomJS when total number of tests (across all suites)
-	 * increases. Might be due to use of promises for which PhantomJS performs badly?
+	 * increases. Might be due to use of promises for which PhantomJS would performs badly?
+	 * NOTE: works only with synchronous code.
 	 * @param testDescription string
 	 * @param testInstructions function
 	 * @param testFinally function to be executed just before afterEach2, in the `finally` block.
@@ -76,7 +77,7 @@ describe('animate option', function () {
 	// PREPARATION CODE
 	/////////////////////////////
 
-	var div, map, group;
+	var div, map, group, previousTransitionSetting;
 
 	div = document.createElement('div');
 	div.style.width = '200px';
@@ -141,6 +142,42 @@ describe('animate option', function () {
 		expect(cluster._animationUnspiderfy).to.be(noAnimation._animationUnspiderfy);
 
 	});
+
+	it2(
+		'always hooks non-animated methods version when L.DomUtil.TRANSITION is false',
+
+		function () {
+
+			previousTransitionSetting = L.DomUtil.TRANSITION;
+			// Fool Leaflet, make it think the browser does not support transitions.
+			L.DomUtil.TRANSITION = false;
+
+			// Need to add to map so that we have the top cluster level created.
+			group = L.markerClusterGroup({animate: true}).addTo(map);
+
+			var noAnimation = L.MarkerClusterGroup.prototype._noAnimation;
+
+			// MCG non-animated methods.
+			expect(group._animationStart).to.be(noAnimation._animationStart);
+			expect(group._animationZoomIn).to.be(noAnimation._animationZoomIn);
+			expect(group._animationZoomOut).to.be(noAnimation._animationZoomOut);
+			expect(group._animationAddLayer).to.be(noAnimation._animationAddLayer);
+
+			// MarkerCluster spiderfy non-animated methods
+			var cluster = group._topClusterLevel;
+
+			noAnimation = L.MarkerClusterNonAnimated.prototype;
+
+			expect(cluster._animationSpiderfy).to.be(noAnimation._animationSpiderfy);
+			expect(cluster._animationUnspiderfy).to.be(noAnimation._animationUnspiderfy);
+
+		},
+
+		function () {
+			// Restore previous setting so that next tests are unaffected.
+			L.DomUtil.TRANSITION = previousTransitionSetting;
+		}
+	);
 
 
 	/////////////////////////////
