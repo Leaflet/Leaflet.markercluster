@@ -37,7 +37,11 @@ By default the Clusterer enables some nice defaults for you:
 
 You can disable any of these as you want in the options when you create the MarkerClusterGroup:
 ```javascript
-var markers = L.markerClusterGroup({ spiderfyOnMaxZoom: false, showCoverageOnHover: false, zoomToBoundsOnClick: false });
+var markers = L.markerClusterGroup({
+	spiderfyOnMaxZoom: false,
+	showCoverageOnHover: false,
+	zoomToBoundsOnClick: false
+});
 ```
 
 ### Customising the Clustered Markers
@@ -61,6 +65,7 @@ Enabled by default (boolean options):
 * **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
 * **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are physically located at the same latitude and longitude.*)
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
+* **chunkedLoading**: When using addLayers, split the processing in small intervals so that the page does not freeze. See also options chunkInterval, chunkDelay and chunkProgress below.
 
 Other options
 * **animateAddingMarkers**: If set to true then adding individual markers to the MarkerClusterGroup after it has been added to the map will add the marker and animate it in to the cluster. Defaults to false as this gives better performance when bulk adding markers. addLayers does not support this, only addLayer with individual Markers.
@@ -70,6 +75,12 @@ Other options
 * **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster
 * **spiderfyDistanceMultiplier**: Increase from 1 to increase the distance away from the center that spiderfied markers are placed. Use if you are using big marker icons (Default:1)
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
+* **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
+* **chunkDelay**: Time delay (in ms) between consecutive periods of processing for addLayers. Default to 50ms.
+* **chunkProgress**: Callback function that is called at the end of each chunkInterval. Typically used to implement a progress indicator, e.g. [code in RealWorld 50k](https://github.com/Leaflet/Leaflet.markercluster/blob/master/example/marker-clustering-realworld.50000.html#L33-L49). Defaults to null. Arguments:
+  1. Number of processed markers
+  2. Total number of markers being added
+  3. Elapsed time (in ms)
 
 ## Events
 If you register for click, mouseover, etc events are just related to Markers in the cluster.
@@ -169,9 +180,9 @@ removeLayers(layerArray): Removes the markers in the given array from the Marker
 ````
 
 ## Handling LOTS of markers
-The Clusterer can handle 10000 or even 50000 markers (in chrome). IE9 has some issues with 50000.
-[realworld 10000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.10000.html)
-[realworld 50000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)
+The Clusterer can handle 10,000 or even 50,000 markers (in chrome). IE9 has some issues with 50,000.
+[realworld 10,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.10000.html)
+[realworld 50,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)
 Performance optimizations could be done so these are handled more gracefully (Running the initial clustering over multiple JS calls rather than locking the browser for a long time)
 
 ### License
