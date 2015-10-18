@@ -391,6 +391,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides LayerGroup.getLayer, WARNING: Really bad performance
 	getLayer: function (id) {
 		var result = null;
+		
+		id = parseInt(id, 10);
 
 		this.eachLayer(function (l) {
 			if (L.stamp(l) === id) {
