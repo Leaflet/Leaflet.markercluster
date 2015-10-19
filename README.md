@@ -87,7 +87,7 @@ Other options
 
 ## Events
 If you register for click, mouseover, etc events are just related to Markers in the cluster.
-To receive events for clusters listen to 'cluster' + 'eventIWant', ex: 'clusterclick', 'clustermouseover'.
+To receive events for clusters listen to 'cluster' + 'eventIWant', ex: 'clusterclick', 'clustermouseover', 'clustermouseout'.
 
 Set your callback up as follows to handle both cases:
 
