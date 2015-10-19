@@ -1,58 +1,24 @@
 ﻿describe('refreshClusters', function () {
 
 	/**
-	 * Wrapper for Mocha's `it` function, to avoid using `beforeEach` and `afterEach`
-	 * which create problems with PhantomJS when total number of tests (across all suites)
-	 * increases. Might be due to use of promises for which PhantomJS would perform badly?
-	 * NOTE: works only with synchronous code.
-	 * @param testDescription string
-	 * @param testInstructions function
-	 * @param testFinally function to be executed just before afterEach2, in the `finally` block.
+	 * Avoid as much as possible creating and destroying objects for each test.
+	 * Instead, try re-using them, except for the ones under test of course.
+	 * PhantomJS does not perform garbage collection for the life of the page,
+	 * i.e. during the entire test process (Karma runs all tests in a single page).
+	 * http://stackoverflow.com/questions/27239708/how-to-get-around-memory-error-with-karma-phantomjs
+	 *
+	 * The `beforeEach` and `afterEach do not seem to cause much issue.
+	 * => they can still be used to initialize some setup between each test.
+	 * Using them keeps a readable spec/index.
+	 *
+	 * But refrain from re-creating div and map every time. Re-use those objects.
 	 */
-	function it2(testDescription, testInstructions, testFinally) {
-
-		it(testDescription, function () {
-
-			// Before each test.
-			if (typeof beforeEach2 === "function") {
-				beforeEach2();
-			}
-
-			try {
-
-				// Perform the actual test instructions.
-				testInstructions();
-
-			} catch (e) {
-
-				// Re-throw the exception so that Mocha sees the failed test.
-				throw e;
-
-			} finally {
-
-				// If specific final instructions are provided.
-				if (typeof testFinally === "function") {
-					testFinally();
-				}
-
-				// After each test.
-				if (typeof afterEach2 === "function") {
-					afterEach2();
-				}
-
-			}
-		});
-	}
-
 
 	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
 
-	/**
-	 * Instructions to be executed before each test called with `it2`.
-	 */
-	function beforeEach2() {
+	beforeEach(function () {
 
 		clock = sinon.useFakeTimers();
 
@@ -64,12 +30,9 @@
 			[-10, -10]
 		]))
 
-	}
+	});
 
-	/**
-	 * Instructions to be executed after each test called with `it2`.
-	 */
-	function afterEach2() {
+	afterEach(function () {
 
 		if (group instanceof L.MarkerClusterGroup) {
 			group.removeLayers(group.getLayers());
@@ -82,12 +45,14 @@
 
 		clock.restore();
 		clock = null;
-	}
+
+	});
 
 
 	/////////////////////////////
 	// PREPARATION CODE
 	/////////////////////////////
+
 
 	var div, map, group, clock;
 
@@ -128,7 +93,7 @@
 	// TESTS
 	/////////////////////////////
 
-	it2('flags all non-visible parent clusters of a given marker', function () {
+	it('flags all non-visible parent clusters of a given marker', function () {
 
 		group = L.markerClusterGroup().addTo(map);
 
@@ -171,7 +136,7 @@
 
 	});
 
-	it2('re-draws visible clusters', function () {
+	it('re-draws visible clusters', function () {
 
 		group = L.markerClusterGroup({
 			iconCreateFunction: function (cluster) {
@@ -220,7 +185,7 @@
 
 	});
 
-	it2('re-draws markers in singleMarkerMode', function () {
+	it('re-draws markers in singleMarkerMode', function () {
 
 		group = L.markerClusterGroup({
 			singleMarkerMode: true,
@@ -334,7 +299,7 @@
 		// Ready to refresh clusters with method of choice and assess result.
 	}
 
-	it2('does not flag clusters of other markers', function () {
+	it('does not flag clusters of other markers', function () {
 
 		init3clusterBranches();
 
@@ -355,7 +320,7 @@
 
 	});
 
-	it2('processes itself when no argument is passed', function () {
+	it('processes itself when no argument is passed', function () {
 
 		init3clusterBranches();
 
@@ -375,7 +340,7 @@
 
 	});
 
-	it2('accepts an array of markers', function () {
+	it('accepts an array of markers', function () {
 
 		init3clusterBranches();
 
@@ -397,7 +362,7 @@
 
 	});
 
-	it2('accepts a mapping of markers', function () {
+	it('accepts a mapping of markers', function () {
 
 		init3clusterBranches();
 
@@ -421,7 +386,7 @@
 
 	});
 
-	it2('accepts an L.LayerGroup', function () {
+	it('accepts an L.LayerGroup', function () {
 
 		init3clusterBranches();
 
@@ -444,7 +409,7 @@
 
 	});
 
-	it2('accepts an L.MarkerCluster', function () {
+	it('accepts an L.MarkerCluster', function () {
 
 		init3clusterBranches();
 
