@@ -65,7 +65,7 @@ Check out the [custom example](http://leaflet.github.com/Leaflet.markercluster/e
 If you need to update the clusters icon (e.g. they are based on markers real-time data), use the method [refreshClusters()](#refreshing-the-clusters-icon).
 
 ### All Options
-#### Enabled by default (boolean options):
+#### Enabled by default (boolean options)
 * **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
 * **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
 * **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are physically located at the same latitude and longitude.*)
@@ -77,12 +77,12 @@ If you need to update the clusters icon (e.g. they are based on markers real-tim
 * **disableClusteringAtZoom**: If set, at this zoom level and below markers will not be clustered. This defaults to disabled. [See Example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld-maxzoom.388.html)
 * **maxClusterRadius**: The maximum radius that a cluster will cover from the central marker (in pixels). Default 80. Decreasing will make more, smaller clusters. You can also use a function that accepts the current map zoom and returns the maximum cluster radius in pixels.
 * **polygonOptions**: Options to pass when creating the L.Polygon(points, options) to show the bounds of a cluster. Defaults to empty, which lets Leaflet use the [default Path options](http://leafletjs.com/reference.html#path-options).
-* **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster. Note: the markers are not replaced by cluster objects, only their icon is replaced. Hence they still react to normal events, and option disableClusteringAtZoom does not restore their previous icon (see [#391](https://github.com/Leaflet/Leaflet.markercluster/issues/391)).
+* **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster. Note: the markers are not replaced by cluster objects, only their icon is replaced. Hence they still react to normal events, and option `disableClusteringAtZoom` does not restore their previous icon (see [#391](https://github.com/Leaflet/Leaflet.markercluster/issues/391)).
 * **spiderLegPolylineOptions**: Allows you to specify [PolylineOptions](http://leafletjs.com/reference.html#polyline-options) to style spider legs. By default, they are `{ weight: 1.5, color: '#222' }`.
 * **spiderfyDistanceMultiplier**: Increase from 1 to increase the distance away from the center that spiderfied markers are placed. Use if you are using big marker icons (Default: 1).
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
 
-#### Chunked addLayers
+#### Chunked addLayers options
 Options for the [addLayer**s**](#bulk-adding-and-removing-markers) method.
 * **chunkedLoading**: Boolean to split the addLayer**s** processing in to small intervals so that the page does not freeze.
 * **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
@@ -94,7 +94,7 @@ Options for the [addLayer**s**](#bulk-adding-and-removing-markers) method.
 
 ## Events
 Leaflet events like `click`, `mouseover`, etc. are just related to _Markers_ in the cluster.
-To receive events for clusters, listen to `'cluster' + 'eventId'`, ex: `clusterclick`, `clustermouseover`, `clustermouseout`.
+To receive events for clusters, listen to `'cluster' + '<eventName>'`, ex: `clusterclick`, `clustermouseover`, `clustermouseout`.
 
 Set your callback up as follows to handle both cases:
 
@@ -132,6 +132,7 @@ This will return null if the marker and its parent clusters are not visible curr
 ```javascript
 var visibleOne = markerClusterGroup.getVisibleParent(myMarker);
 console.log(visibleOne.getLatLng());
+```
 
 #### Refreshing the clusters icon
 If you have [customized](#customising-the-clustered-markers) the clusters icon to use some data from the contained markers, and later that data changes, use this method to force a refresh of the cluster icons.
@@ -164,8 +165,8 @@ myMarker.refreshIconOptions(optionsMap, true);
 ```
 
 #### Other Group Methods
-* hasLayer(layer): Returns true if the given layer (marker) is in the MarkerClusterGroup.
-* zoomToShowLayer(layer, callback): Zooms to show the given marker (spiderfying if required), calls the callback when the marker is visible on the map.
+* **hasLayer**(layer): Returns true if the given layer (marker) is in the MarkerClusterGroup.
+* **zoomToShowLayer**(layer, callback): Zooms to show the given marker (spiderfying if required), calls the callback when the marker is visible on the map.
 
 ### Clusters methods
 The following methods can be used with clusters (not the group). They are typically used for event handling.
