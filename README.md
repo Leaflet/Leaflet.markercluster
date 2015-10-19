@@ -3,7 +3,9 @@ Leaflet.markercluster
 
 Provides Beautiful Animated Marker Clustering functionality for [Leaflet](http://leafletjs.com), a JS library for interactive maps.
 
-*Requires Leaflet 0.7.0 or newer.*
+*Requires Leaflet 0.7.x.*
+
+*For Leaflet 1.0 use the [leaflet-master branch](https://github.com/Leaflet/Leaflet.markercluster/tree/leaflet-master)*
 
 For a Leaflet 0.5 compatible version, [Download b128e950](https://github.com/Leaflet/Leaflet.markercluster/archive/b128e950d8f5d7da5b60bd0aa9a88f6d3dd17c98.zip)<br>
 For a Leaflet 0.4 compatible version, [Download the 0.2 release](https://github.com/Leaflet/Leaflet.markercluster/archive/0.2.zip)
@@ -60,6 +62,8 @@ var markers = L.markerClusterGroup({
 ```
 Check out the [custom example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-custom.html) for an example of this.
 
+If you need to update the clusters icon (e.g. they are based on markers real-time data), use the method [refreshClusters()](#refreshing-the-clusters-icon).
+
 ### All Options
 #### Enabled by default (boolean options):
 * **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
@@ -79,7 +83,7 @@ Check out the [custom example](http://leaflet.github.com/Leaflet.markercluster/e
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
 
 #### Chunked addLayers
-Options for the [addLayer**s**](https://github.com/Leaflet/Leaflet.markercluster#bulk-adding-and-removing-markers) method.
+Options for the [addLayer**s**](#bulk-adding-and-removing-markers) method.
 * **chunkedLoading**: Boolean to split the addLayer**s** processing in to small intervals so that the page does not freeze.
 * **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
 * **chunkDelay**: Time delay (in ms) between consecutive periods of processing for addLayers. Default to 50ms.
@@ -89,8 +93,8 @@ Options for the [addLayer**s**](https://github.com/Leaflet/Leaflet.markercluster
   3. Elapsed time (in ms)
 
 ## Events
-If you register for click, mouseover, etc events are just related to Markers in the cluster.
-To receive events for clusters listen to 'cluster' + 'eventIWant', ex: 'clusterclick', 'clustermouseover', 'clustermouseout'.
+Leaflet events like `click`, `mouseover`, etc. are just related to _Markers_ in the cluster.
+To receive events for clusters, listen to `'cluster' + 'eventId'`, ex: `clusterclick`, `clustermouseover`, `clustermouseout`.
 
 Set your callback up as follows to handle both cases:
 
@@ -100,6 +104,7 @@ markers.on('click', function (a) {
 });
 
 markers.on('clusterclick', function (a) {
+	// a.layer is actually a cluster
 	console.log('cluster ' + a.layer.getAllChildMarkers().length);
 });
 ```
@@ -143,7 +148,7 @@ If you have [customized](#customising-the-clustered-markers) the clusters icon t
 You can use the method:
 - without arguments to force all cluster icons in the Marker Cluster Group to be re-drawn.
 - with an array or a mapping of markers to force only their parent clusters to be re-drawn.
-- with an L.LayerGroup. The method will look for all markers in these objects. Make sure they contain only markers which are also within this Marker Cluster Group.
+- with an L.LayerGroup. The method will look for all markers in it. Make sure it contains only markers which are also within this Marker Cluster Group.
 - with a single marker.
 ```javascript
 markers.refreshClusters();
@@ -169,12 +174,12 @@ myMarker.refreshIconOptions(optionsMap, true);
 ```
 
 ### Adding and removing Markers
-addLayer, removeLayer and clearLayers are supported and they should work for most uses.
+`addLayer`, `removeLayer` and `clearLayers` are supported and they should work for most uses.
 
 ### Bulk adding and removing Markers
-addLayers and removeLayers are bulk methods for adding and removing markers and should be favoured over the single versions when doing bulk addition/removal of markers. Each takes an array of markers. You can use [dedicated options](#chunked-addLayers) to fine-tune the behaviour of addLayers.
+`addLayers` and `removeLayers` are bulk methods for adding and removing markers and should be favoured over the single versions when doing bulk addition/removal of markers. Each takes an array of markers. You can use [dedicated options](#chunked-addLayers) to fine-tune the behaviour of `addLayers`.
 
-If you are removing a lot of markers it will almost definitely be better to call clearLayers then call addLayers to add the markers you don't want to remove back in. See [#59](https://github.com/Leaflet/Leaflet.markercluster/issues/59#issuecomment-9320628) for details.
+If you are removing a lot of markers it will almost definitely be better to call `clearLayers` then call `addLayers` to add the markers you don't want to remove back in. See [#59](https://github.com/Leaflet/Leaflet.markercluster/issues/59#issuecomment-9320628) for details.
 
 ### Other Methods
 ````
@@ -188,7 +193,8 @@ removeLayers(layerArray): Removes the markers in the given array from the Marker
 The Clusterer can handle 10,000 or even 50,000 markers (in chrome). IE9 has some issues with 50,000.
 - [realworld 10,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.10000.html)
 - [realworld 50,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)
-Note: these two example use the chunkedLoading option set to true in order to avoid locking the browser for a long time.
+
+Note: these two example use the `chunkedLoading` option set to true in order to avoid locking the browser for a long time.
 
 ## License
 
