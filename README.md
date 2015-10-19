@@ -27,13 +27,13 @@ markers.addLayer(L.marker(getRandomLatLng(map)));
 map.addLayer(markers);
 ```
 
+## Options
 ### Defaults
 By default the Clusterer enables some nice defaults for you:
 * **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
 * **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
 * **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are physically located at the same latitude and longitude.*)
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
-* **chunkedLoading**: When using addLayers, split the processing in small intervals so that the page does not freeze.
 * **spiderLegPolylineOptions**: Allows you to specify [PolylineOptions](http://leafletjs.com/reference.html#polyline-options) to style spider legs. By default, they are `{ weight: 1.5, color: '#222' }`.
 
 You can disable any of these as you want in the options when you create the MarkerClusterGroup:
@@ -61,23 +61,26 @@ var markers = L.markerClusterGroup({
 Check out the [custom example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-custom.html) for an example of this.
 
 ### All Options
-Enabled by default (boolean options):
+#### Enabled by default (boolean options):
 * **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
 * **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
 * **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are physically located at the same latitude and longitude.*)
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
 * **animate**: Smoothly split / merge cluster children when zooming and spiderfying. If `L.DomUtil.TRANSITION` is false, this option has no effect (no animation is possible).
 
-Other options
+#### Other options
 * **animateAddingMarkers**: If set to true (and `animate` option is also true) then adding individual markers to the MarkerClusterGroup after it has been added to the map will add the marker and animate it into the cluster. Defaults to false as this gives better performance when bulk adding markers. addLayers does not support this, only addLayer with individual Markers.
 * **disableClusteringAtZoom**: If set, at this zoom level and below markers will not be clustered. This defaults to disabled. [See Example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld-maxzoom.388.html)
-* **chunkedLoading**: When using addLayers, split the processing in small intervals so that the page does not freeze. See also options chunkInterval, chunkDelay and chunkProgress below.
 * **maxClusterRadius**: The maximum radius that a cluster will cover from the central marker (in pixels). Default 80. Decreasing will make more, smaller clusters. You can also use a function that accepts the current map zoom and returns the maximum cluster radius in pixels.
 * **polygonOptions**: Options to pass when creating the L.Polygon(points, options) to show the bounds of a cluster. Defaults to empty, which lets Leaflet use the [default Path options](http://leafletjs.com/reference.html#path-options).
-* **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster.
+* **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster. Note: the markers are not replaced by cluster objects, only their icon is replaced. Hence they still react to normal events, and option disableClusteringAtZoom does not restore their previous icon (see [#391](https://github.com/Leaflet/Leaflet.markercluster/issues/391)).
 * **spiderLegPolylineOptions**: Allows you to specify [PolylineOptions](http://leafletjs.com/reference.html#polyline-options) to style spider legs. By default, they are `{ weight: 1.5, color: '#222' }`.
 * **spiderfyDistanceMultiplier**: Increase from 1 to increase the distance away from the center that spiderfied markers are placed. Use if you are using big marker icons (Default: 1).
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
+
+#### Chunked addLayers
+Options for the [addLayer**s**](https://github.com/Leaflet/Leaflet.markercluster#bulk-adding-and-removing-markers) method.
+* **chunkedLoading**: Boolean to split the addLayer**s** processing in to small intervals so that the page does not freeze.
 * **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
 * **chunkDelay**: Time delay (in ms) between consecutive periods of processing for addLayers. Default to 50ms.
 * **chunkProgress**: Callback function that is called at the end of each chunkInterval. Typically used to implement a progress indicator, e.g. [code in RealWorld 50k](https://github.com/Leaflet/Leaflet.markercluster/blob/master/example/marker-clustering-realworld.50000.html#L33-L49). Defaults to null. Arguments:
@@ -101,7 +104,7 @@ markers.on('clusterclick', function (a) {
 });
 ```
 
-#### Additional MarkerClusterGroup Events
+### Additional MarkerClusterGroup Events
 
 - **animationend**: Fires when marker clustering/unclustering animation has completed
 - **spiderfied**: Fires when overlapping markers get spiderified
@@ -140,14 +143,13 @@ If you have [customized](#customising-the-clustered-markers) the clusters icon t
 You can use the method:
 - without arguments to force all cluster icons in the Marker Cluster Group to be re-drawn.
 - with an array or a mapping of markers to force only their parent clusters to be re-drawn.
-- with an L.LayerGroup or L.MarkerCluster. The method will look for all markers in these objects. Make sure they contain only markers which are also within this Marker Cluster Group.
+- with an L.LayerGroup. The method will look for all markers in these objects. Make sure they contain only markers which are also within this Marker Cluster Group.
 - with a single marker.
 ```javascript
 markers.refreshClusters();
 markers.refreshClusters([myMarker0, myMarker33]);
 markers.refreshClusters({id_0: myMarker0, id_any: myMarker33});
 markers.refreshClusters(myLayerGroup);
-markers.refreshClusters(myMarkerCluster);
 markers.refreshClusters(myMarker);
 ```
 
@@ -170,25 +172,25 @@ myMarker.refreshIconOptions(optionsMap, true);
 addLayer, removeLayer and clearLayers are supported and they should work for most uses.
 
 ### Bulk adding and removing Markers
-addLayers and removeLayers are bulk methods for adding and removing markers and should be favoured over the single versions when doing bulk addition/removal of markers. Each takes an array of markers
+addLayers and removeLayers are bulk methods for adding and removing markers and should be favoured over the single versions when doing bulk addition/removal of markers. Each takes an array of markers. You can use [dedicated options](#chunked-addLayers) to fine-tune the behaviour of addLayers.
 
 If you are removing a lot of markers it will almost definitely be better to call clearLayers then call addLayers to add the markers you don't want to remove back in. See [#59](https://github.com/Leaflet/Leaflet.markercluster/issues/59#issuecomment-9320628) for details.
 
 ### Other Methods
 ````
 hasLayer(layer): Returns true if the given layer (marker) is in the MarkerClusterGroup
-zoomToShowLayer(layer, callback): Zooms to show the given marker (spidifying if required), calls the callback when the marker is visible on the map
-addLayers(layerArray): Adds the markers in the given array from the MarkerClusterGroup in an efficent bulk method.
-removeLayers(layerArray): Removes the markers in the given array from the MarkerClusterGroup in an efficent bulk method.
+zoomToShowLayer(layer, callback): Zooms to show the given marker (spiderfying if required), calls the callback when the marker is visible on the map
+addLayers(layerArray): Adds the markers in the given array from the MarkerClusterGroup in an efficient bulk method.
+removeLayers(layerArray): Removes the markers in the given array from the MarkerClusterGroup in an efficient bulk method.
 ````
 
 ## Handling LOTS of markers
 The Clusterer can handle 10,000 or even 50,000 markers (in chrome). IE9 has some issues with 50,000.
-[realworld 10,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.10000.html)
-[realworld 50,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)
-Performance optimizations could be done so these are handled more gracefully (Running the initial clustering over multiple JS calls rather than locking the browser for a long time)
+- [realworld 10,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.10000.html)
+- [realworld 50,000 example](http://leaflet.github.com/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)
+Note: these two example use the chunkedLoading option set to true in order to avoid locking the browser for a long time.
 
-### License
+## License
 
 Leaflet.markercluster is free software, and may be redistributed under the MIT-LICENSE.
 
