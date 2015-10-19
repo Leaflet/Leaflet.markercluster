@@ -38,10 +38,10 @@ L.MarkerClusterGroup.include({
 	 * @private
 	 */
 	_flagParentsIconsNeedUpdate: function (layers) {
-		var parent;
+		var parent, id;
 
 		// Assumes layers is an Array or an Object whose prototype is non-enumerable.
-		for (var id in layers) {
+		for (id in layers) {
 			// Flag parent clusters' icon as "dirty", all the way up.
 			// Dumb process that flags multiple times upper parents, but still
 			// much more efficient than trying to be smart and make short lists,
@@ -51,6 +51,17 @@ L.MarkerClusterGroup.include({
 			while (parent) {
 				parent._iconNeedsUpdate = true;
 				parent = parent.__parent;
+			}
+		}
+
+		// In case of singleMarkerMode, also re-draw the markers.
+		if (this.options.singleMarkerMode) {
+			var layer;
+
+			for (id in layers) {
+				layer = layers[id];
+				// Need to re-create the icon first, then re-draw the marker.
+				layer.setIcon(this._overrideMarkerIcon(layer));
 			}
 		}
 	},

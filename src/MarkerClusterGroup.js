@@ -796,14 +796,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    markerPoint, z;
 
 		if (this.options.singleMarkerMode) {
-			layer.options.icon = this.options.iconCreateFunction({
-				getChildCount: function () {
-					return 1;
-				},
-				getAllChildMarkers: function () {
-					return [layer];
-				}
-			});
+			this._overrideMarkerIcon(layer);
 		}
 
 		//Find the lowest zoom level to slot this one in
@@ -923,6 +916,25 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		} else {
 			newCluster._updateIcon();
 		}
+	},
+
+	/**
+	 * Implements the singleMarkerMode option.
+	 * @param layer Marker to re-style using the Clusters iconCreateFunction.
+	 * @returns {L.Icon} The newly created icon.
+	 * @private
+	 */
+	_overrideMarkerIcon: function (layer) {
+		var icon = layer.options.icon = this.options.iconCreateFunction({
+			getChildCount: function () {
+				return 1;
+			},
+			getAllChildMarkers: function () {
+				return [layer];
+			}
+		});
+
+		return icon;
 	}
 });
 
