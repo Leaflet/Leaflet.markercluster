@@ -51,7 +51,7 @@ var markers = L.markerClusterGroup({
 As an option to MarkerClusterGroup you can provide your own function for creating the Icon for the clustered markers.
 The default implementation changes color at bounds of 10 and 100, but more advanced uses may require customising this.
 You do not need to include the .Default css if you go this way.
-You are passed a MarkerCluster object, you'll probably want to use `getChildCount()` or `getAllChildMarkers()` to work out the icon to show
+You are passed a MarkerCluster object, you'll probably want to use `getChildCount()` or `getAllChildMarkers()` to work out the icon to show.
 
 ```javascript
 var markers = L.markerClusterGroup({
@@ -196,6 +196,10 @@ markers.on('clusterclick', function (a) {
 	a.layer.zoomToBounds();
 });
 ```
+
+#### Other clusters methods
+* **getChildCount**: Returns the total number of markers contained within that cluster.
+* **getAllChildMarkers**: Returns the array of total markers contained within that cluster.
 
 ## Handling LOTS of markers
 The Clusterer can handle 10,000 or even 50,000 markers (in chrome). IE9 has some issues with 50,000.
