@@ -1,67 +1,33 @@
 describe('animate option', function () {
 
 	/**
-	 * Wrapper for Mocha's `it` function, to avoid using `beforeEach` and `afterEach`
-	 * which create problems with PhantomJS when total number of tests (across all suites)
-	 * increases. Might be due to use of promises for which PhantomJS would performs badly?
-	 * NOTE: works only with synchronous code.
-	 * @param testDescription string
-	 * @param testInstructions function
-	 * @param testFinally function to be executed just before afterEach2, in the `finally` block.
+	 * Avoid as much as possible creating and destroying objects for each test.
+	 * Instead, try re-using them, except for the ones under test of course.
+	 * PhantomJS does not perform garbage collection for the life of the page,
+	 * i.e. during the entire test process (Karma runs all tests in a single page).
+	 * http://stackoverflow.com/questions/27239708/how-to-get-around-memory-error-with-karma-phantomjs
+	 *
+	 * The `beforeEach` and `afterEach do not seem to cause much issue.
+	 * => they can still be used to initialize some setup between each test.
+	 * Using them keeps a readable spec/index.
+	 *
+	 * But refrain from re-creating div and map every time. Re-use those objects.
 	 */
-	function it2(testDescription, testInstructions, testFinally) {
-
-		it(testDescription, function () {
-
-			// Before each test.
-			if (typeof beforeEach2 === "function") {
-				beforeEach2();
-			}
-
-			try {
-
-				// Perform the actual test instructions.
-				testInstructions();
-
-			} catch (e) {
-
-				// Re-throw the exception so that Mocha sees the failed test.
-				throw e;
-
-			} finally {
-
-				// If specific final instructions are provided.
-				if (typeof testFinally === "function") {
-					testFinally();
-				}
-
-				// After each test.
-				if (typeof afterEach2 === "function") {
-					afterEach2();
-				}
-
-			}
-		});
-	}
-
 
 	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
 
-	/**
-	 * Instructions to be executed before each test called with `it2`.
-	 */
-	function beforeEach2() {
+	beforeEach(function () {
 
-		// Nothing for this test suite.
+		previousTransitionSetting = L.DomUtil.TRANSITION;
 
-	}
+	});
 
-	/**
-	 * Instructions to be executed after each test called with `it2`.
-	 */
-	function afterEach2() {
+	afterEach(function () {
+
+		// Restore previous setting so that next tests are unaffected.
+		L.DomUtil.TRANSITION = previousTransitionSetting;
 
 		if (group instanceof L.MarkerClusterGroup) {
 			group.removeLayers(group.getLayers());
@@ -70,7 +36,8 @@ describe('animate option', function () {
 
 		// Throw away group as it can be assigned with different configurations between tests.
 		group = null;
-	}
+
+	});
 
 
 	/////////////////////////////
@@ -97,7 +64,7 @@ describe('animate option', function () {
 	// TESTS
 	/////////////////////////////
 
-	it2('hooks animated methods version by default', function () {
+	it('hooks animated methods version by default', function () {
 
 		// Need to add to map so that we have the top cluster level created.
 		group = L.markerClusterGroup().addTo(map);
@@ -120,7 +87,7 @@ describe('animate option', function () {
 
 	});
 
-	it2('hooks non-animated methods version when set to false', function () {
+	it('hooks non-animated methods version when set to false', function () {
 
 		// Need to add to map so that we have the top cluster level created.
 		group = L.markerClusterGroup({animate: false}).addTo(map);
@@ -143,41 +110,31 @@ describe('animate option', function () {
 
 	});
 
-	it2(
-		'always hooks non-animated methods version when L.DomUtil.TRANSITION is false',
+	it('always hooks non-animated methods version when L.DomUtil.TRANSITION is false', function () {
 
-		function () {
+		// Fool Leaflet, make it think the browser does not support transitions.
+		L.DomUtil.TRANSITION = false;
 
-			previousTransitionSetting = L.DomUtil.TRANSITION;
-			// Fool Leaflet, make it think the browser does not support transitions.
-			L.DomUtil.TRANSITION = false;
+		// Need to add to map so that we have the top cluster level created.
+		group = L.markerClusterGroup({animate: true}).addTo(map);
 
-			// Need to add to map so that we have the top cluster level created.
-			group = L.markerClusterGroup({animate: true}).addTo(map);
+		var noAnimation = L.MarkerClusterGroup.prototype._noAnimation;
 
-			var noAnimation = L.MarkerClusterGroup.prototype._noAnimation;
+		// MCG non-animated methods.
+		expect(group._animationStart).to.be(noAnimation._animationStart);
+		expect(group._animationZoomIn).to.be(noAnimation._animationZoomIn);
+		expect(group._animationZoomOut).to.be(noAnimation._animationZoomOut);
+		expect(group._animationAddLayer).to.be(noAnimation._animationAddLayer);
 
-			// MCG non-animated methods.
-			expect(group._animationStart).to.be(noAnimation._animationStart);
-			expect(group._animationZoomIn).to.be(noAnimation._animationZoomIn);
-			expect(group._animationZoomOut).to.be(noAnimation._animationZoomOut);
-			expect(group._animationAddLayer).to.be(noAnimation._animationAddLayer);
+		// MarkerCluster spiderfy non-animated methods
+		var cluster = group._topClusterLevel;
 
-			// MarkerCluster spiderfy non-animated methods
-			var cluster = group._topClusterLevel;
+		noAnimation = L.MarkerClusterNonAnimated.prototype;
 
-			noAnimation = L.MarkerClusterNonAnimated.prototype;
+		expect(cluster._animationSpiderfy).to.be(noAnimation._animationSpiderfy);
+		expect(cluster._animationUnspiderfy).to.be(noAnimation._animationUnspiderfy);
 
-			expect(cluster._animationSpiderfy).to.be(noAnimation._animationSpiderfy);
-			expect(cluster._animationUnspiderfy).to.be(noAnimation._animationUnspiderfy);
-
-		},
-
-		function () {
-			// Restore previous setting so that next tests are unaffected.
-			L.DomUtil.TRANSITION = previousTransitionSetting;
-		}
-	);
+	});
 
 
 	/////////////////////////////
