@@ -105,7 +105,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._addLayer(layer, this._maxZoom);
 
-		// Re-calculate bounds must be done manually now.
+		// Refresh bounds and weighted positions.
 		this._topClusterLevel._recalculateBounds();
 
 		//Work out what is visible
@@ -163,7 +163,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Remove the marker from clusters
 		this._removeLayer(layer, true);
 
-		// Bounds and weighted position must be done manually now.
+		// Refresh bounds and weighted positions.
 		this._topClusterLevel._recalculateBounds();
 
 		if (this._featureGroup.hasLayer(layer)) {
@@ -314,7 +314,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			}
 		}
 
-		// Re-compute bounds and weighted positions.
+		// Refresh bounds and weighted positions.
 		this._topClusterLevel._recalculateBounds();
 
 		//Fix up the clusters and markers on the map
@@ -526,9 +526,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		l = this._needsClustering;
 		this._needsClustering = [];
 		this.addLayers(l);
-
-		// Re-compute bounds and weighted positions.
-		this._topClusterLevel._recalculateBounds();
 	},
 
 	//Overrides FeatureGroup.onRemove
@@ -641,7 +638,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					}
 				}
 			} else {
-				//cluster._recalculateBounds();
 				if (!dontUpdateMap || !cluster._icon) {
 					cluster._updateIcon();
 				}

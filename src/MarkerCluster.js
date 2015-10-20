@@ -142,12 +142,13 @@ L.MarkerCluster = L.Marker.extend({
 		    totalCount = this._childCount,
 		    i, child, childLatLng, childCount;
 
-		this._bounds = new L.LatLngBounds();
-
 		// Case where all markers are removed from the map and we are left with just an empty _topClusterLevel.
 		if (totalCount === 0) {
 			return;
 		}
+
+		// Reset rather than creating a new object, for performance.
+		this._bounds.reset();
 
 		// Child markers.
 		for (i = 0; i < markers.length; i++) {
@@ -378,26 +379,24 @@ L.MarkerCluster = L.Marker.extend({
 		}
 	},
 
-	/**
-	 * Runs a function recursively on every child cluster, then on THIS cluster.
-	 * @param runAtEveryLevel function to be called on each cluster. Takes as single argument the cluster to be processed.
-	 * @private
-	 */
-	_recursivelySimple: function (runAtEveryLevel) {
-		var childClusters = this._childClusters,
-		    i = 0;
-
-		for (; i < childClusters.length; i++) {
-			childClusters[i]._recursivelySimple(runAtEveryLevel);
-		}
-
-		return runAtEveryLevel(this);
-	},
-
-
 	//Returns true if we are the parent of only one cluster and that cluster is the same as us
 	_isSingleParent: function () {
 		//Don't need to check this._markers as the rest won't work if there are any
 		return this._childClusters.length > 0 && this._childClusters[0]._childCount === this._childCount;
 	}
 });
+
+/**
+ * Assigns impossible bounding values so that the next extend entirely determines the new bounds.
+ * This method avoids having to trash the previous object and to create a new one, which is much slower for this class.
+ */
+L.LatLngBounds.prototype.reset = function () {
+	if (this._southWest) {
+		this._southWest.lat = Infinity;
+		this._southWest.lng = Infinity;
+	}
+	if (this._northEast) {
+		this._northEast.lat = -Infinity;
+		this._northEast.lng = -Infinity;
+	}
+};
