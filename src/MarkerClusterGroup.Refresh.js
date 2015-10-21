@@ -85,8 +85,12 @@ L.MarkerClusterGroup.include({
 
 		for (id in layers) {
 			layer = layers[id];
-			// Need to re-create the icon first, then re-draw the marker.
-			layer.setIcon(this._overrideMarkerIcon(layer));
+
+			// Make sure we do not override markers that do not belong to THIS group.
+			if (this.hasLayer(layer)) {
+				// Need to re-create the icon first, then re-draw the marker.
+				layer.setIcon(this._overrideMarkerIcon(layer));
+			}
 		}
 	}
 });
