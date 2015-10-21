@@ -185,24 +185,27 @@
 
 	});
 
+	// Shared code for the 2 below tests
+	function iconCreateFunction(cluster) {
+		var markers = cluster.getAllChildMarkers();
+
+		for(var i in markers) {
+			if (markers[i].changed) {
+				return new L.DivIcon({
+					className: "changed"
+				});
+			}
+		}
+		return new L.DivIcon({
+			className: "original"
+		});
+	}
+
 	it('re-draws markers in singleMarkerMode', function () {
 
 		group = L.markerClusterGroup({
 			singleMarkerMode: true,
-			iconCreateFunction: function (cluster) {
-				var markers = cluster.getAllChildMarkers();
-
-				for(var i in markers) {
-					if (markers[i].changed) {
-						return new L.DivIcon({
-							className: "changed"
-						});
-					}
-				}
-				return new L.DivIcon({
-					className: "original"
-				});
-			}
+			iconCreateFunction: iconCreateFunction
 		}).addTo(map);
 
 		var marker1 = L.marker([1.5, 1.5]).addTo(group);
@@ -219,6 +222,42 @@
 
 		expect(marker1._icon.className).to.contain("changed");
 		expect(marker1._icon.className).to.not.contain("original");
+
+	});
+
+	it('does not modify markers that do not belong to the current group (in singleMarkerMode)', function () {
+
+		group = L.markerClusterGroup({
+			singleMarkerMode: true,
+			iconCreateFunction: iconCreateFunction
+		}).addTo(map);
+
+		var marker1 = L.marker([1.5, 1.5]).addTo(group),
+			marker2 = L.marker([1.5, 1.5], {
+				icon: iconCreateFunction({
+					getAllChildMarkers: function () {
+						return marker2;
+					}
+				})
+			}).addTo(map);
+
+		setMapView();
+
+		expect(marker1._icon.className).to.contain("original");
+		expect(marker2._icon.className).to.contain("original");
+
+		// Alter the markers.
+		marker1.changed = true;
+		marker2.changed = true;
+
+		// Then request clusters refresh.
+		group.refreshClusters([marker1, marker2]);
+
+		expect(marker1._icon.className).to.contain("changed");
+		expect(marker1._icon.className).to.not.contain("original");
+
+		expect(marker2._icon.className).to.contain("original");
+		expect(marker2._icon.className).to.not.contain("changed");
 
 	});
 
