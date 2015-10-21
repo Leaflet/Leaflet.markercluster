@@ -8,7 +8,8 @@
 
 L.MarkerClusterGroup.include({
 	/**
-	 * Updates all clusters (and their icon) which are parents of the given marker(s).
+	 * Updates the icon of all clusters which are parents of the given marker(s).
+	 * In singleMarkerMode, also updates the given marker(s) icon.
 	 * @param layers L.MarkerClusterGroup|L.LayerGroup|Array(L.Marker)|Map(L.Marker)|
 	 * L.MarkerCluster|L.Marker (optional) list of markers (or single marker) whose parent
 	 * clusters need to be updated. If not provided, retrieves all child markers of this.
@@ -29,6 +30,11 @@ L.MarkerClusterGroup.include({
 		this._flagParentsIconsNeedUpdate(layers);
 		this._refreshClustersIcons();
 
+		// In case of singleMarkerMode, also re-draw the markers.
+		if (this.options.singleMarkerMode) {
+			this._refreshSingleMarkerModeMarkers(layers);
+		}
+
 		return this;
 	},
 
@@ -38,10 +44,10 @@ L.MarkerClusterGroup.include({
 	 * @private
 	 */
 	_flagParentsIconsNeedUpdate: function (layers) {
-		var parent;
+		var id, parent;
 
 		// Assumes layers is an Array or an Object whose prototype is non-enumerable.
-		for (var id in layers) {
+		for (id in layers) {
 			// Flag parent clusters' icon as "dirty", all the way up.
 			// Dumb process that flags multiple times upper parents, but still
 			// much more efficient than trying to be smart and make short lists,
@@ -66,6 +72,26 @@ L.MarkerClusterGroup.include({
 				c._updateIcon();
 			}
 		});
+	},
+
+	/**
+	 * Re-draws the icon of the supplied markers.
+	 * To be used in singleMarkerMode only.
+	 * @param layers Array(L.Marker)|Map(L.Marker) list of markers.
+	 * @private
+	 */
+	_refreshSingleMarkerModeMarkers: function (layers) {
+		var id, layer;
+
+		for (id in layers) {
+			layer = layers[id];
+
+			// Make sure we do not override markers that do not belong to THIS group.
+			if (this.hasLayer(layer)) {
+				// Need to re-create the icon first, then re-draw the marker.
+				layer.setIcon(this._overrideMarkerIcon(layer));
+			}
+		}
 	}
 });
 

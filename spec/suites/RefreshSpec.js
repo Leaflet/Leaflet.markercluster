@@ -1,21 +1,60 @@
 ﻿describe('refreshClusters', function () {
-	var map, div, clock, group;
 
-	function getClusterAtZoom(marker, zoom) {
-		var parent = marker.__parent;
+	/**
+	 * Avoid as much as possible creating and destroying objects for each test.
+	 * Instead, try re-using them, except for the ones under test of course.
+	 * PhantomJS does not perform garbage collection for the life of the page,
+	 * i.e. during the entire test process (Karma runs all tests in a single page).
+	 * http://stackoverflow.com/questions/27239708/how-to-get-around-memory-error-with-karma-phantomjs
+	 *
+	 * The `beforeEach` and `afterEach do not seem to cause much issue.
+	 * => they can still be used to initialize some setup between each test.
+	 * Using them keeps a readable spec/index.
+	 *
+	 * But refrain from re-creating div and map every time. Re-use those objects.
+	 */
 
-		while (parent && parent._zoom !== zoom) {
-			parent = parent.__parent;
+	/////////////////////////////
+	// SETUP FOR EACH TEST
+	/////////////////////////////
+
+	beforeEach(function () {
+
+		clock = sinon.useFakeTimers();
+
+		// Look away to avoid refreshing the display while adding markers.
+		// By adding markers one by one (instead of using addLayers) we make
+		// sure we never start an async process.
+		map.fitBounds(new L.LatLngBounds([
+			[-11, -11],
+			[-10, -10]
+		]))
+
+	});
+
+	afterEach(function () {
+
+		if (group instanceof L.MarkerClusterGroup) {
+			group.removeLayers(group.getLayers());
+			map.removeLayer(group);
 		}
 
-		return parent;
-	}
+		// group must be thrown away since we are testing it with a potentially
+		// different configuration at each test.
+		group = null;
 
-	// It looks like using beforeEach and afterEach generates problems when
-	// total number (across all spec suites) of tests increases.
-	// It could be related to PhantomJS memory leak / bad garbage collection.
-	// This problem seems to affect only PhantomJS, no other browsers?
-	// So let's implement beforeEach and afterEach manually and try re-using objects.
+		clock.restore();
+		clock = null;
+
+	});
+
+
+	/////////////////////////////
+	// PREPARATION CODE
+	/////////////////////////////
+
+
+	var div, map, group, clock;
 
 	div = document.createElement('div');
 	div.style.width = '200px';
@@ -30,16 +69,14 @@
 		[2, 2]
 	]));
 
-	function init() {
-		clock = sinon.useFakeTimers();
+	function getClusterAtZoom(marker, zoom) {
+		var parent = marker.__parent;
 
-		// Look away to avoid refreshing the display while adding markers.
-		// By adding markers one by one (instead of using addLayers) we make
-		// sure we never start an async process.
-		map.fitBounds(new L.LatLngBounds([
-			[-11, -11],
-			[-10, -10]
-		]))
+		while (parent && parent._zoom !== zoom) {
+			parent = parent.__parent;
+		}
+
+		return parent;
 	}
 
 	function setMapView() {
@@ -51,21 +88,12 @@
 		]));
 	}
 
-	function reset() {
-		// Keep map and div setup to avoid potential memory leak.
-		map.removeLayer(group);
 
-		// group must be thrown away since we are testing it with a potentially
-		// different configuration at each test.
-		group = null;
-
-		clock.restore();
-		clock = null;
-	}
+	/////////////////////////////
+	// TESTS
+	/////////////////////////////
 
 	it('flags all non-visible parent clusters of a given marker', function () {
-
-		init();
 
 		group = L.markerClusterGroup().addTo(map);
 
@@ -106,13 +134,9 @@
 		// Also check that visible clusters are "un-flagged" since they should be re-drawn.
 		expect(marker1cluster5._iconNeedsUpdate).to.not.be.ok();
 
-		reset();
-
 	});
 
 	it('re-draws visible clusters', function () {
-
-		init();
 
 		group = L.markerClusterGroup({
 			iconCreateFunction: function (cluster) {
@@ -159,7 +183,81 @@
 		expect(marker1cluster9._icon.className).to.contain("changed");
 		expect(marker1cluster9._icon.className).to.not.contain("original");
 
-		reset();
+	});
+
+	// Shared code for the 2 below tests
+	function iconCreateFunction(cluster) {
+		var markers = cluster.getAllChildMarkers();
+
+		for(var i in markers) {
+			if (markers[i].changed) {
+				return new L.DivIcon({
+					className: "changed"
+				});
+			}
+		}
+		return new L.DivIcon({
+			className: "original"
+		});
+	}
+
+	it('re-draws markers in singleMarkerMode', function () {
+
+		group = L.markerClusterGroup({
+			singleMarkerMode: true,
+			iconCreateFunction: iconCreateFunction
+		}).addTo(map);
+
+		var marker1 = L.marker([1.5, 1.5]).addTo(group);
+
+		setMapView();
+
+		expect(marker1._icon.className).to.contain("original");
+
+		// Alter the marker.
+		marker1.changed = true;
+
+		// Then request clusters refresh.
+		group.refreshClusters(marker1);
+
+		expect(marker1._icon.className).to.contain("changed");
+		expect(marker1._icon.className).to.not.contain("original");
+
+	});
+
+	it('does not modify markers that do not belong to the current group (in singleMarkerMode)', function () {
+
+		group = L.markerClusterGroup({
+			singleMarkerMode: true,
+			iconCreateFunction: iconCreateFunction
+		}).addTo(map);
+
+		var marker1 = L.marker([1.5, 1.5]).addTo(group),
+			marker2 = L.marker([1.5, 1.5], {
+				icon: iconCreateFunction({
+					getAllChildMarkers: function () {
+						return marker2;
+					}
+				})
+			}).addTo(map);
+
+		setMapView();
+
+		expect(marker1._icon.className).to.contain("original");
+		expect(marker2._icon.className).to.contain("original");
+
+		// Alter the markers.
+		marker1.changed = true;
+		marker2.changed = true;
+
+		// Then request clusters refresh.
+		group.refreshClusters([marker1, marker2]);
+
+		expect(marker1._icon.className).to.contain("changed");
+		expect(marker1._icon.className).to.not.contain("original");
+
+		expect(marker2._icon.className).to.contain("original");
+		expect(marker2._icon.className).to.not.contain("changed");
 
 	});
 
@@ -182,8 +280,6 @@
 	    marker5cluster5;
 
 	function init3clusterBranches() {
-
-		init();
 
 		group = L.markerClusterGroup({
 			maxClusterRadius: 2 // Make sure we keep distinct clusters.
@@ -261,7 +357,6 @@
 		expect(marker5cluster8._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
 
-		reset();
 	});
 
 	it('processes itself when no argument is passed', function () {
@@ -281,8 +376,6 @@
 
 		expect(marker5cluster8._iconNeedsUpdate).to.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.be.ok();
-
-		reset();
 
 	});
 
@@ -305,8 +398,6 @@
 		// Clusters of marker3 and 4 shall not be flagged.
 		expect(marker3cluster8._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
-
-		reset();
 
 	});
 
@@ -332,8 +423,6 @@
 		expect(marker3cluster8._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 
-		reset();
-
 	});
 
 	it('accepts an L.LayerGroup', function () {
@@ -357,8 +446,6 @@
 		expect(marker3cluster8._iconNeedsUpdate).to.not.be.ok();
 		expect(marker3cluster3._iconNeedsUpdate).to.not.be.ok();
 
-		reset();
-
 	});
 
 	it('accepts an L.MarkerCluster', function () {
@@ -381,11 +468,13 @@
 		expect(marker5cluster8._iconNeedsUpdate).to.not.be.ok();
 		expect(marker5cluster3._iconNeedsUpdate).to.not.be.ok();
 
-		reset();
-
 	});
 
-	// Now we can throw away the map and div.
+
+	/////////////////////////////
+	// CLEAN UP CODE
+	/////////////////////////////
+
 	map.remove();
 	document.body.removeChild(div);
 
