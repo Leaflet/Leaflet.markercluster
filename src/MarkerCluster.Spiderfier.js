@@ -168,7 +168,7 @@ L.MarkerCluster.include({
 			thisLayerLatLng = this._latlng,
 			thisLayerPos = map.latLngToLayerPoint(thisLayerLatLng),
 			svgAnim = L.Path.SVG && this.SVG_ANIMATION,
-			legOptions = this._group.options.spiderLegPolylineOptions,
+			legOptions = L.extend({}, this._group.options.spiderLegPolylineOptions), // Copy the options so that we can modify them for animation.
 			finalLegOpacity = legOptions.opacity,
 			i, m, leg, legPath, legLength, newPos;
 
@@ -176,8 +176,16 @@ L.MarkerCluster.include({
 			finalLegOpacity = L.MarkerClusterGroup.prototype.options.spiderLegPolylineOptions.opacity;
 		}
 
-		// Add the class for CSS transitions.
-		legOptions.className = (legOptions.className || '') + ' leaflet-cluster-spider-leg';
+		if (svgAnim) {
+			// If the initial opacity of the spider leg is not 0 then it appears before the animation starts.
+			legOptions.opacity = 0;
+
+			// Add the class for CSS transitions.
+			legOptions.className = (legOptions.className || '') + ' leaflet-cluster-spider-leg';
+		} else {
+			// Make sure we have a defined opacity.
+			legOptions.opacity = finalLegOpacity;
+		}
 
 		// Add markers and spider legs to map, hidden at our center point.
 		// Traverse in ascending order to make sure that inner circleMarkers are on top of further legs. Normal markers are re-ordered by newPosition.
@@ -189,11 +197,6 @@ L.MarkerCluster.include({
 
 			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
 			leg = new L.Polyline([thisLayerLatLng, newPos], legOptions);
-
-			// If the initial opacity of the spider leg is not 0 then it appears before the animation starts.
-			if (svgAnim) {
-				leg.setStyle({opacity: 0});
-			}
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 
