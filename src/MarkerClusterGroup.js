@@ -32,7 +32,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		spiderfyDistanceMultiplier: 1,
 
 		// Make it possible to specify a polyline options on a spider leg
-		spiderLegPolylineOptions: { weight: 1.5, color: '#222' },
+		spiderLegPolylineOptions: { weight: 1.5, color: '#222', opacity: 0.5 },
 
 		// When bulk adding layers, adds markers in chunks. Means addLayers may not add all the layers in the call, others will be loaded during setTimeouts
 		chunkedLoading: false,
