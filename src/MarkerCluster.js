@@ -404,18 +404,3 @@ L.MarkerCluster = L.Marker.extend({
 		return this._childClusters.length > 0 && this._childClusters[0]._childCount === this._childCount;
 	}
 });
-
-/**
- * Assigns impossible bounding values so that the next extend entirely determines the new bounds.
- * This method avoids having to trash the previous object and to create a new one, which is much slower for this class.
- */
-L.LatLngBounds.prototype.reset = function () {
-	if (this._southWest) {
-		this._southWest.lat = Infinity;
-		this._southWest.lng = Infinity;
-	}
-	if (this._northEast) {
-		this._northEast.lat = -Infinity;
-		this._northEast.lng = -Infinity;
-	}
-};
