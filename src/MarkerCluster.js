@@ -134,6 +134,25 @@ L.MarkerCluster = L.Marker.extend({
 		}
 	},
 
+	/**
+	 * Assigns impossible bounding values so that the next extend entirely determines the new bounds.
+	 * This method avoids having to trash the previous L.LatLngBounds object and to create a new one, which is much slower for this class.
+	 * As long as the bounds are not extended, most other methods would probably fail, as they would with bounds initialized but not extended.
+	 * @private
+	 */
+	_resetBounds: function () {
+		var bounds = this._bounds;
+
+		if (bounds._southWest) {
+			bounds._southWest.lat = Infinity;
+			bounds._southWest.lng = Infinity;
+		}
+		if (bounds._northEast) {
+			bounds._northEast.lat = -Infinity;
+			bounds._northEast.lng = -Infinity;
+		}
+	},
+
 	_recalculateBounds: function () {
 		var markers = this._markers,
 		    childClusters = this._childClusters,
@@ -148,7 +167,7 @@ L.MarkerCluster = L.Marker.extend({
 		}
 
 		// Reset rather than creating a new object, for performance.
-		this._bounds.reset();
+		this._resetBounds();
 
 		// Child markers.
 		for (i = 0; i < markers.length; i++) {
