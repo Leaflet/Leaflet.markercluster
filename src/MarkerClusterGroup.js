@@ -105,6 +105,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._addLayer(layer, this._maxZoom);
 
+		// Refresh bounds and weighted positions.
+		this._topClusterLevel._recalculateBounds();
+
 		//Work out what is visible
 		var visibleLayer = layer,
 			currentZoom = this._map.getZoom();
@@ -159,6 +162,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Remove the marker from clusters
 		this._removeLayer(layer, true);
+
+		// Refresh bounds and weighted positions.
+		this._topClusterLevel._recalculateBounds();
 
 		if (this._featureGroup.hasLayer(layer)) {
 			this._featureGroup.removeLayer(layer);
@@ -222,7 +228,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					chunkProgress(offset, layersArray.length, (new Date()).getTime() - started);
 				}
 
+				// Completed processing all markers.
 				if (offset === layersArray.length) {
+
+					// Refresh bounds and weighted positions.
+					this._topClusterLevel._recalculateBounds();
+
 					//Update the icons of all those visible clusters that were affected
 					this._featureGroup.eachLayer(function (c) {
 						if (c instanceof L.MarkerCluster && c._iconNeedsUpdate) {
@@ -302,6 +313,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				}
 			}
 		}
+
+		// Refresh bounds and weighted positions.
+		this._topClusterLevel._recalculateBounds();
 
 		//Fix up the clusters and markers on the map
 		this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
@@ -558,6 +572,23 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 	},
 
+	/**
+	 * Removes a marker from all _gridUnclustered zoom levels, starting at the supplied zoom.
+	 * @param marker to be removed from _gridUnclustered.
+	 * @param z integer bottom start zoom level (included)
+	 * @private
+	 */
+	_removeFromGridUnclustered: function (marker, z) {
+		var map = this._map,
+		    gridUnclustered = this._gridUnclustered;
+
+		for (; z >= 0; z--) {
+			if (!gridUnclustered[z].removeObject(marker, map.project(marker.getLatLng(), z))) {
+				break;
+			}
+		}
+	},
+
 	//Internal function for removing a marker from everything.
 	//dontUpdateMap: set to true if you will handle updating the map manually (for bulk functions)
 	_removeLayer: function (marker, removeFromDistanceGrid, dontUpdateMap) {
@@ -568,11 +599,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Remove the marker from distance clusters it might be in
 		if (removeFromDistanceGrid) {
-			for (var z = this._maxZoom; z >= 0; z--) {
-				if (!gridUnclustered[z].removeObject(marker, map.project(marker.getLatLng(), z))) {
-					break;
-				}
-			}
+			this._removeFromGridUnclustered(marker, this._maxZoom);
 		}
 
 		//Work our way up the clusters removing them as we go if required
@@ -585,6 +612,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		while (cluster) {
 			cluster._childCount--;
+			cluster._boundsNeedUpdate = true;
 
 			if (cluster._zoom < 0) {
 				//Top level, do nothing
@@ -610,7 +638,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					}
 				}
 			} else {
-				cluster._recalculateBounds();
 				if (!dontUpdateMap || !cluster._icon) {
 					cluster._updateIcon();
 				}
@@ -835,11 +862,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				parent._addChild(lastParent);
 
 				//Remove closest from this zoom level and any above that it is in, replace with newCluster
-				for (z = zoom; z >= 0; z--) {
-					if (!gridUnclustered[z].removeObject(closest, this._map.project(closest.getLatLng(), z))) {
-						break;
-					}
-				}
+				this._removeFromGridUnclustered(closest, zoom);
 
 				return;
 			}
