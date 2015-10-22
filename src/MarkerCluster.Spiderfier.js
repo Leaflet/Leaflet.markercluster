@@ -128,6 +128,8 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 			newPos = map.layerPointToLatLng(positions[i]);
 			m = childMarkers[i];
 
+			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
+
 			m._preSpiderfyLatlng = m._latlng;
 			m.setLatLng(newPos);
 			if (m.setZIndexOffset) {
@@ -157,16 +159,42 @@ L.MarkerCluster.include({
 	}()),
 
 	_animationSpiderfy: function (childMarkers, positions) {
-		var me = this,
-			group = this._group,
+		var group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			thisLayerPos = map.latLngToLayerPoint(this._latlng),
-			i, m, leg, newPos;
+			thisLayerLatLng = this._latlng,
+			thisLayerPos = map.latLngToLayerPoint(thisLayerLatLng),
+			initialLegOpacity = L.Path.SVG ? 0 : 0.3,
+			legOptions = this._group.options.spiderLegPolylineOptions,
+			svg = L.Path.SVG && this.SVG_ANIMATION,
+			i, m, leg, legPath, legLength, newPos;
 
-		//Add markers to map hidden at our center point
+		if (legOptions.opacity === undefined) {
+			legOptions.opacity = initialLegOpacity;
+		}
+		// Add the class for CSS transitions.
+		legOptions.className = (legOptions.className || '') + ' leaflet-cluster-spider-leg';
+
+		//Add markers and spider legs to map hidden at our center point
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			m = childMarkers[i];
+
+			newPos = map.layerPointToLatLng(positions[i]);
+
+			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
+			leg = new L.Polyline([thisLayerLatLng, newPos], legOptions);
+			map.addLayer(leg);
+			m._spiderLeg = leg;
+
+			if (svg) {
+				legPath = leg._path;
+				legLength = legPath.getTotalLength() + 0.1; // Need a small extra length to avoid remaining dot in Firefox.
+				// Dash the leg so that dash covers the entire leg and so does the interval.
+				legPath.style.strokeDasharray = legLength + ' ' + legLength;
+				// Start with offset covering the entire leg, so that it is filled with interval only.
+				legPath.style.strokeDashoffset = legLength;
+				legPath.style.opacity = 0;
+			}
 
 			//If it is a marker, add it now and we'll animate it out
 			if (m.setOpacity) {
@@ -185,10 +213,7 @@ L.MarkerCluster.include({
 		group._forceLayout();
 		group._animationStart();
 
-		var initialLegOpacity = L.Path.SVG ? 0 : 0.3,
-			xmlns = L.Path.SVG_NS;
-
-
+		// Reveal markers and spider legs.
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			newPos = map.layerPointToLatLng(positions[i]);
 			m = childMarkers[i];
@@ -201,55 +226,20 @@ L.MarkerCluster.include({
 				m.clusterShow();
 			}
 
-
-			//Add Legs.
-			var legOptions = this._group.options.spiderLegPolylineOptions;
-			if (legOptions.opacity === undefined) {
-				legOptions.opacity = initialLegOpacity;
+			// Animate leg (animation is actually delegated to CSS transition).
+			if (svg) {
+				legPath = m._spiderLeg._path;
+				legPath.style.strokeDashoffset = 0;
+				legPath.style.opacity = 0.5;
 			}
-			leg = new L.Polyline([me._latlng, newPos], legOptions);
-			map.addLayer(leg);
-			m._spiderLeg = leg;
-
-			//Following animations don't work for canvas
-			if (!L.Path.SVG || !this.SVG_ANIMATION) {
-				continue;
-			}
-
-			//How this works:
-			//http://stackoverflow.com/questions/5924238/how-do-you-animate-an-svg-path-in-ios
-			//http://dev.opera.com/articles/view/advanced-svg-animation-techniques/
-
-			//Animate length
-			var length = leg._path.getTotalLength();
-			leg._path.setAttribute("stroke-dasharray", length + "," + length);
-
-			var anim = document.createElementNS(xmlns, "animate");
-			anim.setAttribute("attributeName", "stroke-dashoffset");
-			anim.setAttribute("begin", "indefinite");
-			anim.setAttribute("from", length);
-			anim.setAttribute("to", 0);
-			anim.setAttribute("dur", 0.25);
-			leg._path.appendChild(anim);
-			anim.beginElement();
-
-			//Animate opacity
-			anim = document.createElementNS(xmlns, "animate");
-			anim.setAttribute("attributeName", "stroke-opacity");
-			anim.setAttribute("attributeName", "stroke-opacity");
-			anim.setAttribute("begin", "indefinite");
-			anim.setAttribute("from", 0);
-			anim.setAttribute("to", 0.5);
-			anim.setAttribute("dur", 0.25);
-			leg._path.appendChild(anim);
-			anim.beginElement();
 		}
-		me.setOpacity(0.3);
+		this.setOpacity(0.3);
 
+		// No longer needed???
 		//Set the opacity of the spiderLegs back to their correct value
 		// The animations above override this until they complete.
 		// If the initial opacity of the spiderlegs isn't 0 then they appear before the animation starts.
-		if (L.Path.SVG) {
+		/*if (L.Path.SVG) {
 			this._group._forceLayout();
 
 			for (i = childMarkers.length - 1; i >= 0; i--) {
@@ -258,7 +248,7 @@ L.MarkerCluster.include({
 				m.options.opacity = 0.5;
 				m._path.setAttribute('stroke-opacity', 0.5);
 			}
-		}
+		}*/
 
 		setTimeout(function () {
 			group._animationEnd();
@@ -273,7 +263,7 @@ L.MarkerCluster.include({
 			thisLayerPos = zoomDetails ? map._latLngToNewLayerPoint(this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
 			childMarkers = this.getAllChildMarkers(),
 			svg = L.Path.SVG && this.SVG_ANIMATION,
-			m, i, a;
+			m, i, legPath, legLength;
 
 		group._animationStart();
 
@@ -298,20 +288,12 @@ L.MarkerCluster.include({
 				fg.removeLayer(m);
 			}
 
-			//Animate the spider legs back in
+			// Animate the spider leg back in (animation is actually delegated to CSS transition).
 			if (svg) {
-				a = m._spiderLeg._path.childNodes[0];
-				a.setAttribute('to', a.getAttribute('from'));
-				a.setAttribute('from', 0);
-				a.beginElement();
-
-				a = m._spiderLeg._path.childNodes[1];
-				a.setAttribute('from', 0.5);
-				a.setAttribute('to', 0);
-				a.setAttribute('stroke-opacity', 0);
-				a.beginElement();
-
-				m._spiderLeg._path.setAttribute('stroke-opacity', 0);
+				legPath = m._spiderLeg._path;
+				legLength = legPath.getTotalLength() + 0.1;
+				legPath.style.strokeDashoffset = legLength;
+				legPath.style.opacity = 0;
 			}
 		}
 
