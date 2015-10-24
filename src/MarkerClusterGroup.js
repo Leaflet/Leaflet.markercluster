@@ -503,6 +503,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this._generateInitialClusters();
 		}
 
+		this._maxLat = map.options.crs.projection.MAX_LATITUDE;
+
 		for (i = 0, l = this._needsRemoving.length; i < l; i++) {
 			layer = this._needsRemoving[i];
 			this._removeLayer(layer, true);
@@ -542,7 +544,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this._spiderfierOnRemove();
 		}
 
-
+		delete this._maxLat;
 
 		//Clean up all the layers we added to the map
 		this._hideCoverage();
@@ -920,10 +922,33 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		if (!this.options.removeOutsideVisibleBounds) {
 			return this._mapBoundsInfinite;
 		} else if (L.Browser.mobile) {
-			return this._map.getBounds();
+			return this._checkBounds(this._map.getBounds());
 		}
 
-		return this._map.getBounds().pad(1); // Padding expands the bounds by its own dimensions but scaled with the given factor.
+		return this._checkBounds(this._map.getBounds().pad(1)); // Padding expands the bounds by its own dimensions but scaled with the given factor.
+	},
+
+	/**
+	 * Expands the latitude to Infinity (or -Infinity) if the input bounds reach the map projection maximum defined latitude (in the case of Web/Spherical Mercator, it is 85.0511287798).
+	 * Otherwise, the removeOutsideVisibleBounds option will remove markers beyond that limit, whereas the same markers without this option (or outside MCG) will have their position
+	 * floored (ceiled) by the projection and rendered at that limit, making the user think MCG "eats" them and never displays them again.
+	 * @param bounds L.LatLngBounds
+	 * @returns {L.LatLngBounds}
+	 * @private
+	 */
+	_checkBounds: function (bounds) {
+		var maxLat = this._maxLat;
+
+		if (maxLat !== undefined) {
+			if (bounds.getNorth() >= maxLat) {
+				bounds._northEast.lat = Infinity;
+			}
+			if (bounds.getSouth() <= -maxLat) {
+				bounds._southWest.lat = -Infinity;
+			}
+		}
+
+		return bounds;
 	},
 
 	//Shared animation code

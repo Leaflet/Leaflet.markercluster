@@ -1,75 +1,44 @@
 describe('Option removeOutsideVisibleBounds', function () {
 
 	/**
-	 * Wrapper for Mocha's `it` function, to avoid using `beforeEach` and `afterEach`
-	 * which create problems with PhantomJS when total number of tests (across all suites)
-	 * increases. Might be due to use of promises for which PhantomJS performs badly?
-	 * @param testDescription string
-	 * @param testInstructions function
-	 * @param testFinally function to be executed just before afterEach2, in the `finally` block.
+	 * Avoid as much as possible creating and destroying objects for each test.
+	 * Instead, try re-using them, except for the ones under test of course.
+	 * PhantomJS does not perform garbage collection for the life of the page,
+	 * i.e. during the entire test process (Karma runs all tests in a single page).
+	 * http://stackoverflow.com/questions/27239708/how-to-get-around-memory-error-with-karma-phantomjs
+	 *
+	 * The `beforeEach` and `afterEach do not seem to cause much issue.
+	 * => they can still be used to initialize some setup between each test.
+	 * Using them keeps a readable spec/index.
+	 *
+	 * But refrain from re-creating div and map every time. Re-use those objects.
 	 */
-	function it2(testDescription, testInstructions, testFinally) {
-
-		it(testDescription, function () {
-
-			// Before each test.
-			if (typeof beforeEach2 === "function") {
-				beforeEach2();
-			}
-
-			try {
-
-				// Perform the actual test instructions.
-				testInstructions();
-
-			} catch (e) {
-
-				// Re-throw the exception so that Mocha sees the failed test.
-				throw e;
-
-			} finally {
-
-				// If specific final instructions are provided.
-				if (typeof testFinally === "function") {
-					testFinally();
-				}
-
-				// After each test.
-				if (typeof afterEach2 === "function") {
-					afterEach2();
-				}
-
-			}
-		});
-	}
-
 
 	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
 
-	/**
-	 * Instructions to be executed before each test called with `it2`.
-	 */
-	function beforeEach2() {
+	beforeEach(function () {
 
 		// Nothing for this test suite.
 
-	}
+	});
 
-	/**
-	 * Instructions to be executed after each test called with `it2`.
-	 */
-	function afterEach2() {
+	afterEach(function () {
+
+		// Restore the previous setting, so that even in case of test failure, next tests are not affected.
+		L.Browser.mobile = previousMobileSetting;
 
 		if (group instanceof L.MarkerClusterGroup) {
 			group.removeLayers(group.getLayers());
 			map.removeLayer(group);
 		}
 
-		// Throw away group as it can be assigned with different configurations between tests.
+		// group must be thrown away since we are testing it with a potentially
+		// different configuration at each test.
 		group = null;
-	}
+
+	});
 
 
 	/////////////////////////////
@@ -81,7 +50,9 @@ describe('Option removeOutsideVisibleBounds', function () {
 	    marker3 = L.marker([1.5, 1.5]), // In view port.
 	    marker4 = L.marker([1.5, 2.4]), // 1 screen width away.
 	    marker5 = L.marker([1.5, 3.4]), // 2 screens width away.
-	    div, map, group, previousMobileSetting;
+	    markers = [marker1, marker2, marker3, marker4, marker5],
+	    previousMobileSetting = L.Browser.mobile,
+	    div, map, group, i;
 
 	div = document.createElement('div');
 	div.style.width = '200px';
@@ -97,24 +68,17 @@ describe('Option removeOutsideVisibleBounds', function () {
 	]));
 
 	// Add all markers once to map then remove them immediately so that their icon is null (instead of undefined).
-	map.removeLayer(marker1.addTo(map));
-	map.removeLayer(marker2.addTo(map));
-	map.removeLayer(marker3.addTo(map));
-	map.removeLayer(marker4.addTo(map));
-	map.removeLayer(marker5.addTo(map));
+	for (i = 0; i < markers.length; i++) {
+		map.removeLayer(markers[i].addTo(map));
+	}
 
 
 	function prepareGroup() {
 
-		// Group should be assigned with a Marker Cluster Group before calling this function.
+		// "group" should be assigned with a Marker Cluster Group before calling this function.
 		group.addTo(map);
 
-		// Add markers 1 by 1 to make sure we do not create an async process.
-		marker1.addTo(group);
-		marker2.addTo(group);
-		marker3.addTo(group);
-		marker4.addTo(group);
-		marker5.addTo(group);
+		group.addLayers(markers);
 	}
 
 
@@ -122,7 +86,7 @@ describe('Option removeOutsideVisibleBounds', function () {
 	// TESTS
 	/////////////////////////////
 
-	it2('removes objects more than 1 screen away from view port by default', function () {
+	it('removes objects more than 1 screen away from view port by default', function () {
 
 		group = L.markerClusterGroup();
 
@@ -134,35 +98,24 @@ describe('Option removeOutsideVisibleBounds', function () {
 
 	});
 
-	it2(
-		'removes objects out of view port by default for mobile device',
+	it('removes objects out of view port by default for mobile device', function () {
 
-		function () {
+		// Fool Leaflet, make it thinks it runs on a mobile device.
+		L.Browser.mobile = true;
 
-			// Fool Leaflet, make it thinks it runs on a mobile device.
-			previousMobileSetting = L.Browser.mobile;
-			L.Browser.mobile = true;
+		group = L.markerClusterGroup();
 
-			group = L.markerClusterGroup();
+		prepareGroup();
 
-			prepareGroup();
+		expect(marker1._icon).to.be(null);
+		expect(marker2._icon).to.be(null);
+		expect(map._panes.markerPane.childNodes.length).to.be(1); // marker 3 only.
+		expect(marker4._icon).to.be(null);
+		expect(marker5._icon).to.be(null);
 
-			expect(marker1._icon).to.be(null);
-			expect(marker2._icon).to.be(null);
-			expect(map._panes.markerPane.childNodes.length).to.be(1); // marker 3 only.
-			expect(marker4._icon).to.be(null);
-			expect(marker5._icon).to.be(null);
+	});
 
-		},
-
-		// Extra final instruction to be called even on failure.
-		function () {
-			// Restore original setting, so that next tests are unaffected.
-			L.Browser.mobile = previousMobileSetting;
-		}
-	);
-
-	it2('leaves all objects on map when set to false', function () {
+	it('leaves all objects on map when set to false', function () {
 
 		group = L.markerClusterGroup({
 			removeOutsideVisibleBounds: false
@@ -171,6 +124,70 @@ describe('Option removeOutsideVisibleBounds', function () {
 		prepareGroup();
 
 		expect(map._panes.markerPane.childNodes.length).to.be(5); // All 5 markers.
+
+	});
+
+	// Following tests need markers at very high latitude.
+	// They test the _checkBounds method against the default Web/Spherical Mercator projection maximum latitude (85.0511287798).
+	function moveMarkersAndMapToMaxLat() {
+		var latLngs = [
+			[89, 0], // Impossible in real world, but nothing prevents the user from entering such latitude, and  Web/Spherical Mercator projection will still display it at 85.0511287798
+			[87.9, 0], // 2 "screen" heights away.
+			[85.0, 0], // In center of view.
+			[83.1, 0], // 1 "screen" height away.
+			[82.1, 0] // 2 "screens" height away.
+		];
+
+		for (i = 0; i < markers.length; i++) {
+			markers[i].setLatLng(latLngs[i]);
+			console.log(i + ": " + markers[i].getLatLng());
+		}
+
+		map.fitBounds([
+			[84, -1],
+			[86, 1] // The actual longitude span will be wider. '-8.7890625,83.64783722095373,8.7890625,85.3238789974019'
+		]);
+		// expanded visible bounds should then equal '-26.3671875,81.97179544450556,26.3671875,86.99992077385008'
+		// expanded visible bounds should then equal '-26.3671875,81.97179544450556,26.3671875,Infinity'
+	}
+
+	function checkProjection() {
+		expect(map.options.crs).to.equal(L.CRS.EPSG3857);
+		expect(L.CRS.EPSG3857.projection).to.equal(L.Projection.SphericalMercator);
+		expect(L.Projection.SphericalMercator.MAX_LATITUDE).to.be.a('number');
+	}
+
+	it('includes objects above the Web Mercator projection maximum limit by default', function () {
+
+		moveMarkersAndMapToMaxLat();
+
+		group = L.markerClusterGroup();
+
+		prepareGroup();
+
+		checkProjection();
+
+		console.log("Bounds: " + group._getExpandedVisibleBounds().toBBoxString());
+
+		expect(map._panes.markerPane.childNodes.length).to.be(5); // all 5 markers.
+
+	});
+
+	it('includes objects above the Web Mercator projection maximum limit for mobile device', function () {
+
+		// Fool Leaflet, make it thinks it runs on a mobile device.
+		L.Browser.mobile = true;
+
+		moveMarkersAndMapToMaxLat();
+
+		group = L.markerClusterGroup();
+
+		prepareGroup();
+
+		checkProjection();
+
+		expect(map._panes.markerPane.childNodes.length).to.be(4); // markers 1, 2, 3 and 4.
+		expect(marker5._icon).to.be(null);
 
 	});
 
