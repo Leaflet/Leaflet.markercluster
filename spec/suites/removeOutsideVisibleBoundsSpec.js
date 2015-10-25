@@ -129,7 +129,7 @@ describe('Option removeOutsideVisibleBounds', function () {
 
 
 	// Following tests need markers at very high latitude.
-	// They test the _checkBounds method against the default Web/Spherical Mercator projection maximum latitude (85.0511287798).
+	// They test the _checkBoundsMaxLat method against the default Web/Spherical Mercator projection maximum latitude (85.0511287798).
 	// The actual map view should be '-1.0986328125,84.92929204957956,1.0986328125,85.11983467698401'
 	// The expdanded bounds without correction should be '-3.2958984375,84.7387494221751,3.2958984375,85.31037730438847'
 	var latLngsMaxLatDefault = [

@@ -922,10 +922,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		if (!this.options.removeOutsideVisibleBounds) {
 			return this._mapBoundsInfinite;
 		} else if (L.Browser.mobile) {
-			return this._checkBounds(this._map.getBounds());
+			return this._checkBoundsMaxLat(this._map.getBounds());
 		}
 
-		return this._checkBounds(this._map.getBounds().pad(1)); // Padding expands the bounds by its own dimensions but scaled with the given factor.
+		return this._checkBoundsMaxLat(this._map.getBounds().pad(1)); // Padding expands the bounds by its own dimensions but scaled with the given factor.
 	},
 
 	/**
@@ -938,7 +938,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	 * @returns {L.LatLngBounds}
 	 * @private
 	 */
-	_checkBounds: function (bounds) {
+	_checkBoundsMaxLat: function (bounds) {
 		var maxLat = this._maxLat;
 
 		if (maxLat !== undefined) {
