@@ -929,9 +929,11 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	/**
-	 * Expands the latitude to Infinity (or -Infinity) if the input bounds reach the map projection maximum defined latitude (in the case of Web/Spherical Mercator, it is 85.0511287798).
-	 * Otherwise, the removeOutsideVisibleBounds option will remove markers beyond that limit, whereas the same markers without this option (or outside MCG) will have their position
-	 * floored (ceiled) by the projection and rendered at that limit, making the user think MCG "eats" them and never displays them again.
+	 * Expands the latitude to Infinity (or -Infinity) if the input bounds reach the map projection maximum defined latitude
+	 * (in the case of Web/Spherical Mercator, it is 85.0511287798 / see https://en.wikipedia.org/wiki/Web_Mercator#Formulas).
+	 * Otherwise, the removeOutsideVisibleBounds option will remove markers beyond that limit, whereas the same markers without
+	 * this option (or outside MCG) will have their position floored (ceiled) by the projection and rendered at that limit,
+	 * making the user think that MCG "eats" them and never displays them again.
 	 * @param bounds L.LatLngBounds
 	 * @returns {L.LatLngBounds}
 	 * @private

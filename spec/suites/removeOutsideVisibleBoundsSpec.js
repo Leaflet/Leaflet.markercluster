@@ -127,66 +127,136 @@ describe('Option removeOutsideVisibleBounds', function () {
 
 	});
 
+
 	// Following tests need markers at very high latitude.
 	// They test the _checkBounds method against the default Web/Spherical Mercator projection maximum latitude (85.0511287798).
-	function moveMarkersAndMapToMaxLat() {
-		var latLngs = [
-			[89, 0], // Impossible in real world, but nothing prevents the user from entering such latitude, and  Web/Spherical Mercator projection will still display it at 85.0511287798
-			[87.9, 0], // 2 "screen" heights away.
-			[85.0, 0], // In center of view.
-			[83.1, 0], // 1 "screen" height away.
-			[82.1, 0] // 2 "screens" height away.
-		];
+	// The actual map view should be '-1.0986328125,84.92929204957956,1.0986328125,85.11983467698401'
+	// The expdanded bounds without correction should be '-3.2958984375,84.7387494221751,3.2958984375,85.31037730438847'
+	var latLngsMaxLatDefault = [
+		[100, 3], // Impossible in real world, but nothing prevents the user from entering such latitude, and  Web/Spherical Mercator projection will still display it at 85.0511287798
+		[85.2, 1.5], // 1 "screen" heights away.
+		[85, 0], // In center of view.
+		[84.8, -1.5], // 1 "screen" height away.
+		[84.6, -3] // 2 "screens" height away.
+	];
 
+	function moveMarkersAndMapToMaxLat(latLngs, isSouth) {
 		for (i = 0; i < markers.length; i++) {
-			markers[i].setLatLng(latLngs[i]);
-			console.log(i + ": " + markers[i].getLatLng());
+			if (isSouth) {
+				markers[i].setLatLng([-latLngs[i][0], latLngs[i][1]]);
+			} else {
+				markers[i].setLatLng(latLngs[i]);
+			}
 		}
 
 		map.fitBounds([
-			[84, -1],
-			[86, 1] // The actual longitude span will be wider. '-8.7890625,83.64783722095373,8.7890625,85.3238789974019'
+			[isSouth ? -86 : 85, -1],
+			[isSouth ? -85 : 86, 1] // The actual map view longitude span will be wider. '-1.0986328125,84.92929204957956,1.0986328125,85.11983467698401'
 		]);
-		// expanded visible bounds should then equal '-26.3671875,81.97179544450556,26.3671875,86.99992077385008'
-		// expanded visible bounds should then equal '-26.3671875,81.97179544450556,26.3671875,Infinity'
 	}
 
-	function checkProjection() {
+	function checkProjection(latLngs) {
 		expect(map.options.crs).to.equal(L.CRS.EPSG3857);
 		expect(L.CRS.EPSG3857.projection).to.equal(L.Projection.SphericalMercator);
 		expect(L.Projection.SphericalMercator.MAX_LATITUDE).to.be.a('number');
+
+		var mapZoom = map.getZoom();
+
+		for (i = 0; i < markers.length; i++) {
+			markers[i].setLatLng(latLngs[i]);
+			try {
+				expect(markers[i].__parent._zoom).to.be.below(mapZoom);
+			} catch (e) {
+				console.log("Failed marker: " + (i + 1));
+				throw e;
+			}
+		}
 	}
 
 	it('includes objects above the Web Mercator projection maximum limit by default', function () {
 
-		moveMarkersAndMapToMaxLat();
+		moveMarkersAndMapToMaxLat(latLngsMaxLatDefault);
 
 		group = L.markerClusterGroup();
 
 		prepareGroup();
 
-		checkProjection();
+		checkProjection(latLngsMaxLatDefault);
 
-		console.log("Bounds: " + group._getExpandedVisibleBounds().toBBoxString());
-
-		expect(map._panes.markerPane.childNodes.length).to.be(5); // all 5 markers.
+		expect(map._panes.markerPane.childNodes.length).to.be(4); // Markers 1, 2, 3 and 4.
+		expect(marker5._icon).to.be(null);
 
 	});
+
+	it('includes objects below the Web Mercator projection minimum limit by default', function () {
+
+		moveMarkersAndMapToMaxLat(latLngsMaxLatDefault, true);
+
+		// Make sure we are really in Southern hemisphere.
+		expect(map.getBounds().getNorth()).to.be.below(-80);
+
+		group = L.markerClusterGroup();
+
+		prepareGroup();
+
+		checkProjection(latLngsMaxLatDefault);
+
+		expect(map._panes.markerPane.childNodes.length).to.be(4); // Markers 1, 2, 3 and 4.
+		expect(marker5._icon).to.be(null);
+
+	});
+
+
+	// The actual map view should be '-1.0986328125,84.92929204957956,1.0986328125,85.11983467698401'
+	var latLngsMaxLatMobile = [
+		[100, 1], // Impossible in real world, but nothing prevents the user from entering such latitude, and  Web/Spherical Mercator projection will still display it at 85.0511287798
+		[85.2, 0.5], // 1 "screen" heights away, but should be included by the correction.
+		[85, 0], // In center of view.
+		[84.9, -1], // 1 "screen" height away.
+		[84.8, -1.5] // 2 "screens" height away.
+	];
 
 	it('includes objects above the Web Mercator projection maximum limit for mobile device', function () {
 
 		// Fool Leaflet, make it thinks it runs on a mobile device.
 		L.Browser.mobile = true;
 
-		moveMarkersAndMapToMaxLat();
+		moveMarkersAndMapToMaxLat(latLngsMaxLatMobile);
 
-		group = L.markerClusterGroup();
+		group = L.markerClusterGroup({
+			maxClusterRadius: 10
+		});
 
 		prepareGroup();
 
-		checkProjection();
+		checkProjection(latLngsMaxLatMobile);
 
-		expect(map._panes.markerPane.childNodes.length).to.be(4); // markers 1, 2, 3 and 4.
+		expect(map._panes.markerPane.childNodes.length).to.be(3); // Markers 1, 2 and 3.
+		expect(marker4._icon).to.be(null);
+		expect(marker5._icon).to.be(null);
+
+	});
+
+	it('includes objects below the Web Mercator projection minimum limit for mobile device', function () {
+
+		// Fool Leaflet, make it thinks it runs on a mobile device.
+		L.Browser.mobile = true;
+
+		moveMarkersAndMapToMaxLat(latLngsMaxLatMobile, true);
+
+		// Make sure we are really in Southern hemisphere.
+		expect(map.getBounds().getNorth()).to.be.below(-80);
+
+		group = L.markerClusterGroup({
+			maxClusterRadius: 10
+		});
+
+		prepareGroup();
+
+		checkProjection(latLngsMaxLatMobile);
+
+		expect(map._panes.markerPane.childNodes.length).to.be(3); // Markers 1, 2 and 3.
+		expect(marker4._icon).to.be(null);
 		expect(marker5._icon).to.be(null);
 
 	});
