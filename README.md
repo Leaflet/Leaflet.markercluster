@@ -83,7 +83,7 @@ If you need to update the clusters icon (e.g. they are based on markers real-tim
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
 
 #### Chunked addLayers options
-Options for the [addLayer**s**](#bulk-adding-and-removing-markers) method.
+Options for the [addLayer**s**](#bulk-adding-and-removing-markers) method. See [#357](https://github.com/Leaflet/Leaflet.markercluster/issues/357) for explanation on how the chunking works.
 * **chunkedLoading**: Boolean to split the addLayer**s** processing in to small intervals so that the page does not freeze.
 * **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
 * **chunkDelay**: Time delay (in ms) between consecutive periods of processing for addLayers. Default to 50ms.
