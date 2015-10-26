@@ -33,7 +33,7 @@ L.MarkerCluster.include({
 		if (childMarkers.length >= this._circleSpiralSwitchover) {
 			positions = this._generatePointsSpiral(childMarkers.length, center);
 		} else {
-			center.y += 10; //Otherwise circles look wrong
+			center.y += 10; // Otherwise circles look wrong => hack for standard blue icon, renders differently for other icons.
 			positions = this._generatePointsCircle(childMarkers.length, center);
 		}
 
@@ -71,17 +71,18 @@ L.MarkerCluster.include({
 		var spiderfyDistanceMultiplier = this._group.options.spiderfyDistanceMultiplier,
 			legLength = spiderfyDistanceMultiplier * this._spiralLengthStart,
 			separation = spiderfyDistanceMultiplier * this._spiralFootSeparation,
-			lengthFactor = spiderfyDistanceMultiplier * this._spiralLengthFactor,
+			lengthFactor = spiderfyDistanceMultiplier * this._spiralLengthFactor * this._2PI,
 			angle = 0,
 			res = [],
 			i;
 
 		res.length = count;
 
+		// Higher index, closer position to cluster center.
 		for (i = count - 1; i >= 0; i--) {
 			angle += separation / legLength + i * 0.0005;
 			res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle))._round();
-			legLength += this._2PI * lengthFactor / angle;
+			legLength += lengthFactor / angle;
 		}
 		return res;
 	},
@@ -157,9 +158,6 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 
 //Animated versions here
 L.MarkerCluster.include({
-	SVG_ANIMATION: (function () {
-		return document.createElementNS('http://www.w3.org/2000/svg', 'animate').toString().indexOf('SVGAnimate') > -1;
-	}()),
 
 	_animationSpiderfy: function (childMarkers, positions) {
 		var group = this._group,
@@ -167,7 +165,7 @@ L.MarkerCluster.include({
 			fg = group._featureGroup,
 			thisLayerLatLng = this._latlng,
 			thisLayerPos = map.latLngToLayerPoint(thisLayerLatLng),
-			svgAnim = L.Path.SVG && this.SVG_ANIMATION,
+			svg = L.Path.SVG,
 			legOptions = L.extend({}, this._group.options.spiderLegPolylineOptions), // Copy the options so that we can modify them for animation.
 			finalLegOpacity = legOptions.opacity,
 			i, m, leg, legPath, legLength, newPos;
@@ -176,7 +174,7 @@ L.MarkerCluster.include({
 			finalLegOpacity = L.MarkerClusterGroup.prototype.options.spiderLegPolylineOptions.opacity;
 		}
 
-		if (svgAnim) {
+		if (svg) {
 			// If the initial opacity of the spider leg is not 0 then it appears before the animation starts.
 			legOptions.opacity = 0;
 
@@ -202,7 +200,7 @@ L.MarkerCluster.include({
 
 			// Explanations: https://jakearchibald.com/2013/animated-line-drawing-svg/
 			// In our case the transition property is declared in the CSS file.
-			if (svgAnim) {
+			if (svg) {
 				legPath = leg._path;
 				legLength = legPath.getTotalLength() + 0.1; // Need a small extra length to avoid remaining dot in Firefox.
 				legPath.style.strokeDasharray = legLength + ' ' + legLength;
@@ -240,7 +238,7 @@ L.MarkerCluster.include({
 			}
 
 			// Animate leg (animation is actually delegated to CSS transition).
-			if (svgAnim) {
+			if (svg) {
 				leg = m._spiderLeg;
 				legPath = leg._path;
 				legPath.style.strokeDashoffset = 0;
@@ -262,7 +260,7 @@ L.MarkerCluster.include({
 			fg = group._featureGroup,
 			thisLayerPos = zoomDetails ? map._latLngToNewLayerPoint(this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
 			childMarkers = this.getAllChildMarkers(),
-			svgAnim = L.Path.SVG && this.SVG_ANIMATION,
+			svg = L.Path.SVG,
 			m, i, leg, legPath, legLength;
 
 		group._animationStart();
@@ -289,7 +287,7 @@ L.MarkerCluster.include({
 			}
 
 			// Animate the spider leg back in (animation is actually delegated to CSS transition).
-			if (svgAnim) {
+			if (svg) {
 				leg = m._spiderLeg;
 				legPath = leg._path;
 				legLength = legPath.getTotalLength() + 0.1;
@@ -347,13 +345,6 @@ L.MarkerClusterGroup.include({
 		}
 		//Browsers without zoomAnimation or a big zoom don't fire zoomstart
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
-
-		if (L.Path.SVG && !L.Browser.touch) {
-			this._map._initPathRoot();
-			//Needs to happen in the pageload, not after, or animations don't work in webkit
-			//  http://stackoverflow.com/questions/8455200/svg-animate-with-dynamically-added-elements
-			//Disable on touch browsers as the animation messes up on a touch zoom and isn't very noticable
-		}
 	},
 
 	_spiderfierOnRemove: function () {
