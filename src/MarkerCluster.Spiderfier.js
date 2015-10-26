@@ -68,19 +68,20 @@ L.MarkerCluster.include({
 	},
 
 	_generatePointsSpiral: function (count, centerPt) {
-		var legLength = this._group.options.spiderfyDistanceMultiplier * this._spiralLengthStart,
-			separation = this._group.options.spiderfyDistanceMultiplier * this._spiralFootSeparation,
-			lengthFactor = this._group.options.spiderfyDistanceMultiplier * this._spiralLengthFactor,
-			angle = 0,
-			res = [],
-			i;
+		var spiderfyDistanceMultiplier = this._group.options.spiderfyDistanceMultiplier,
+		    legLength = spiderfyDistanceMultiplier * this._spiralLengthStart,
+		    separation = spiderfyDistanceMultiplier * this._spiralFootSeparation,
+		    lengthFactor = spiderfyDistanceMultiplier * this._spiralLengthFactor * this._2PI,
+		    angle = 0,
+		    res = [],
+		    i;
 
 		res.length = count;
 
 		for (i = count - 1; i >= 0; i--) {
 			angle += separation / legLength + i * 0.0005;
 			res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle))._round();
-			legLength += this._2PI * lengthFactor / angle;
+			legLength += lengthFactor / angle;
 		}
 		return res;
 	},
@@ -116,18 +117,27 @@ L.MarkerCluster.include({
 	}
 });
 
+//Non Animated versions of everything
 L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
-	//Non Animated versions of everything
 	_animationSpiderfy: function (childMarkers, positions) {
 		var group = this._group,
-			map = group._map,
-			fg = group._featureGroup,
-			i, m, leg, newPos;
+		    map = group._map,
+		    fg = group._featureGroup,
+		    legOptions = this._group.options.spiderLegPolylineOptions,
+		    i, m, leg, newPos;
 
-		for (i = childMarkers.length - 1; i >= 0; i--) {
+		// Traverse in ascending order to make sure that inner circleMarkers are on top of further legs. Normal markers are re-ordered by newPosition.
+		// The reverse order trick no longer improves performance on modern browsers.
+		for (i = 0; i < childMarkers.length; i++) {
 			newPos = map.layerPointToLatLng(positions[i]);
 			m = childMarkers[i];
 
+			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
+			leg = new L.Polyline([this._latlng, newPos], legOptions);
+			map.addLayer(leg);
+			m._spiderLeg = leg;
+
+			// Now add the marker.
 			m._preSpiderfyLatlng = m._latlng;
 			m.setLatLng(newPos);
 			if (m.setZIndexOffset) {
@@ -135,11 +145,6 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 			}
 
 			fg.addLayer(m);
-
-			var legOptions = this._group.options.spiderLegPolylineOptions;
-			leg = new L.Polyline([this._latlng, newPos], legOptions);
-			map.addLayer(leg);
-			m._spiderLeg = leg;
 		}
 		this.setOpacity(0.3);
 		group.fire('spiderfied');
@@ -150,45 +155,72 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 	}
 });
 
+//Animated versions here
 L.MarkerCluster.include({
-	//Animated versions here
-	SVG_ANIMATION: (function () {
-		return document.createElementNS('http://www.w3.org/2000/svg', 'animate').toString().indexOf('SVGAnimate') > -1;
-	}()),
+
+	_transitionDuration: 300, // in ms. Note: this is different from the timeout value (200 ms) which only fires an event.
 
 	_animationSpiderfy: function (childMarkers, positions) {
-		var me = this,
-			group = this._group,
-			map = group._map,
-			fg = group._featureGroup,
-			thisLayerPos = map.latLngToLayerPoint(this._latlng),
-			i, m, leg, newPos;
+		var group = this._group,
+		    map = group._map,
+		    fg = group._featureGroup,
+		    thisLayerLatLng = this._latlng,
+		    thisLayerPos = map.latLngToLayerPoint(thisLayerLatLng),
+		    svg = L.Path.SVG,
+		    legOptions = this._group.options.spiderLegPolylineOptions,
+		    i, m, leg, legPath, legLength, newPos;
 
-		//Add markers to map hidden at our center point
-		for (i = childMarkers.length - 1; i >= 0; i--) {
+		if (legOptions.opacity === undefined) {
+			legOptions.opacity = L.MarkerClusterGroup.prototype.options.spiderLegPolylineOptions.opacity;
+		}
+		this._finalLegOpacity = legOptions.opacity;
+
+		// Add markers and spider legs to map, hidden at our center point.
+		// Traverse in ascending order to make sure that inner circleMarkers are on top of further legs. Normal markers are re-ordered by newPosition.
+		// The reverse order trick no longer improves performance on modern browsers.
+		for (i = 0; i < childMarkers.length; i++) {
 			m = childMarkers[i];
 
-			//If it is a marker, add it now and we'll animate it out
+			newPos = map.layerPointToLatLng(positions[i]);
+
+			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
+			leg = new L.Polyline([thisLayerLatLng, newPos], legOptions);
+			map.addLayer(leg);
+			m._spiderLeg = leg;
+
+			// Explanations: https://jakearchibald.com/2013/animated-line-drawing-svg/
+			// In our case we will use requestAnimationFrame rather than CSS Transition, which is not applied on SVG properties by IE.
+			// http://stackoverflow.com/questions/24918529/animate-path-in-internet-explorer
+			// https://connect.microsoft.com/IE/feedbackdetail/view/920928/ie-11-css-transition-property-not-working-for-svg-elements
+			if (svg) {
+				legPath = leg._path;
+				legLength = legPath.getTotalLength() + 0.1; // Need a small extra length to avoid remaining dot in Firefox.
+				legPath.style.strokeDasharray = legLength + ' ' + legLength;
+				//legPath.style.strokeDashoffset = legLength;
+				leg.legLength = legLength;
+			}
+
+			// If it is a marker, add it now and we'll animate it out
 			if (m.setOpacity) {
-				m.setZIndexOffset(1000000); //Make these appear on top of EVERYTHING
+				m.setZIndexOffset(1000000); // Make normal markers appear on top of EVERYTHING
 				m.clusterHide();
-			
+
 				fg.addLayer(m);
 
 				m._setPos(thisLayerPos);
 			} else {
-				//Vectors just get immediately added
+				// Vectors just get immediately added
 				fg.addLayer(m);
 			}
 		}
 
+		// Start legs animation before the forced layout, so that if we are able to animate, their opacity is already changed to 0.
+		this._animateLegs(childMarkers);
+
 		group._forceLayout();
 		group._animationStart();
 
-		var initialLegOpacity = L.Path.SVG ? 0 : 0.3,
-			xmlns = L.Path.SVG_NS;
-
-
+		// Reveal markers and spider legs.
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			newPos = map.layerPointToLatLng(positions[i]);
 			m = childMarkers[i];
@@ -196,69 +228,12 @@ L.MarkerCluster.include({
 			//Move marker to new position
 			m._preSpiderfyLatlng = m._latlng;
 			m.setLatLng(newPos);
-			
+
 			if (m.setOpacity) {
 				m.clusterShow();
 			}
-
-
-			//Add Legs.
-			var legOptions = this._group.options.spiderLegPolylineOptions;
-			if (legOptions.opacity === undefined) {
-				legOptions.opacity = initialLegOpacity;
-			}
-			leg = new L.Polyline([me._latlng, newPos], legOptions);
-			map.addLayer(leg);
-			m._spiderLeg = leg;
-
-			//Following animations don't work for canvas
-			if (!L.Path.SVG || !this.SVG_ANIMATION) {
-				continue;
-			}
-
-			//How this works:
-			//http://stackoverflow.com/questions/5924238/how-do-you-animate-an-svg-path-in-ios
-			//http://dev.opera.com/articles/view/advanced-svg-animation-techniques/
-
-			//Animate length
-			var length = leg._path.getTotalLength();
-			leg._path.setAttribute("stroke-dasharray", length + "," + length);
-
-			var anim = document.createElementNS(xmlns, "animate");
-			anim.setAttribute("attributeName", "stroke-dashoffset");
-			anim.setAttribute("begin", "indefinite");
-			anim.setAttribute("from", length);
-			anim.setAttribute("to", 0);
-			anim.setAttribute("dur", 0.25);
-			leg._path.appendChild(anim);
-			anim.beginElement();
-
-			//Animate opacity
-			anim = document.createElementNS(xmlns, "animate");
-			anim.setAttribute("attributeName", "stroke-opacity");
-			anim.setAttribute("attributeName", "stroke-opacity");
-			anim.setAttribute("begin", "indefinite");
-			anim.setAttribute("from", 0);
-			anim.setAttribute("to", 0.5);
-			anim.setAttribute("dur", 0.25);
-			leg._path.appendChild(anim);
-			anim.beginElement();
 		}
-		me.setOpacity(0.3);
-
-		//Set the opacity of the spiderLegs back to their correct value
-		// The animations above override this until they complete.
-		// If the initial opacity of the spiderlegs isn't 0 then they appear before the animation starts.
-		if (L.Path.SVG) {
-			this._group._forceLayout();
-
-			for (i = childMarkers.length - 1; i >= 0; i--) {
-				m = childMarkers[i]._spiderLeg;
-
-				m.options.opacity = 0.5;
-				m._path.setAttribute('stroke-opacity', 0.5);
-			}
-		}
+		this.setOpacity(0.3);
 
 		setTimeout(function () {
 			group._animationEnd();
@@ -268,12 +243,11 @@ L.MarkerCluster.include({
 
 	_animationUnspiderfy: function (zoomDetails) {
 		var group = this._group,
-			map = group._map,
-			fg = group._featureGroup,
-			thisLayerPos = zoomDetails ? map._latLngToNewLayerPoint(this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
-			childMarkers = this.getAllChildMarkers(),
-			svg = L.Path.SVG && this.SVG_ANIMATION,
-			m, i, a;
+		    map = group._map,
+		    fg = group._featureGroup,
+		    thisLayerPos = zoomDetails ? map._latLngToNewLayerPoint(this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
+		    childMarkers = this.getAllChildMarkers(),
+		    m, i;
 
 		group._animationStart();
 
@@ -282,7 +256,7 @@ L.MarkerCluster.include({
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			m = childMarkers[i];
 
-			//Marker was added to us after we were spidified
+			//Marker was added to us after we were spiderfied
 			if (!m._preSpiderfyLatlng) {
 				continue;
 			}
@@ -297,23 +271,10 @@ L.MarkerCluster.include({
 			} else {
 				fg.removeLayer(m);
 			}
-
-			//Animate the spider legs back in
-			if (svg) {
-				a = m._spiderLeg._path.childNodes[0];
-				a.setAttribute('to', a.getAttribute('from'));
-				a.setAttribute('from', 0);
-				a.beginElement();
-
-				a = m._spiderLeg._path.childNodes[1];
-				a.setAttribute('from', 0.5);
-				a.setAttribute('to', 0);
-				a.setAttribute('stroke-opacity', 0);
-				a.beginElement();
-
-				m._spiderLeg._path.setAttribute('stroke-opacity', 0);
-			}
 		}
+
+		// Animate the spider legs back in.
+		this._animateLegs(childMarkers, true);
 
 		setTimeout(function () {
 			//If we have only <= one child left then that marker will be shown on the map so don't remove it!
@@ -348,6 +309,48 @@ L.MarkerCluster.include({
 			}
 			group._animationEnd();
 		}, 200);
+	},
+
+	_setLegsStyle: function (progress) {
+		var revertProgress = 1 - progress,
+		    reverse = this._reverse,
+		    finalLegOpacity = this._finalLegOpacity,
+		    markers = this._markers,
+		    i = 0,
+			leg;
+
+		for (; i < markers.length; i++) {
+			leg = markers[i]._spiderLeg;
+			// Check for animation end before transition end.
+			if (!leg) {
+				this._startTime = 0;
+				break;
+			}
+			// Linear transition, so it will be slightly delayed compared to markers transform (used for translation), which use ease-out.
+			leg._path.style.strokeDashoffset = (reverse ? progress : revertProgress) * leg.legLength;
+			leg.setStyle({opacity: (reverse ? revertProgress : progress) * finalLegOpacity});
+		}
+	},
+
+	_runFrame: function () {
+		var elapsed = (+new Date()) - this._startTime,
+			duration = this._transitionDuration;
+
+		if (elapsed < duration) {
+			L.Util.requestAnimFrame(this._runFrame, this);
+			this._setLegsStyle(elapsed / duration);
+		} else {
+			this._setLegsStyle(1);
+		}
+	},
+
+	_animateLegs: function (markers, reverse) {
+		if (L.Path.SVG) {
+			this._startTime = +new Date();
+			this._reverse = reverse;
+
+			L.Util.requestAnimFrame(this._runFrame, this);
+		}
 	}
 });
 
@@ -364,13 +367,6 @@ L.MarkerClusterGroup.include({
 		}
 		//Browsers without zoomAnimation or a big zoom don't fire zoomstart
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
-
-		if (L.Path.SVG && !L.Browser.touch) {
-			this._map._initPathRoot();
-			//Needs to happen in the pageload, not after, or animations don't work in webkit
-			//  http://stackoverflow.com/questions/8455200/svg-animate-with-dynamically-added-elements
-			//Disable on touch browsers as the animation messes up on a touch zoom and isn't very noticable
-		}
 	},
 
 	_spiderfierOnRemove: function () {
