@@ -213,3 +213,18 @@ Note: these two examples use the `chunkedLoading` option set to true in order to
 Leaflet.markercluster is free software, and may be redistributed under the MIT-LICENSE.
 
 [![Build Status](https://travis-ci.org/Leaflet/Leaflet.markercluster.png?branch=master)](https://travis-ci.org/Leaflet/Leaflet.markercluster)
+
+## Sub-plugins
+Leaflet.markercluster plugin is very popular and as such it generates high and
+diverse expectations for increased functionalities.
+
+If you are in that case, be sure to have a look first at the repository
+[issues](https://github.com/Leaflet/Leaflet.markercluster/issues) in case what
+you are looking for would already be discussed, and some workarounds would be proposed.
+
+Check also the below sub-plugins:
+
+| Plugin | Description | Maintainer |
+| :----- | :---------- | :--------- |
+| [Leaflet.FeatureGroup.SubGroup](https://github.com/ghybs/Leaflet.FeatureGroup.SubGroup) | Creates a Feature Group that adds its child layers into a parent group when added to a map (e.g. through L.Control.Layers). Typical usage is to dynamically add/remove groups of markers from Marker Cluster. | [ghybs](https://github.com/ghybs) |
+| [Leaflet.MarkerCluster.LayerSupport](https://github.com/ghybs/Leaflet.MarkerCluster.LayerSupport) | Brings compatibility with L.Control.Layers and other Leaflet plugins. I.e. everything that uses direct calls to map.addLayer and map.removeLayer. | [ghybs](https://github.com/ghybs) |
