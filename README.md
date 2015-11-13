@@ -10,6 +10,39 @@ Provides Beautiful Animated Marker Clustering functionality for [Leaflet](http:/
 For a Leaflet 0.5 compatible version, [Download b128e950](https://github.com/Leaflet/Leaflet.markercluster/archive/b128e950d8f5d7da5b60bd0aa9a88f6d3dd17c98.zip)<br>
 For a Leaflet 0.4 compatible version, [Download the 0.2 release](https://github.com/Leaflet/Leaflet.markercluster/archive/0.2.zip)
 
+<!---
+TOC created with gh-md-toc
+https://github.com/ekalinin/github-markdown-toc
+removed link to h1 and indented back 2 spaces all links.
+-->
+## Table of Contents
+  * [Using the plugin](#using-the-plugin)
+    * [Usage](#usage)
+  * [Options](#options)
+    * [Defaults](#defaults)
+    * [Customising the Clustered Markers](#customising-the-clustered-markers)
+    * [All Options](#all-options)
+  	* [Enabled by default (boolean options)](#enabled-by-default-boolean-options)
+  	* [Other options](#other-options)
+  	* [Chunked addLayers options](#chunked-addlayers-options)
+  * [Events](#events)
+    * [Additional MarkerClusterGroup Events](#additional-markerclustergroup-events)
+  * [Methods](#methods)
+    * [Group methods](#group-methods)
+  	* [Adding and removing Markers](#adding-and-removing-markers)
+  	* [Bulk adding and removing Markers](#bulk-adding-and-removing-markers)
+  	* [Getting the visible parent of a marker](#getting-the-visible-parent-of-a-marker)
+  	* [Refreshing the clusters icon](#refreshing-the-clusters-icon)
+  	* [Other Group Methods](#other-group-methods)
+    * [Clusters methods](#clusters-methods)
+  	* [Getting the bounds of a cluster](#getting-the-bounds-of-a-cluster)
+  	* [Zooming to the bounds of a cluster](#zooming-to-the-bounds-of-a-cluster)
+  	* [Other clusters methods](#other-clusters-methods)
+  * [Handling LOTS of markers](#handling-lots-of-markers)
+  * [License](#license)
+  * [Sub-plugins](#sub-plugins)
+
+
 ## Using the plugin
 
 Install with Bower: `bower install leaflet.markercluster`
