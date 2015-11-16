@@ -14,6 +14,26 @@ L.MarkerCluster.include({
 	_circleSpiralSwitchover: 9, //show spiral instead of circle from this marker count upwards.
 								// 0 -> always spiral; Infinity -> always circle
 
+	explodeCluster: function () {
+		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
+			return;
+		}
+
+		var childMarkers = this.getAllChildMarkers(),
+			group = this._group,
+			map = group._map,
+			positions = [];
+
+		this._group._unspiderfy();
+		this._group._spiderfied = this;
+
+		for (var index in childMarkers) {
+			positions.push(map.latLngToLayerPoint(childMarkers[index]._latlng));
+		}
+
+		this._animationSpiderfy(childMarkers, positions);
+	},
+
 	spiderfy: function () {
 		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
 			return;

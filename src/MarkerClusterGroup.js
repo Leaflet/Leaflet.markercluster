@@ -712,7 +712,11 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var map = this._map;
 		if (e.layer._bounds._northEast.equals(e.layer._bounds._southWest)) {
 			if (this.options.spiderfyOnMaxZoom) {
-				e.layer.spiderfy();
+				if (this.options.spiderfyDisabled) {
+					e.layer.explodeCluster();
+				} else {
+					e.layer.spiderfy();
+				}
 			}
 		} else if (map.getMaxZoom() === map.getZoom()) {
 			if (this.options.spiderfyOnMaxZoom) {
