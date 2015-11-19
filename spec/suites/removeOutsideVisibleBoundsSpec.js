@@ -163,7 +163,6 @@ describe('Option removeOutsideVisibleBounds', function () {
 		var mapZoom = map.getZoom();
 
 		for (i = 0; i < markers.length; i++) {
-			markers[i].setLatLng(latLngs[i]);
 			try {
 				expect(markers[i].__parent._zoom).to.be.below(mapZoom);
 			} catch (e) {
