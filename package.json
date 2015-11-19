@@ -11,7 +11,8 @@
 		"mocha": "~1.10.0",
 		"karma": "~0.8.5",
 		"uglify-js": "~2.3.6",
-		"jake": "~0.5.16"
+		"jake": "~0.5.16",
+	    "magic-string": "^0.7.0"
 	},
 	"main": "dist/leaflet.markercluster.js",
 	"scripts": {
