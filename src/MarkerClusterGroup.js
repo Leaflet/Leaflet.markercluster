@@ -1046,6 +1046,7 @@ L.MarkerClusterGroup.include({
 			this._map._mapPane.className += ' leaflet-cluster-anim';
 			this._inZoomAnimation++;
 		},
+
 		_animationZoomIn: function (previousZoomLevel, newZoomLevel) {
 			var bounds = this._getExpandedVisibleBounds(),
 			    fg     = this._featureGroup,
@@ -1093,12 +1094,13 @@ L.MarkerClusterGroup.include({
 					n.clusterShow();
 				}
 			});
-			this._ignoreMove = false;
 
 			//update the positions of the just added clusters/markers
 			this._topClusterLevel._recursively(bounds, previousZoomLevel, newZoomLevel, function (c) {
 				c._recursivelyRestoreChildPositions(newZoomLevel);
 			});
+
+			this._ignoreMove = false;
 
 			//Remove the old clusters and close the zoom animation
 			this._enqueue(function () {
@@ -1120,6 +1122,7 @@ L.MarkerClusterGroup.include({
 			//Remove markers that were on the map before but won't be now
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, previousZoomLevel, this._getExpandedVisibleBounds());
 		},
+
 		_animationAddLayer: function (layer, newCluster) {
 			var me = this,
 			    fg = this._featureGroup;

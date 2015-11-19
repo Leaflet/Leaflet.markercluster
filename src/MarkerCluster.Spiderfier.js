@@ -419,9 +419,12 @@ L.MarkerClusterGroup.include({
 		if (layer._spiderLeg) {
 			this._featureGroup.removeLayer(layer);
 
-			layer.setOpacity(1);
-			//Position will be fixed up immediately in _animationUnspiderfy
-			layer.setZIndexOffset(0);
+			// L.Circle can be spiderfied, but only Markers have setOpacity and setZIndexOffset methods.
+			if (layer instanceof L.Marker) {
+				layer.setOpacity(1);
+				//Position will be fixed up immediately in _animationUnspiderfy
+				layer.setZIndexOffset(0);
+			}
 
 			this._map.removeLayer(layer._spiderLeg);
 			delete layer._spiderLeg;
