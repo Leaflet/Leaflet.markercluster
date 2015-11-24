@@ -709,17 +709,17 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_zoomOrSpiderfy: function (e) {
-		var map = this._map;
-		if (e.layer._bounds._northEast.equals(e.layer._bounds._southWest)) {
+		var map = this._map,
+		    cluster = e.layer,
+		    someChildMarkerParent = cluster.getAllChildMarkers()[0].__parent;
+
+		if (someChildMarkerParent._zoom === map.getMaxZoom() && someChildMarkerParent._childCount === cluster._childCount) {
+			// All child markers are contained in a single cluster from map._maxZoom to this cluster.
 			if (this.options.spiderfyOnMaxZoom) {
-				e.layer.spiderfy();
-			}
-		} else if (map.getMaxZoom() === map.getZoom()) {
-			if (this.options.spiderfyOnMaxZoom) {
-				e.layer.spiderfy();
+				cluster.spiderfy();
 			}
 		} else if (this.options.zoomToBoundsOnClick) {
-			e.layer.zoomToBounds();
+			cluster.zoomToBounds();
 		}
 
 		// Focus the map again for keyboard users.
