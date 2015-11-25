@@ -711,9 +711,13 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_zoomOrSpiderfy: function (e) {
 		var map = this._map,
 		    cluster = e.layer,
-		    someChildMarkerParent = cluster.getAllChildMarkers()[0].__parent;
+			bottomCluster = cluster;
 
-		if (someChildMarkerParent._zoom === map.getMaxZoom() && someChildMarkerParent._childCount === cluster._childCount) {
+		while (bottomCluster._childClusters.length) {
+			bottomCluster = bottomCluster._childClusters[0];
+		} // bottomCluster is not necessarily the bottom-most one, but in that case we should not spiderfy anyway.
+
+		if (bottomCluster._zoom === map.getMaxZoom() && bottomCluster._childCount === cluster._childCount) {
 			// All child markers are contained in a single cluster from map._maxZoom to this cluster.
 			if (this.options.spiderfyOnMaxZoom) {
 				cluster.spiderfy();
