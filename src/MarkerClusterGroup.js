@@ -711,7 +711,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_zoomOrSpiderfy: function (e) {
 		var map = this._map,
 		    cluster = e.layer,
-			bottomCluster = cluster;
+		    bottomCluster = cluster;
 
 		while (bottomCluster._childClusters.length === 1) {
 			bottomCluster = bottomCluster._childClusters[0];
