@@ -713,9 +713,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    cluster = e.layer,
 			bottomCluster = cluster;
 
-		while (bottomCluster._childClusters.length) {
+		while (bottomCluster._childClusters.length === 1) {
 			bottomCluster = bottomCluster._childClusters[0];
-		} // bottomCluster is not necessarily the bottom-most one, but in that case we should not spiderfy anyway.
+		}
 
 		if (bottomCluster._zoom === map.getMaxZoom() && bottomCluster._childCount === cluster._childCount) {
 			// All child markers are contained in a single cluster from map._maxZoom to this cluster.
