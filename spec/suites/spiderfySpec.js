@@ -68,6 +68,68 @@
 		expect(marker2._container.parentNode).to.be(map._pathRoot);
 	});
 
+	it('Spiderfies at current zoom if all child markers are at the exact same position', function () {
+
+		var group = new L.MarkerClusterGroup();
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		// Get the appropriate cluster.
+		var cluster = marker.__parent,
+		    zoom = map.getZoom();
+
+		while (cluster._zoom !== zoom) {
+			cluster = cluster.__parent;
+		}
+
+		expect(zoom).to.be.lessThan(10);
+
+		cluster.fireEvent('click');
+
+		clock.tick(1000);
+
+		expect(map.getZoom()).to.equal(zoom);
+
+		expect(marker._icon.parentNode).to.be(map._panes.markerPane);
+		expect(marker2._icon.parentNode).to.be(map._panes.markerPane);
+
+	});
+
+	it('Spiderfies at current zoom if all child markers are still within a single cluster at map maxZoom', function () {
+
+		var group = new L.MarkerClusterGroup();
+		var marker = new L.Marker([1.5, 1.50001]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		expect(marker.__parent._zoom).to.equal(18);
+
+		// Get the appropriate cluster.
+		var cluster = marker.__parent,
+		    zoom = map.getZoom();
+
+		while (cluster._zoom !== zoom) {
+			cluster = cluster.__parent;
+		}
+
+		expect(zoom).to.be.lessThan(10);
+
+		cluster.fireEvent('click');
+
+		clock.tick(1000);
+
+		expect(map.getZoom()).to.equal(zoom);
+
+		expect(marker._icon.parentNode).to.be(map._panes.markerPane);
+		expect(marker2._icon.parentNode).to.be(map._panes.markerPane);
+
+	});
+
 	describe('zoomend event listener', function () {
 		it('unspiderfies correctly', function () {
 
