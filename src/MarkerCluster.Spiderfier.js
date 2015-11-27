@@ -361,6 +361,7 @@ L.MarkerClusterGroup.include({
 		this._map.off('click', this._unspiderfyWrapper, this);
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
+		this._map.off('zoomend', this._noanimationUnspiderfy, this);
 
 		//Ensure that markers are back where they should be
 		// Use no animation to avoid a sticky leaflet-cluster-anim class on mapPane
