@@ -709,16 +709,15 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_zoomOrSpiderfy: function (e) {
-		var map = this._map,
-		    cluster = e.layer,
+		var cluster = e.layer,
 		    bottomCluster = cluster;
 
 		while (bottomCluster._childClusters.length === 1) {
 			bottomCluster = bottomCluster._childClusters[0];
 		}
 
-		if (bottomCluster._zoom === map.getMaxZoom() && bottomCluster._childCount === cluster._childCount) {
-			// All child markers are contained in a single cluster from map._maxZoom to this cluster.
+		if (bottomCluster._zoom === this._maxZoom && bottomCluster._childCount === cluster._childCount) {
+			// All child markers are contained in a single cluster from this._maxZoom to this cluster.
 			if (this.options.spiderfyOnMaxZoom) {
 				cluster.spiderfy();
 			}
@@ -728,7 +727,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		// Focus the map again for keyboard users.
 		if (e.originalEvent && e.originalEvent.keyCode === 13) {
-			map._container.focus();
+			this._map._container.focus();
 		}
 	},
 
