@@ -1,28 +1,74 @@
 ﻿describe('spiderfy', function () {
-	var map, div, clock;
+
+	/**
+	 * Avoid as much as possible creating and destroying objects for each test.
+	 * Instead, try re-using them, except for the ones under test of course.
+	 * PhantomJS does not perform garbage collection for the life of the page,
+	 * i.e. during the entire test process (Karma runs all tests in a single page).
+	 * http://stackoverflow.com/questions/27239708/how-to-get-around-memory-error-with-karma-phantomjs
+	 *
+	 * The `beforeEach` and `afterEach do not seem to cause much issue.
+	 * => they can still be used to initialize some setup between each test.
+	 * Using them keeps a readable spec/index.
+	 *
+	 * But refrain from re-creating div and map every time. Re-use those objects.
+	 */
+
+	/////////////////////////////
+	// SETUP FOR EACH TEST
+	/////////////////////////////
+
 	beforeEach(function () {
+
 		clock = sinon.useFakeTimers();
 
-		div = document.createElement('div');
-		div.style.width = '200px';
-		div.style.height = '200px';
-		document.body.appendChild(div);
-
-		map = L.map(div, { maxZoom: 18 });
-
-		map.fitBounds(new L.LatLngBounds([
-			[1, 1],
-			[2, 2]
-		]));
 	});
+
 	afterEach(function () {
+
+		if (group instanceof L.MarkerClusterGroup) {
+			group.clearLayers();
+			map.removeLayer(group);
+		}
+
+		// group must be thrown away since we are testing it with a potentially
+		// different configuration at each test.
+		group = null;
+
 		clock.restore();
-		document.body.removeChild(div);
+		clock = null;
+
 	});
+
+
+	/////////////////////////////
+	// PREPARATION CODE
+	/////////////////////////////
+
+	var div, map, group, clock;
+
+	div = document.createElement('div');
+	div.style.width = '200px';
+	div.style.height = '200px';
+	document.body.appendChild(div);
+
+	map = L.map(div, { maxZoom: 18 });
+
+	// Corresponds to zoom level 8 for the above div dimensions.
+	map.fitBounds(new L.LatLngBounds([
+		[1, 1],
+		[2, 2]
+	]));
+
+
+	/////////////////////////////
+	// TESTS
+	/////////////////////////////
 
 	it('Spiderfies 2 Markers', function () {
 
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
+
 		var marker = new L.Marker([1.5, 1.5]);
 		var marker2 = new L.Marker([1.5, 1.5]);
 
@@ -38,7 +84,8 @@
 
 	it('Spiderfies 2 CircleMarkers', function () {
 
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
+
 		var marker = new L.CircleMarker([1.5, 1.5]);
 		var marker2 = new L.CircleMarker([1.5, 1.5]);
 
@@ -54,7 +101,8 @@
 
 	it('Spiderfies 2 Circles', function () {
 
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
+
 		var marker = new L.Circle([1.5, 1.5], 10);
 		var marker2 = new L.Circle([1.5, 1.5], 10);
 
@@ -70,7 +118,8 @@
 
 	it('Spiderfies at current zoom if all child markers are at the exact same position', function () {
 
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
+
 		var marker = new L.Marker([1.5, 1.5]);
 		var marker2 = new L.Marker([1.5, 1.5]);
 
@@ -100,7 +149,8 @@
 
 	it('Spiderfies at current zoom if all child markers are still within a single cluster at map maxZoom', function () {
 
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
+
 		var marker = new L.Marker([1.5, 1.50001]);
 		var marker2 = new L.Marker([1.5, 1.5]);
 
@@ -130,10 +180,93 @@
 
 	});
 
+	it('removes all markers and spider legs when group is removed from map', function () {
+
+		group = new L.MarkerClusterGroup();
+
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+
+		expect(map._panes.markerPane.childNodes.length).to.be(3); // The 2 markers + semi-transparent cluster.
+		expect(map._pathRoot.childNodes.length).to.be(2); // The 2 spider legs.
+
+	});
+
+	it('adds then removes class "leaflet-cluster-anim" from mapPane on spiderfy', function () {
+
+		group = new L.MarkerClusterGroup();
+
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+
+		expect(map._panes.mapPane.className).to.contain('leaflet-cluster-anim');
+
+		clock.tick(1000);
+
+		expect(map._panes.mapPane.className).to.not.contain('leaflet-cluster-anim');
+
+	});
+
+	it('adds then removes class "leaflet-cluster-anim" from mapPane on unspiderfy', function () {
+
+		group = new L.MarkerClusterGroup();
+
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+
+		clock.tick(1000);
+
+		marker.__parent.unspiderfy();
+
+		expect(map._panes.mapPane.className).to.contain('leaflet-cluster-anim');
+
+		clock.tick(1000);
+
+		expect(map._panes.mapPane.className).to.not.contain('leaflet-cluster-anim');
+
+	});
+
+	it('does not leave class "leaflet-cluster-anim" on mapPane when group is removed while spiderfied', function () {
+
+		group = new L.MarkerClusterGroup();
+
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+
+		clock.tick(1000);
+
+		map.removeLayer(group);
+
+		expect(map._panes.mapPane.className).to.not.contain('leaflet-cluster-anim');
+
+	});
+
 	describe('zoomend event listener', function () {
+
 		it('unspiderfies correctly', function () {
 
-			var group = new L.MarkerClusterGroup();
+			group = new L.MarkerClusterGroup();
+
 			var marker = new L.Circle([1.5, 1.5], 10);
 			var marker2 = new L.Circle([1.5, 1.5], 10);
 
@@ -150,5 +283,15 @@
 			//We should unspiderfy with no animation, so this should be null
 			expect(group._spiderfied).to.be(null);
 		});
+
 	});
+
+
+	/////////////////////////////
+	// CLEAN UP CODE
+	/////////////////////////////
+
+	map.remove();
+	document.body.removeChild(div);
+
 });
