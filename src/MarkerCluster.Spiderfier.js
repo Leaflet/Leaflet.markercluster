@@ -148,7 +148,10 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 			fg.addLayer(m);
 		}
 		this.setOpacity(0.3);
-		group.fire('spiderfied');
+		group.fire('spiderfied', {
+			cluster: this,
+			markers: childMarkers
+		});
 	},
 
 	_animationUnspiderfy: function () {
@@ -252,7 +255,10 @@ L.MarkerCluster.include({
 
 		setTimeout(function () {
 			group._animationEnd();
-			group.fire('spiderfied');
+			group.fire('spiderfied', {
+				cluster: me,
+				markers: childMarkers
+			});
 		}, 200);
 	},
 
