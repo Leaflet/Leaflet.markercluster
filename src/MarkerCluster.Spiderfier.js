@@ -233,7 +233,7 @@ L.MarkerCluster.include({
 			}
 			
 			// Vectors just get immediately added
-				fg.addLayer(m);
+			fg.addLayer(m);
 
 			if (m._setPos) {
 				m._setPos(thisLayerPos);

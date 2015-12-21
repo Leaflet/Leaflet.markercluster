@@ -138,7 +138,7 @@
 
 		expect(zoom).to.be.lessThan(10);
 
-		cluster.fireEvent('click');
+		cluster.fireEvent('click', null, true);
 
 		clock.tick(1000);
 
@@ -171,7 +171,7 @@
 
 		expect(zoom).to.be.lessThan(10);
 
-		cluster.fireEvent('click');
+		cluster.fireEvent('click', null, true);
 
 		clock.tick(1000);
 
@@ -195,7 +195,7 @@
 		marker.__parent.spiderfy();
 
 		expect(map._panes.markerPane.childNodes.length).to.be(3); // The 2 markers + semi-transparent cluster.
-		expect(map._pathRoot.childNodes.length).to.be(2); // The 2 spider legs.
+		expect(map.getPane('overlayPane').firstChild.firstChild.childNodes.length).to.be(2); // The 2 spider legs.
 
 	});
 
