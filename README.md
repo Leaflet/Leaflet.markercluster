@@ -145,7 +145,8 @@ markers.on('clusterclick', function (a) {
 ### Additional MarkerClusterGroup Events
 
 - **animationend**: Fires when marker clustering/unclustering animation has completed
-- **spiderfied**: Fires when overlapping markers get spiderified
+- **spiderfied**: Fires when overlapping markers get spiderified (Contains ```cluster``` and ```markers``` attributes)
+- **unspiderfied**: Fires when overlapping markers get spiderified (Contains ```cluster``` and ```markers``` attributes)
 
 ## Methods
 
