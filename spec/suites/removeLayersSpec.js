@@ -41,6 +41,30 @@
 		expect(group.getLayers().length).to.be(0);
 	});
 
+	it('removes all the layer given to it even though they move', function () {
+
+		var group = new L.MarkerClusterGroup();
+		var markers = [
+			new L.Marker([10, 10]),
+			new L.Marker([20, 20]),
+			new L.Marker([30, 30])
+		];
+		var len = markers.length;
+		map.addLayer(group);
+
+		group.addLayers(markers);
+
+		markers.forEach(function (marker) {
+			marker.setLatLng([1.5, 1.5]);
+			group.removeLayer(marker);
+			expect(group.getLayers().length).to.be(len - 1);
+			group.addLayer(marker);
+			expect(group.getLayers().length).to.be(len);
+		});
+
+		expect(group.getLayers().length).to.be(len);
+	});
+
 	it('removes all the layer given to it even if the group is not on the map', function () {
 
 		var group = new L.MarkerClusterGroup();
