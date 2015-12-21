@@ -116,7 +116,7 @@ If you need to update the clusters icon (e.g. they are based on markers real-tim
 * **iconCreateFunction**: Function used to create the cluster icon [See default as example](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542).
 
 #### Chunked addLayers options
-Options for the [addLayer**s**](#bulk-adding-and-removing-markers) method. See [#357](https://github.com/Leaflet/Leaflet.markercluster/issues/357) for explanation on how the chunking works.
+Options for the [addLayers](#bulk-adding-and-removing-markers) method. See [#357](https://github.com/Leaflet/Leaflet.markercluster/issues/357) for explanation on how the chunking works.
 * **chunkedLoading**: Boolean to split the addLayer**s** processing in to small intervals so that the page does not freeze.
 * **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
 * **chunkDelay**: Time delay (in ms) between consecutive periods of processing for addLayers. Default to 50ms.
@@ -145,7 +145,8 @@ markers.on('clusterclick', function (a) {
 ### Additional MarkerClusterGroup Events
 
 - **animationend**: Fires when marker clustering/unclustering animation has completed
-- **spiderfied**: Fires when overlapping markers get spiderified
+- **spiderfied**: Fires when overlapping markers get spiderified (Contains ```cluster``` and ```markers``` attributes)
+- **unspiderfied**: Fires when overlapping markers get spiderified (Contains ```cluster``` and ```markers``` attributes)
 
 ## Methods
 
@@ -261,3 +262,4 @@ Check also the below sub-plugins:
 | :----- | :---------- | :--------- |
 | [Leaflet.FeatureGroup.SubGroup](https://github.com/ghybs/Leaflet.FeatureGroup.SubGroup) | Creates a Feature Group that adds its child layers into a parent group when added to a map (e.g. through L.Control.Layers). Typical usage is to dynamically add/remove groups of markers from Marker Cluster. | [ghybs](https://github.com/ghybs) |
 | [Leaflet.MarkerCluster.LayerSupport](https://github.com/ghybs/Leaflet.MarkerCluster.LayerSupport) | Brings compatibility with L.Control.Layers and other Leaflet plugins. I.e. everything that uses direct calls to map.addLayer and map.removeLayer. | [ghybs](https://github.com/ghybs) |
+| [Leaflet.MarkerCluster.Freezable](https://github.com/ghybs/Leaflet.MarkerCluster.Freezable) | Adds the ability to freeze clusters at a specified zoom. E.g. freezing at maxZoom + 1 makes as if clustering was programmatically disabled. | [ghybs](https://github.com/ghybs) |

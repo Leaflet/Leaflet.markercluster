@@ -116,6 +116,10 @@ L.MarkerCluster.include({
 			}
 		}
 
+		group.fire('unspiderfied', {
+			cluster: this,
+			markers: childMarkers
+		});
 		group._ignoreMove = false;
 		group._spiderfied = null;
 	}
@@ -155,7 +159,10 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 		this.setOpacity(0.3);
 
 		group._ignoreMove = false;
-		group.fire('spiderfied');
+		group.fire('spiderfied', {
+			cluster: this,
+			markers: childMarkers
+		});
 	},
 
 	_animationUnspiderfy: function () {
@@ -167,7 +174,8 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 L.MarkerCluster.include({
 
 	_animationSpiderfy: function (childMarkers, positions) {
-		var group = this._group,
+		var me = this,
+			group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
 			thisLayerLatLng = this._latlng,
@@ -212,21 +220,23 @@ L.MarkerCluster.include({
 			if (svg) {
 				legPath = leg._path;
 				legLength = legPath.getTotalLength() + 0.1; // Need a small extra length to avoid remaining dot in Firefox.
-				legPath.style.strokeDasharray = legLength + ' ' + legLength;
+				legPath.style.strokeDasharray = legLength; // Just 1 length is enough, it will be duplicated.
 				legPath.style.strokeDashoffset = legLength;
 			}
 
 			// If it is a marker, add it now and we'll animate it out
-			if (m.setOpacity) {
+			if (m.setZIndexOffset) {
 				m.setZIndexOffset(1000000); // Make normal markers appear on top of EVERYTHING
+			}
+			if (m.clusterHide) {
 				m.clusterHide();
+			}
 			
+			// Vectors just get immediately added
 				fg.addLayer(m);
 
+			if (m._setPos) {
 				m._setPos(thisLayerPos);
-			} else {
-				// Vectors just get immediately added
-				fg.addLayer(m);
 			}
 		}
 
@@ -242,7 +252,7 @@ L.MarkerCluster.include({
 			m._preSpiderfyLatlng = m._latlng;
 			m.setLatLng(newPos);
 			
-			if (m.setOpacity) {
+			if (m.clusterShow) {
 				m.clusterShow();
 			}
 
@@ -261,18 +271,22 @@ L.MarkerCluster.include({
 
 		setTimeout(function () {
 			group._animationEnd();
-			group.fire('spiderfied');
+			group.fire('spiderfied', {
+				cluster: me,
+				markers: childMarkers
+			});
 		}, 200);
 	},
 
 	_animationUnspiderfy: function (zoomDetails) {
-		var group = this._group,
+		var me = this,
+			group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
 			thisLayerPos = zoomDetails ? map._latLngToNewLayerPoint(this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
 			childMarkers = this.getAllChildMarkers(),
 			svg = L.Path.SVG,
-			m, i, leg, legPath, legLength;
+			m, i, leg, legPath, legLength, nonAnimatable;
 
 		group._ignoreMove = true;
 		group._animationStart();
@@ -290,11 +304,18 @@ L.MarkerCluster.include({
 			//Fix up the location to the real one
 			m.setLatLng(m._preSpiderfyLatlng);
 			delete m._preSpiderfyLatlng;
+
 			//Hack override the location to be our center
-			if (m.setOpacity) {
+			nonAnimatable = true;
+			if (m._setPos) {
 				m._setPos(thisLayerPos);
+				nonAnimatable = false;
+			}
+			if (m.clusterHide) {
 				m.clusterHide();
-			} else {
+				nonAnimatable = false;
+			}
+			if (nonAnimatable) {
 				fg.removeLayer(m);
 			}
 
@@ -328,9 +349,10 @@ L.MarkerCluster.include({
 					continue;
 				}
 
-
-				if (m.setOpacity) {
+				if (m.clusterShow) {
 					m.clusterShow();
+				}
+				if (m.setZIndexOffset) {
 					m.setZIndexOffset(0);
 				}
 
@@ -342,6 +364,10 @@ L.MarkerCluster.include({
 				delete m._spiderLeg;
 			}
 			group._animationEnd();
+			group.fire('unspiderfied', {
+				cluster: me,
+				markers: childMarkers
+			});
 		}, 200);
 	}
 });
@@ -372,10 +398,12 @@ L.MarkerClusterGroup.include({
 		this._map.off('click', this._unspiderfyWrapper, this);
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
+		this._map.off('zoomend', this._noanimationUnspiderfy, this);
 
-		this._unspiderfy(); //Ensure that markers are back where they should be
+		//Ensure that markers are back where they should be
+		// Use no animation to avoid a sticky leaflet-cluster-anim class on mapPane
+		this._noanimationUnspiderfy();
 	},
-
 
 	//On zoom start we add a zoomanim handler so that we are guaranteed to be last (after markers are animated)
 	//This means we can define the animation they do rather than Markers doing an animation to their actual location
@@ -386,6 +414,7 @@ L.MarkerClusterGroup.include({
 
 		this._map.on('zoomanim', this._unspiderfyZoomAnim, this);
 	},
+
 	_unspiderfyZoomAnim: function (zoomDetails) {
 		//Wait until the first zoomanim after the user has finished touch-zooming before running the animation
 		if (L.DomUtil.hasClass(this._map._mapPane, 'leaflet-touching')) {
@@ -395,7 +424,6 @@ L.MarkerClusterGroup.include({
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
 		this._unspiderfy(zoomDetails);
 	},
-
 
 	_unspiderfyWrapper: function () {
 		/// <summary>_unspiderfy but passes no arguments</summary>
@@ -419,9 +447,11 @@ L.MarkerClusterGroup.include({
 		if (layer._spiderLeg) {
 			this._featureGroup.removeLayer(layer);
 
-			if (layer.setOpacity) {
-				layer.setOpacity(1);
+			if (layer.clusterShow) {
+				layer.clusterShow();
+			}
 				//Position will be fixed up immediately in _animationUnspiderfy
+			if (layer.setZIndexOffset) {
 				layer.setZIndexOffset(0);
 			}
 

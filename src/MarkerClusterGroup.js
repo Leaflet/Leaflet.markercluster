@@ -728,22 +728,25 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_zoomOrSpiderfy: function (e) {
-		var map = this._map;
-		if (e.layer._bounds._northEast.equals(e.layer._bounds._southWest)) {
+		var cluster = e.layer,
+		    bottomCluster = cluster;
+
+		while (bottomCluster._childClusters.length === 1) {
+			bottomCluster = bottomCluster._childClusters[0];
+		}
+
+		if (bottomCluster._zoom === this._maxZoom && bottomCluster._childCount === cluster._childCount) {
+			// All child markers are contained in a single cluster from this._maxZoom to this cluster.
 			if (this.options.spiderfyOnMaxZoom) {
-				e.layer.spiderfy();
-			}
-		} else if (map.getMaxZoom() === map.getZoom()) {
-			if (this.options.spiderfyOnMaxZoom) {
-				e.layer.spiderfy();
+				cluster.spiderfy();
 			}
 		} else if (this.options.zoomToBoundsOnClick) {
-			e.layer.zoomToBounds();
+			cluster.zoomToBounds();
 		}
 
 		// Focus the map again for keyboard users.
 		if (e.originalEvent && e.originalEvent.keyCode === 13) {
-			map._container.focus();
+			this._map._container.focus();
 		}
 	},
 
