@@ -11,6 +11,7 @@ L.MarkerCluster = L.Marker.extend({
 		this._childClusters = [];
 		this._childCount = 0;
 		this._iconNeedsUpdate = true;
+		this._boundsNeedUpdate = true;
 
 		this._bounds = new L.LatLngBounds();
 
@@ -99,7 +100,9 @@ L.MarkerCluster = L.Marker.extend({
 	_addChild: function (new1, isNotificationFromChild) {
 
 		this._iconNeedsUpdate = true;
-		this._expandBounds(new1);
+
+		this._boundsNeedUpdate = true;
+		this._setClusterCenter(new1);
 
 		if (new1 instanceof L.MarkerCluster) {
 			if (!isNotificationFromChild) {
@@ -119,34 +122,85 @@ L.MarkerCluster = L.Marker.extend({
 		}
 	},
 
-	//Expand our bounds and tell our parent to
-	_expandBounds: function (marker) {
-		var addedCount,
-		    addedLatLng = marker._wLatLng || marker._latlng;
-
-		if (marker instanceof L.MarkerCluster) {
-			this._bounds.extend(marker._bounds);
-			addedCount = marker._childCount;
-		} else {
-			this._bounds.extend(addedLatLng);
-			addedCount = 1;
-		}
-
+	/**
+	 * Makes sure the cluster center is set. If not, uses the child center if it is a cluster, or the marker position.
+	 * @param child L.MarkerCluster|L.Marker that will be used as cluster center if not defined yet.
+	 * @private
+	 */
+	_setClusterCenter: function (child) {
 		if (!this._cLatLng) {
 			// when clustering, take position of the first point as the cluster center
-			this._cLatLng = marker._cLatLng || addedLatLng;
+			this._cLatLng = child._cLatLng || child._latlng;
+		}
+	},
+
+	/**
+	 * Assigns impossible bounding values so that the next extend entirely determines the new bounds.
+	 * This method avoids having to trash the previous L.LatLngBounds object and to create a new one, which is much slower for this class.
+	 * As long as the bounds are not extended, most other methods would probably fail, as they would with bounds initialized but not extended.
+	 * @private
+	 */
+	_resetBounds: function () {
+		var bounds = this._bounds;
+
+		if (bounds._southWest) {
+			bounds._southWest.lat = Infinity;
+			bounds._southWest.lng = Infinity;
+		}
+		if (bounds._northEast) {
+			bounds._northEast.lat = -Infinity;
+			bounds._northEast.lng = -Infinity;
+		}
+	},
+
+	_recalculateBounds: function () {
+		var markers = this._markers,
+		    childClusters = this._childClusters,
+		    latSum = 0,
+		    lngSum = 0,
+		    totalCount = this._childCount,
+		    i, child, childLatLng, childCount;
+
+		// Case where all markers are removed from the map and we are left with just an empty _topClusterLevel.
+		if (totalCount === 0) {
+			return;
 		}
 
-		// when showing clusters, take weighted average of all points as cluster center
-		var totalCount = this._childCount + addedCount;
+		// Reset rather than creating a new object, for performance.
+		this._resetBounds();
 
-		//Calculate weighted latlng for display
-		if (!this._wLatLng) {
-			this._latlng = this._wLatLng = new L.LatLng(addedLatLng.lat, addedLatLng.lng);
-		} else {
-			this._wLatLng.lat = (addedLatLng.lat * addedCount + this._wLatLng.lat * this._childCount) / totalCount;
-			this._wLatLng.lng = (addedLatLng.lng * addedCount + this._wLatLng.lng * this._childCount) / totalCount;
+		// Child markers.
+		for (i = 0; i < markers.length; i++) {
+			childLatLng = markers[i]._latlng;
+
+			this._bounds.extend(childLatLng);
+
+			latSum += childLatLng.lat;
+			lngSum += childLatLng.lng;
 		}
+
+		// Child clusters.
+		for (i = 0; i < childClusters.length; i++) {
+			child = childClusters[i];
+
+			// Re-compute child bounds and weighted position first if necessary.
+			if (child._boundsNeedUpdate) {
+				child._recalculateBounds();
+			}
+
+			this._bounds.extend(child._bounds);
+
+			childLatLng = child._wLatLng;
+			childCount = child._childCount;
+
+			latSum += childLatLng.lat * childCount;
+			lngSum += childLatLng.lng * childCount;
+		}
+
+		this._latlng = this._wLatLng = new L.LatLng(latSum / totalCount, lngSum / totalCount);
+
+		// Reset dirty flag.
+		this._boundsNeedUpdate = false;
 	},
 
 	//Set our markers position as given and add it to the map
@@ -343,23 +397,6 @@ L.MarkerCluster = L.Marker.extend({
 			}
 		}
 	},
-
-	_recalculateBounds: function () {
-		var markers = this._markers,
-			childClusters = this._childClusters,
-			i;
-
-		this._bounds = new L.LatLngBounds();
-		delete this._wLatLng;
-
-		for (i = markers.length - 1; i >= 0; i--) {
-			this._expandBounds(markers[i]);
-		}
-		for (i = childClusters.length - 1; i >= 0; i--) {
-			this._expandBounds(childClusters[i]);
-		}
-	},
-
 
 	//Returns true if we are the parent of only one cluster and that cluster is the same as us
 	_isSingleParent: function () {
