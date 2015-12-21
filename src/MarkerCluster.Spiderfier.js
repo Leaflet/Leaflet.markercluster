@@ -114,7 +114,10 @@ L.MarkerCluster.include({
 			}
 		}
 		
-		group.fire('unspiderfied');
+		group.fire('unspiderfied', {
+			cluster: this,
+			markers: childMarkers
+		});
 		group._spiderfied = null;
 	}
 });
@@ -265,7 +268,8 @@ L.MarkerCluster.include({
 	},
 
 	_animationUnspiderfy: function (zoomDetails) {
-		var group = this._group,
+		var me = this,
+			group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
 			thisLayerPos = zoomDetails ? map._latLngToNewLayerPoint(this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
@@ -346,7 +350,10 @@ L.MarkerCluster.include({
 				delete m._spiderLeg;
 			}
 			group._animationEnd();
-			group.fire('unspiderfied');
+			group.fire('unspiderfied', {
+				cluster: me,
+				markers: childMarkers
+			});
 		}, 200);
 	}
 });

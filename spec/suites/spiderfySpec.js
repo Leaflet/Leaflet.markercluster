@@ -241,6 +241,36 @@
 
 	});
 
+	it('fires unspiderfied event on unspiderfy', function (done) {
+
+		group = new L.MarkerClusterGroup();
+
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+
+		clock.tick(1000);
+
+		// Add event listener
+		group.on('unspiderfied', function (event) {
+			expect(event.target).to.be(group);
+			expect(event.cluster).to.be.a(L.Marker);
+			expect(event.markers[1]).to.be(marker);
+			expect(event.markers[0]).to.be(marker2);
+
+			done();
+		});
+
+		marker.__parent.unspiderfy();
+
+		clock.tick(1000);
+
+	});
+
 	it('does not leave class "leaflet-cluster-anim" on mapPane when group is removed while spiderfied', function () {
 
 		group = new L.MarkerClusterGroup();
