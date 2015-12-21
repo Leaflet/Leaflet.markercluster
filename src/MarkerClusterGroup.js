@@ -383,6 +383,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides LayerGroup.eachLayer
 	eachLayer: function (method, context) {
 		var markers = this._needsClustering.slice(),
+			needsRemoving = this._needsRemoving,
 			i;
 
 		if (this._topClusterLevel) {
@@ -390,7 +391,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 
 		for (i = markers.length - 1; i >= 0; i--) {
-			method.call(context, markers[i]);
+			if (needsRemoving.indexOf(markers[i]) === -1) {
+				method.call(context, markers[i]);
+			}
 		}
 
 		this._nonPointGroup.eachLayer(method, context);
