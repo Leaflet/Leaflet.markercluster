@@ -286,6 +286,58 @@
 
 	});
 
+	describe('spiderfied event listener', function () {
+		it('Spiderfies 2 Markers', function (done) {
+
+			group = new L.MarkerClusterGroup();
+			var marker = new L.Marker([1.5, 1.5]);
+			var marker2 = new L.Marker([1.5, 1.5]);
+
+			group.addLayer(marker);
+			group.addLayer(marker2);
+			map.addLayer(group);
+
+			// Add event listener
+			group.on('spiderfied', function (event) {
+				expect(event.target).to.be(group);
+				expect(event.cluster).to.be.a(L.Marker);
+				expect(event.markers[1]).to.be(marker);
+				expect(event.markers[0]).to.be(marker2);
+
+				done();
+			});
+
+			marker.__parent.spiderfy();
+
+			clock.tick(200);
+		});
+
+		it('Spiderfies 2 Circles', function (done) {
+
+			group = new L.MarkerClusterGroup();
+			var marker = new L.Circle([1.5, 1.5], 10);
+			var marker2 = new L.Circle([1.5, 1.5], 10);
+
+			group.addLayer(marker);
+			group.addLayer(marker2);
+			map.addLayer(group);
+
+			// Add event listener
+			group.on('spiderfied', function (event) {
+				expect(event.target).to.be(group);
+				expect(event.cluster).to.be.a(L.Marker);
+				expect(event.markers[1]).to.be(marker);
+				expect(event.markers[0]).to.be(marker2);
+
+				done();
+			});
+
+			marker.__parent.spiderfy();
+
+			clock.tick(200);
+		});
+	});
+
 
 	/////////////////////////////
 	// CLEAN UP CODE

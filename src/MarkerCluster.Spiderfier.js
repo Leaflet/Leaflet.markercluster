@@ -163,7 +163,8 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 L.MarkerCluster.include({
 
 	_animationSpiderfy: function (childMarkers, positions) {
-		var group = this._group,
+		var me = this,
+			group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
 			thisLayerLatLng = this._latlng,
