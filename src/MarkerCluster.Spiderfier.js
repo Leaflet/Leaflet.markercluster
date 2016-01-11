@@ -94,6 +94,8 @@ L.MarkerCluster.include({
 			childMarkers = this.getAllChildMarkers(),
 			m, i;
 
+		group._ignoreMove = true;
+
 		this.setOpacity(1);
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			m = childMarkers[i];
@@ -113,11 +115,12 @@ L.MarkerCluster.include({
 				delete m._spiderLeg;
 			}
 		}
-		
+
 		group.fire('unspiderfied', {
 			cluster: this,
 			markers: childMarkers
 		});
+		group._ignoreMove = false;
 		group._spiderfied = null;
 	}
 });
@@ -130,6 +133,8 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 			fg = group._featureGroup,
 			legOptions = this._group.options.spiderLegPolylineOptions,
 			i, m, leg, newPos;
+
+		group._ignoreMove = true;
 
 		// Traverse in ascending order to make sure that inner circleMarkers are on top of further legs. Normal markers are re-ordered by newPosition.
 		// The reverse order trick no longer improves performance on modern browsers.
@@ -152,6 +157,8 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 			fg.addLayer(m);
 		}
 		this.setOpacity(0.3);
+
+		group._ignoreMove = false;
 		group.fire('spiderfied', {
 			cluster: this,
 			markers: childMarkers
@@ -193,6 +200,8 @@ L.MarkerCluster.include({
 			legOptions.opacity = finalLegOpacity;
 		}
 
+		group._ignoreMove = true;
+
 		// Add markers and spider legs to map, hidden at our center point.
 		// Traverse in ascending order to make sure that inner circleMarkers are on top of further legs. Normal markers are re-ordered by newPosition.
 		// The reverse order trick no longer improves performance on modern browsers.
@@ -222,7 +231,7 @@ L.MarkerCluster.include({
 			if (m.clusterHide) {
 				m.clusterHide();
 			}
-
+			
 			// Vectors just get immediately added
 			fg.addLayer(m);
 
@@ -258,6 +267,8 @@ L.MarkerCluster.include({
 		}
 		this.setOpacity(0.3);
 
+		group._ignoreMove = false;
+
 		setTimeout(function () {
 			group._animationEnd();
 			group.fire('spiderfied', {
@@ -277,6 +288,7 @@ L.MarkerCluster.include({
 			svg = L.Path.SVG,
 			m, i, leg, legPath, legLength, nonAnimatable;
 
+		group._ignoreMove = true;
 		group._animationStart();
 
 		//Make us visible and bring the child markers back in
@@ -316,6 +328,8 @@ L.MarkerCluster.include({
 				leg.setStyle({opacity: 0});
 			}
 		}
+
+		group._ignoreMove = false;
 
 		setTimeout(function () {
 			//If we have only <= one child left then that marker will be shown on the map so don't remove it!
@@ -375,6 +389,13 @@ L.MarkerClusterGroup.include({
 		}
 		//Browsers without zoomAnimation or a big zoom don't fire zoomstart
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
+
+		if (!L.Browser.touch) {
+			this._map.getRenderer(this);
+			//Needs to happen in the pageload, not after, or animations don't work in webkit
+			//  http://stackoverflow.com/questions/8455200/svg-animate-with-dynamically-added-elements
+			//Disable on touch browsers as the animation messes up on a touch zoom and isn't very noticable
+		}
 	},
 
 	_spiderfierOnRemove: function () {
@@ -433,7 +454,7 @@ L.MarkerClusterGroup.include({
 			if (layer.clusterShow) {
 				layer.clusterShow();
 			}
-			//Position will be fixed up immediately in _animationUnspiderfy
+				//Position will be fixed up immediately in _animationUnspiderfy
 			if (layer.setZIndexOffset) {
 				layer.setZIndexOffset(0);
 			}

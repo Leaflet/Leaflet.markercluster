@@ -21,6 +21,7 @@ describe('Option removeOutsideVisibleBounds', function () {
 	beforeEach(function () {
 
 		// Nothing for this test suite.
+		clock = sinon.useFakeTimers();
 
 	});
 
@@ -30,13 +31,17 @@ describe('Option removeOutsideVisibleBounds', function () {
 		L.Browser.mobile = previousMobileSetting;
 
 		if (group instanceof L.MarkerClusterGroup) {
-			group.removeLayers(group.getLayers());
+			//group.removeLayers(group.getLayers());
+			group.clearLayers();
 			map.removeLayer(group);
 		}
 
 		// group must be thrown away since we are testing it with a potentially
 		// different configuration at each test.
 		group = null;
+
+		clock.restore();
+		clock = null;
 
 	});
 
@@ -52,7 +57,7 @@ describe('Option removeOutsideVisibleBounds', function () {
 	    marker5 = L.marker([1.5, 3.4]), // 2 screens width away.
 	    markers = [marker1, marker2, marker3, marker4, marker5],
 	    previousMobileSetting = L.Browser.mobile,
-	    div, map, group, i;
+	    div, map, group, i, clock;
 
 	div = document.createElement('div');
 	div.style.width = '200px';
@@ -131,7 +136,7 @@ describe('Option removeOutsideVisibleBounds', function () {
 	// Following tests need markers at very high latitude.
 	// They test the _checkBoundsMaxLat method against the default Web/Spherical Mercator projection maximum latitude (85.0511287798).
 	// The actual map view should be '-1.0986328125,84.92929204957956,1.0986328125,85.11983467698401'
-	// The expdanded bounds without correction should be '-3.2958984375,84.7387494221751,3.2958984375,85.31037730438847'
+	// The expanded bounds without correction should be '-3.2958984375,84.7387494221751,3.2958984375,85.31037730438847'
 	var latLngsMaxLatDefault = [
 		[100, 3], // Impossible in real world, but nothing prevents the user from entering such latitude, and  Web/Spherical Mercator projection will still display it at 85.0511287798
 		[85.2, 1.5], // 1 "screen" heights away.
@@ -199,6 +204,8 @@ describe('Option removeOutsideVisibleBounds', function () {
 		prepareGroup();
 
 		checkProjection(latLngsMaxLatDefault);
+
+		clock.tick(1000);
 
 		expect(map._panes.markerPane.childNodes.length).to.be(4); // Markers 1, 2, 3 and 4.
 		expect(marker5._icon).to.be(null);
