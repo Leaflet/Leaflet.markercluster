@@ -205,7 +205,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					m = layersArray[offset];
 
 					// Group of layers, append children to layersArray and skip.
-					// Side effect: total increases, so chunkProgress ratio jumps backward.
+					// Side effects:
+					// - Total increases, so chunkProgress ratio jumps backward.
+					// - Input array is modified.
 					if (m instanceof L.LayerGroup) {
 						this._extractNonGroupLayers(m, layersArray);
 						l = layersArray.length;
