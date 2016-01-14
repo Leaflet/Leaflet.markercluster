@@ -74,11 +74,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	addLayer: function (layer) {
 
 		if (layer instanceof L.LayerGroup) {
-			var array = [];
-			for (var i in layer._layers) {
-				array.push(layer._layers[i]);
-			}
-			return this.addLayers(array);
+			return this.addLayers([layer]);
 		}
 
 		//Don't cluster non point data
@@ -180,19 +176,24 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	//Takes an array of markers and adds them in bulk
 	addLayers: function (layersArray) {
+		if (!L.Util.isArray(layersArray)) {
+			return this.addLayer(layersArray);
+		}
+
 		var fg = this._featureGroup,
-			npg = this._nonPointGroup,
-			chunked = this.options.chunkedLoading,
-			chunkInterval = this.options.chunkInterval,
-			chunkProgress = this.options.chunkProgress,
-			newMarkers, i, l, m;
+		    npg = this._nonPointGroup,
+		    chunked = this.options.chunkedLoading,
+		    chunkInterval = this.options.chunkInterval,
+		    chunkProgress = this.options.chunkProgress,
+		    l = layersArray.length,
+		    offset = 0,
+		    m;
 
 		if (this._map) {
-			var offset = 0,
-				started = (new Date()).getTime();
+			var started = (new Date()).getTime();
 			var process = L.bind(function () {
 				var start = (new Date()).getTime();
-				for (; offset < layersArray.length; offset++) {
+				for (; offset < l; offset++) {
 					if (chunked && offset % 200 === 0) {
 						// every couple hundred markers, instrument the time elapsed since processing started:
 						var elapsed = (new Date()).getTime() - start;
@@ -202,6 +203,14 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					}
 
 					m = layersArray[offset];
+
+					// Group of layers, append children to layersArray and skip.
+					// Side effect: total increases, so chunkProgress ratio jumps backward.
+					if (m instanceof L.LayerGroup) {
+						this._extractNonGroupLayers(m, layersArray);
+						l = layersArray.length;
+						continue;
+					}
 
 					//Not point data, can't be clustered
 					if (!m.getLatLng) {
@@ -219,7 +228,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					if (m.__parent) {
 						if (m.__parent.getChildCount() === 2) {
 							var markers = m.__parent.getAllChildMarkers(),
-								otherMarker = markers[0] === m ? markers[1] : markers[0];
+							    otherMarker = markers[0] === m ? markers[1] : markers[0];
 							fg.removeLayer(otherMarker);
 						}
 					}
@@ -227,11 +236,11 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 				if (chunkProgress) {
 					// report progress and time elapsed:
-					chunkProgress(offset, layersArray.length, (new Date()).getTime() - started);
+					chunkProgress(offset, l, (new Date()).getTime() - started);
 				}
 
 				// Completed processing all markers.
-				if (offset === layersArray.length) {
+				if (offset === l) {
 
 					// Refresh bounds and weighted positions.
 					this._topClusterLevel._recalculateBounds();
@@ -251,9 +260,17 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 			process();
 		} else {
-			newMarkers = [];
-			for (i = 0, l = layersArray.length; i < l; i++) {
-				m = layersArray[i];
+			var needsClustering = this._needsClustering;
+
+			for (; offset < l; offset++) {
+				m = layersArray[offset];
+
+				// Group of layers, append children to layersArray and skip.
+				if (m instanceof L.LayerGroup) {
+					this._extractNonGroupLayers(m, layersArray);
+					l = layersArray.length;
+					continue;
+				}
 
 				//Not point data, can't be clustered
 				if (!m.getLatLng) {
@@ -265,9 +282,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					continue;
 				}
 
-				newMarkers.push(m);
+				needsClustering.push(m);
 			}
-			this._needsClustering = this._needsClustering.concat(newMarkers);
 		}
 		return this;
 	},
@@ -994,6 +1010,34 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		} else {
 			newCluster._updateIcon();
 		}
+	},
+
+	/**
+	 * Extracts individual (i.e. non-group) layers from a Layer Group.
+	 * @param group to extract layers from.
+	 * @param output {Array} in which to store the extracted layers.
+	 * @returns {*|Array}
+	 * @private
+	 */
+	_extractNonGroupLayers: function (group, output) {
+		var layers = group.getLayers(),
+		    i = 0,
+		    layer;
+
+		output = output || [];
+
+		for (; i < layers.length; i++) {
+			layer = layers[i];
+
+			if (layer instanceof L.LayerGroup) {
+				this._extractNonGroupLayers(layer, output);
+				continue;
+			}
+
+			output.push(layer);
+		}
+
+		return output;
 	},
 
 	/**
