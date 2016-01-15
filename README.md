@@ -158,6 +158,11 @@ markers.on('clusterclick', function (a) {
 #### Bulk adding and removing Markers
 `addLayers` and `removeLayers` are bulk methods for adding and removing markers and should be favoured over the single versions when doing bulk addition/removal of markers. Each takes an array of markers. You can use [dedicated options](#chunked-addlayers) to fine-tune the behaviour of `addLayers`.
 
+These methods extract non-group layer children from Layer Group types, even deeply nested. _However_, be noted that:
+- The input array is modified. If you need to keep it untouched, clone it before passing it (e.g. `newArray = originalArray.slice()`).
+- `chunkProgress` jumps backward when `addLayers` finds a group (since appending its children to the input array makes the total increase).
+- `hasLayer` method will return `true` for child non-group layers, but `false` on any (possibly parent) Layer Group type.
+
 If you are removing a lot of markers it will almost definitely be better to call `clearLayers` then call `addLayers` to add the markers you don't want to remove back in. See [#59](https://github.com/Leaflet/Leaflet.markercluster/issues/59#issuecomment-9320628) for details.
 
 #### Getting the visible parent of a marker

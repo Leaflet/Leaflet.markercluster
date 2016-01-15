@@ -125,13 +125,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	removeLayer: function (layer) {
 
-		if (layer instanceof L.LayerGroup)
-		{
-			var array = [];
-			for (var i in layer._layers) {
-				array.push(layer._layers[i]);
-			}
-			return this.removeLayers(array);
+		if (layer instanceof L.LayerGroup) {
+			return this.removeLayers([layer]);
 		}
 
 		//Non point layers
@@ -208,6 +203,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					// Side effects:
 					// - Total increases, so chunkProgress ratio jumps backward.
 					// - Input array is modified.
+					// Changing array length while looping does not affect performance in current browsers:
+					// http://jsperf.com/for-loop-changing-length/6
 					if (m instanceof L.LayerGroup) {
 						this._extractNonGroupLayers(m, layersArray);
 						l = layersArray.length;
@@ -292,13 +289,22 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	//Takes an array of markers and removes them in bulk
 	removeLayers: function (layersArray) {
-		var i, l, m,
+		var i, m,
+		    l = layersArray.length,
 			fg = this._featureGroup,
 			npg = this._nonPointGroup;
 
 		if (!this._map) {
-			for (i = 0, l = layersArray.length; i < l; i++) {
+			for (i = 0; i < l; i++) {
 				m = layersArray[i];
+
+				// Group of layers, append children to layersArray and skip.
+				if (m instanceof L.LayerGroup) {
+					this._extractNonGroupLayers(m, layersArray);
+					l = layersArray.length;
+					continue;
+				}
+
 				this._arraySplice(this._needsClustering, m);
 				npg.removeLayer(m);
 				if (this.hasLayer(m)) {
@@ -310,14 +316,33 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		if (this._unspiderfy) {
 			this._unspiderfy();
-			for (i = 0, l = layersArray.length; i < l; i++) {
-				m = layersArray[i];
+
+			// Work on a copy of the array, so that next loop is not affected.
+			var layersArray2 = layersArray.slice(),
+			    l2 = l;
+			for (i = 0; i < l2; i++) {
+				m = layersArray2[i];
+
+				// Group of layers, append children to layersArray and skip.
+				if (m instanceof L.LayerGroup) {
+					this._extractNonGroupLayers(m, layersArray2);
+					l2 = layersArray2.length;
+					continue;
+				}
+
 				this._unspiderfyLayer(m);
 			}
 		}
 
-		for (i = 0, l = layersArray.length; i < l; i++) {
+		for (i = 0; i < l; i++) {
 			m = layersArray[i];
+
+			// Group of layers, append children to layersArray and skip.
+			if (m instanceof L.LayerGroup) {
+				this._extractNonGroupLayers(m, layersArray);
+				l = layersArray.length;
+				continue;
+			}
 
 			if (!m.__parent) {
 				npg.removeLayer(m);
