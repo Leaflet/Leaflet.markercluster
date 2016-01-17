@@ -39,14 +39,14 @@
 				var popupText = 'geometry type: ' + feature.geometry.type;
 
 				if (feature.properties.color) {
-					popupText += '<br/>color: ' + feature.properties.color
+					popupText += '<br/>color: ' + feature.properties.color;
 				}
 
 				layer.bindPopup(popupText);
 			}
 		});
 
-		geojson.addLayer(new L.Marker(new L.LatLng(2.745530718801952, 105.194091796875)))
+		geojson.addLayer(new L.Marker(new L.LatLng(2.745530718801952, 105.194091796875)));
 
 		var eye1 = new L.Marker(new L.LatLng(-0.7250783020332547, 101.8212890625));
 		var eye2 = new L.Marker(new L.LatLng(-0.7360637370492077, 103.2275390625));
