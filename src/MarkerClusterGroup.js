@@ -182,6 +182,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    chunkProgress = this.options.chunkProgress,
 		    l = layersArray.length,
 		    offset = 0,
+		    originalArray = true,
 		    m;
 
 		if (this._map) {
@@ -202,10 +203,14 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					// Group of layers, append children to layersArray and skip.
 					// Side effects:
 					// - Total increases, so chunkProgress ratio jumps backward.
-					// - Input array is modified.
+					// - Groups are not included in this group, only their non-group child layers (hasLayer).
 					// Changing array length while looping does not affect performance in current browsers:
 					// http://jsperf.com/for-loop-changing-length/6
 					if (m instanceof L.LayerGroup) {
+						if (originalArray) {
+							layersArray = layersArray.slice();
+							originalArray = false;
+						}
 						this._extractNonGroupLayers(m, layersArray);
 						l = layersArray.length;
 						continue;
@@ -266,6 +271,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 				// Group of layers, append children to layersArray and skip.
 				if (m instanceof L.LayerGroup) {
+					if (originalArray) {
+						layersArray = layersArray.slice();
+						originalArray = false;
+					}
 					this._extractNonGroupLayers(m, layersArray);
 					l = layersArray.length;
 					continue;
@@ -291,8 +300,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	removeLayers: function (layersArray) {
 		var i, m,
 		    l = layersArray.length,
-			fg = this._featureGroup,
-			npg = this._nonPointGroup;
+		    fg = this._featureGroup,
+		    npg = this._nonPointGroup,
+		    originalArray = true;
 
 		if (!this._map) {
 			for (i = 0; i < l; i++) {
@@ -300,6 +310,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 				// Group of layers, append children to layersArray and skip.
 				if (m instanceof L.LayerGroup) {
+					if (originalArray) {
+						layersArray = layersArray.slice();
+						originalArray = false;
+					}
 					this._extractNonGroupLayers(m, layersArray);
 					l = layersArray.length;
 					continue;
@@ -339,6 +353,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 			// Group of layers, append children to layersArray and skip.
 			if (m instanceof L.LayerGroup) {
+				if (originalArray) {
+					layersArray = layersArray.slice();
+					originalArray = false;
+				}
 				this._extractNonGroupLayers(m, layersArray);
 				l = layersArray.length;
 				continue;
