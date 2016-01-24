@@ -377,6 +377,10 @@ L.MarkerClusterGroup.include({
 	//The MarkerCluster currently spiderfied (if any)
 	_spiderfied: null,
 
+	unspiderfy: function () {
+		this._unspiderfy.apply(this, arguments);
+	},
+
 	_spiderfierOnAdd: function () {
 		this._map.on('click', this._unspiderfyWrapper, this);
 
