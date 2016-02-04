@@ -799,7 +799,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			bottomCluster = bottomCluster._childClusters[0];
 		}
 
-		if (bottomCluster._zoom === this._maxZoom && bottomCluster._childCount === cluster._childCount) {
+		if (bottomCluster._zoom === this._map.getMaxZoom() && bottomCluster._childCount === cluster._childCount) {
 			// All child markers are contained in a single cluster from this._maxZoom to this cluster.
 			if (this.options.spiderfyOnMaxZoom) {
 				cluster.spiderfy();
