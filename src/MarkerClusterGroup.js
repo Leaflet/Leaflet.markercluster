@@ -15,6 +15,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		disableClusteringAtZoom: null,
 
+        // Automatically spiderfy when the max zoom has reached.
+        autoSpiderfyOnMaxZoom: false,
+
 		// Setting this to false prevents the removal of any clusters outside of the viewpoint, which
 		// is the default behaviour for performance reasons.
 		removeOutsideVisibleBounds: true,
@@ -405,7 +408,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides LayerGroup.getLayer, WARNING: Really bad performance
 	getLayer: function (id) {
 		var result = null;
-		
+
 		id = parseInt(id, 10);
 
 		this.eachLayer(function (l) {
@@ -443,7 +446,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	//Zoom down to show the given layer (spiderfying if necessary) then calls the callback
 	zoomToShowLayer: function (layer, callback) {
-		
+
 		if (typeof callback !== 'function') {
 			callback = function () {};
 		}
@@ -796,7 +799,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var maxZoom = this._map.getMaxZoom(),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
-	
+
 		//If we just set maxClusterRadius to a single number, we need to create
 		//a simple function to return that number. Otherwise, we just have to
 		//use the function we've passed in.
@@ -810,7 +813,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._maxZoom = maxZoom;
 		this._gridClusters = {};
 		this._gridUnclustered = {};
-	
+
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= 0; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
