@@ -41,10 +41,6 @@ L.MarkerCluster.include({
 	},
 
 	unspiderfy: function (zoomDetails) {
-		/// <param Name="zoomDetails">Argument from zoomanim if being called in a zoom animation or null otherwise</param>
-		if (this._group._inZoomAnimation) {
-			return;
-		}
 		this._animationUnspiderfy(zoomDetails);
 
 		this._group._spiderfied = null;
@@ -374,6 +370,7 @@ L.MarkerClusterGroup.include({
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
 
 		if (this.options.autoSpiderfyOnMaxZoom) {
+            this._map.on('layeradd', this._spiderfyOnAdd, this);
 			this._map.on('zoomend', this._spiderfyOnZoom, this);
 		}
 	},
@@ -383,6 +380,7 @@ L.MarkerClusterGroup.include({
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
 		this._map.off('zoomend', this._noanimationUnspiderfy, this);
+        this._map.off('layeradd', this._spiderfyOnAdd, this);
 		this._map.off('zoomend', this._spiderfyOnZoom, this);
 
 		//Ensure that markers are back where they should be
@@ -390,14 +388,36 @@ L.MarkerClusterGroup.include({
 		this._noanimationUnspiderfy();
 	},
 
+    _spiderfyOnAdd: function (e) {
+        if (this._spiderfied) {
+            return;
+        }
+
+        if (this._map.getZoom() === this._map.getMaxZoom()) {
+            this._spiderfiedByZoom = true;
+            this._unspiderfy();
+
+            if (e.layer.spiderfy) {
+                e.layer.spiderfy();
+            }
+        }
+    },
+
 	// Spiderfy the clusten when the max zoom level has reached.
 	_spiderfyOnZoom: function () {
-		if (this._map.getZoom() === this._map.getMaxZoom()) {
+        if (this._spiderfied) {
+            return;
+        }
+
+        if (this._map.getZoom() === this._map.getMaxZoom()) {
 			this._spiderfiedByZoom = true;
+            this._unspiderfy();
 
 			var layers = this._featureGroup.getLayers();
 			for (var i in layers) {
-				layers[i].spiderfy();
+                if (layers[i].spiderfy) {
+                    layers[i].spiderfy();
+                }
 			}
 		} else {
 			this._spiderfiedByZoom = false;
@@ -435,12 +455,14 @@ L.MarkerClusterGroup.include({
 
 	_unspiderfy: function (zoomDetails) {
 		if (this._spiderfied) {
+            this._spiderfiedByZoom = false;
 			this._spiderfied.unspiderfy(zoomDetails);
 		}
 	},
 
 	_noanimationUnspiderfy: function () {
 		if (this._spiderfied) {
+            this._spiderfiedByZoom = false;
 			this._spiderfied._noanimationUnspiderfy();
 		}
 	},

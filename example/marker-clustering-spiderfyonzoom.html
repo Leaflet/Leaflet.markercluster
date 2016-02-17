@@ -34,13 +34,25 @@
 			}),
 			latlng = L.latLng(-37.82, 175.24);
 
-		var map = L.map('map', {center: latlng, zoom: 13, layers: [tiles]});
+		var map = L.map('map', {
+            center: latlng,
+            zoom: 13,
+            maxZoom: 13,
+            layers: [tiles]
+        });
 
-		var markers = L.markerClusterGroup({
+		var markerCluster = L.markerClusterGroup({
             spiderfyOnMaxZoom: true,
             autoSpiderfyOnMaxZoom: true
         });
-		var markerList = [];
+
+		map.addLayer(markerCluster);
+
+        var featureLayers = {};
+        featureLayers['first'] = L.featureGroup();
+        featureLayers['first'].addTo(map);
+        featureLayers['second'] = L.featureGroup();
+        featureLayers['second'].addTo(map);
 
 		function populate() {
 			for (var i = 0; i < addressPoints.length; i++) {
@@ -48,20 +60,22 @@
 				var title = a[2];
                 var marker;
 
-                if (i < addressPoints.length / 2) {
-    				marker = L.marker(L.latLng(-37.82, 175.24), { title: title });
-                } else {
-    				marker = L.marker(L.latLng(-46.439648, 168.352136), { title: title });
-                }
+                marker = L.marker(L.latLng(-37.82, 175.24), { title: title });
 				marker.bindPopup(title);
-				markers.addLayer(marker);
-				markerList.push(marker);
+
+                if (i < addressPoints.length / 2) {
+	                featureLayers['first'].addLayer(marker);
+                } else {
+                    featureLayers['second'].addLayer(marker);
+                }
 			}
 		}
 
 		populate();
 
-		map.addLayer(markers);
+        markerCluster.clearLayers();
+        markerCluster.addLayer(featureLayers['first']);
+        markerCluster.addLayer(featureLayers['second']);
 
 		document.getElementById('doit').onclick = function () {
 			var m = markerList[Math.floor(Math.random() * markerList.length)];
