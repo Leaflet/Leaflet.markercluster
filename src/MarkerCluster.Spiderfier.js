@@ -439,7 +439,7 @@ L.MarkerClusterGroup.include({
 	},
 
 	_unspiderfyWrapper: function () {
-		if (this._spiderfiedByZoom) {
+		if (this._spiderfiedByZoom || this.options.preventUnspiderfyOnClick) {
             return;
         }
 

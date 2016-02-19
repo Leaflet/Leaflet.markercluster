@@ -23,6 +23,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
         // Automatically spiderfy when the max zoom has reached.
         autoSpiderfyOnMaxZoom: false,
 
+        // Prevent unspiderfy on click (except for other clusters)
+        preventUnspiderfyOnClick: false,
+
 		// Setting this to false prevents the removal of any clusters outside of the viewpoint, which
 		// is the default behaviour for performance reasons.
 		removeOutsideVisibleBounds: true,
@@ -2356,7 +2359,7 @@ L.MarkerClusterGroup.include({
 	},
 
 	_unspiderfyWrapper: function () {
-		if (this._spiderfiedByZoom) {
+		if (this._spiderfiedByZoom || this.options.preventUnspiderfyOnClick) {
             return;
         }
 
