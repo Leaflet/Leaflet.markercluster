@@ -370,7 +370,7 @@ L.MarkerClusterGroup.include({
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
 
 		if (this.options.autoSpiderfyOnMaxZoom) {
-            this._map.on('layeradd', this._spiderfyOnAdd, this);
+            this._featureGroup.on('layeradd', this._spiderfyOnAdd, this);
 			this._map.on('zoomend', this._spiderfyOnZoom, this);
 		}
 	},
@@ -380,7 +380,7 @@ L.MarkerClusterGroup.include({
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
 		this._map.off('zoomend', this._noanimationUnspiderfy, this);
-        this._map.off('layeradd', this._spiderfyOnAdd, this);
+        this._featureGroup.off('layeradd', this._spiderfyOnAdd, this);
 		this._map.off('zoomend', this._spiderfyOnZoom, this);
 
 		//Ensure that markers are back where they should be
@@ -390,7 +390,7 @@ L.MarkerClusterGroup.include({
 
     _spiderfyOnAdd: function (e) {
         if (this._spiderfied) {
-            return;
+            this._unspiderfy();
         }
 
         if (this._map.getZoom() === this._map.getMaxZoom()) {
