@@ -76,6 +76,7 @@
         markerCluster.clearLayers();
         markerCluster.addLayer(featureLayers['first']);
         markerCluster.addLayer(featureLayers['second']);
+        markerCluster.spiderfyOnZoom();
 
 		document.getElementById('doit').onclick = function () {
 			var m = markerList[Math.floor(Math.random() * markerList.length)];

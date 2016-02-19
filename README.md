@@ -202,6 +202,7 @@ myMarker.refreshIconOptions(optionsMap, true);
 #### Other Group Methods
 * **hasLayer**(layer): Returns true if the given layer (marker) is in the MarkerClusterGroup.
 * **zoomToShowLayer**(layer, callback): Zooms to show the given marker (spiderfying if required), calls the callback when the marker is visible on the map.
+* **spiderfyOnZoom**: Manually trigger the spiderfy. Only works when the map has reached the max zoom level. The same method is fired on zoom when `autoSpiderfyOnMaxZoom` is set to true.
 
 ### Clusters methods
 The following methods can be used with clusters (not the group). They are typically used for event handling.

@@ -41,6 +41,11 @@ L.MarkerCluster.include({
 	},
 
 	unspiderfy: function (zoomDetails) {
+        /// <param Name="zoomDetails">Argument from zoomanim if being called in a zoom animation or null otherwise</param>
+		if (this._group._spiderfied === null && this._group._inZoomAnimation) {
+			return;
+		}
+
 		this._animationUnspiderfy(zoomDetails);
 
 		this._group._spiderfied = null;
@@ -370,8 +375,8 @@ L.MarkerClusterGroup.include({
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
 
 		if (this.options.autoSpiderfyOnMaxZoom) {
-            this._featureGroup.on('layeradd', this._spiderfyOnAdd, this);
-			this._map.on('zoomend', this._spiderfyOnZoom, this);
+            // this._featureGroup.on('layeradd', this._spiderfyOnAdd, this);
+			this._map.on('zoomend', this.spiderfyOnZoom, this);
 		}
 	},
 
@@ -380,36 +385,25 @@ L.MarkerClusterGroup.include({
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
 		this._map.off('zoomend', this._noanimationUnspiderfy, this);
-        this._featureGroup.off('layeradd', this._spiderfyOnAdd, this);
-		this._map.off('zoomend', this._spiderfyOnZoom, this);
+        // this._featureGroup.off('layeradd', this._spiderfyOnAdd, this);
+		this._map.off('zoomend', this.spiderfyOnZoom, this);
 
 		//Ensure that markers are back where they should be
 		// Use no animation to avoid a sticky leaflet-cluster-anim class on mapPane
 		this._noanimationUnspiderfy();
 	},
 
-    _spiderfyOnAdd: function (e) {
-        if (this._spiderfied) {
-            this._unspiderfy();
-        }
-
-        if (this._map.getZoom() === this._map.getMaxZoom()) {
-            this._spiderfiedByZoom = true;
-            this._unspiderfy();
-
-            if (e.layer.spiderfy) {
-                e.layer.spiderfy();
-            }
-        }
+    _isZoomMax: function () {
+        return this._map.getZoom() === this._map.getMaxZoom();
     },
 
 	// Spiderfy the clusten when the max zoom level has reached.
-	_spiderfyOnZoom: function () {
+	spiderfyOnZoom: function () {
         if (this._spiderfied) {
             return;
         }
 
-        if (this._map.getZoom() === this._map.getMaxZoom()) {
+        if (this._isZoomMax()) {
 			this._spiderfiedByZoom = true;
             this._unspiderfy();
 
