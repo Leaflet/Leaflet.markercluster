@@ -987,10 +987,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_mergeSplitClusters: function () {
 		var mapZoom = Math.round(this._map._zoom);
 
-		//Incase we are starting to split before the animation finished
+		//In case we are starting to split before the animation finished
 		this._processQueue();
 
-		if (this._zoom < mapZoom && this._currentShownBounds.contains(this._getExpandedVisibleBounds())) { //Zoom in, split
+		if (this._zoom < mapZoom && this._currentShownBounds.intersects(this._getExpandedVisibleBounds())) { //Zoom in, split
 			this._animationStart();
 			//Remove clusters now off screen
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._zoom, this._getExpandedVisibleBounds());
