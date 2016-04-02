@@ -67,7 +67,7 @@ map.addLayer(markers);
 By default the Clusterer enables some nice defaults for you:
 * **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
 * **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
-* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are physically located at the same latitude and longitude.*)
+* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level or at zoom specified by `disableClusteringAtZoom` option*)
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
 * **spiderLegPolylineOptions**: Allows you to specify [PolylineOptions](http://leafletjs.com/reference.html#polyline-options) to style spider legs. By default, they are `{ weight: 1.5, color: '#222', opacity: 0.5 }`.
 
@@ -101,7 +101,7 @@ If you need to update the clusters icon (e.g. they are based on markers real-tim
 #### Enabled by default (boolean options)
 * **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
 * **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
-* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level* or at zoom specified by `disableClusteringAtZoom` option).
+* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level or at zoom specified by `disableClusteringAtZoom` option*).
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
 * **animate**: Smoothly split / merge cluster children when zooming and spiderfying. If `L.DomUtil.TRANSITION` is false, this option has no effect (no animation is possible).
 
