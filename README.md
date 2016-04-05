@@ -238,6 +238,8 @@ markers.on('clusterclick', function (a) {
 #### Other clusters methods
 * **getChildCount**: Returns the total number of markers contained within that cluster.
 * **getAllChildMarkers**: Returns the array of total markers contained within that cluster.
+* **spiderfy**: Spiderfies the child markers of this cluster
+* **unspiderfy**: Unspiderfies a cluster (opposite of spiderfy)
 
 ## Handling LOTS of markers
 The Clusterer can handle 10,000 or even 50,000 markers (in chrome). IE9 has some issues with 50,000.
