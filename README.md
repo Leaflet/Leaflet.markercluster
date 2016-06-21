@@ -156,7 +156,7 @@ markers.on('clusterclick', function (a) {
 `addLayer`, `removeLayer` and `clearLayers` are supported and they should work for most uses.
 
 #### Bulk adding and removing Markers
-`addLayers` and `removeLayers` are bulk methods for adding and removing markers and should be favoured over the single versions when doing bulk addition/removal of markers. Each takes an array of markers. You can use [dedicated options](#chunked-addlayers) to fine-tune the behaviour of `addLayers`.
+`addLayers` and `removeLayers` are bulk methods for adding and removing markers and should be favoured over the single versions when doing bulk addition/removal of markers. Each takes an array of markers. You can use [dedicated options](#chunked-addlayers-options) to fine-tune the behaviour of `addLayers`.
 
 These methods extract non-group layer children from Layer Group types, even deeply nested. _However_, be noted that:
 - `chunkProgress` jumps backward when `addLayers` finds a group (since appending its children to the input array makes the total increase).
