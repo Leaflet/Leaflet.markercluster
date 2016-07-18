@@ -62,19 +62,6 @@ L.MarkerClusterGroup.include({
 	},
 
 	/**
-	 * Refreshes the icon of all "dirty" visible clusters.
-	 * Non-visible "dirty" clusters will be updated when they are added to the map.
-	 * @private
-	 */
-	_refreshClustersIcons: function () {
-		this._featureGroup.eachLayer(function (c) {
-			if (c instanceof L.MarkerCluster && c._iconNeedsUpdate) {
-				c._updateIcon();
-			}
-		});
-	},
-
-	/**
 	 * Re-draws the icon of the supplied markers.
 	 * To be used in singleMarkerMode only.
 	 * @param layers Array(L.Marker)|Map(L.Marker) list of markers.
