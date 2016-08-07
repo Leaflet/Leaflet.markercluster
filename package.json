@@ -3,9 +3,6 @@
 	"repository": "https://github.com/Leaflet/Leaflet.markercluster",
 	"version": "1.0.0-rc.1",
 	"description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet",
-	"peerDependencies": {
-		"leaflet": "~1.0.0-rc.1"
-	},
 	"devDependencies": {
 		"jshint": "~2.1.3",
 		"mocha": "~1.10.0",
