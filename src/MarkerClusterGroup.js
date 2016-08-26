@@ -108,7 +108,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Work out what is visible
 		var visibleLayer = layer,
-			currentZoom = this._map.getZoom();
+		    currentZoom = this._zoom;
 		if (layer.__parent) {
 			while (visibleLayer.__parent._zoom >= currentZoom) {
 				visibleLayer = visibleLayer.__parent;
@@ -1251,7 +1251,7 @@ L.MarkerClusterGroup.include({
 					this._forceLayout();
 
 					me._animationStart();
-					me._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._map.getZoom());
+					me._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._zoom);
 				}
 			}
 		}
