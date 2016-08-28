@@ -108,7 +108,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Work out what is visible
 		var visibleLayer = layer,
-			currentZoom = this._map.getZoom();
+		    currentZoom = this._zoom;
 		if (layer.__parent) {
 			while (visibleLayer.__parent._zoom >= currentZoom) {
 				visibleLayer = visibleLayer.__parent;
@@ -527,7 +527,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		if (layer._icon && this._map.getBounds().contains(layer.getLatLng())) {
 			//Layer is visible ond on screen, immediate return
 			callback();
-		} else if (layer.__parent._zoom < this._map.getZoom()) {
+		} else if (layer.__parent._zoom < Math.round(this._map._zoom)) {
 			//Layer should be visible at this zoom level. It must not be on screen so just pan over to it
 			this._map.on('moveend', showMarker, this);
 			this._map.panTo(layer.getLatLng());
@@ -574,7 +574,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._needsRemoving = [];
 
 		//Remember the current zoom level and bounds
-		this._zoom = this._map.getZoom();
+		this._zoom = Math.round(this._map._zoom);
 		this._currentShownBounds = this._getExpandedVisibleBounds();
 
 		this._map.on('zoomend', this._zoomEnd, this);
@@ -1251,7 +1251,7 @@ L.MarkerClusterGroup.include({
 					this._forceLayout();
 
 					me._animationStart();
-					me._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._map.getZoom());
+					me._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._zoom);
 				}
 			}
 		}
