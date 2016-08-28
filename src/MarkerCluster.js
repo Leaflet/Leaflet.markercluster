@@ -370,29 +370,20 @@ L.MarkerCluster = L.Marker.extend({
 		    zoom = this._zoom,
 		    i, c;
 
-		if (zoomLevelToStart > zoom) { //Still going down to required depth, just recurse to child clusters
+		if (zoomLevelToStart <= zoom) {
+			if (runAtEveryLevel) {
+				runAtEveryLevel(this);
+			}
+			if (runAtBottomLevel && zoom === zoomLevelToStop) {
+				runAtBottomLevel(this);
+			}
+		}
+
+		if (zoom < zoomLevelToStart || zoom < zoomLevelToStop) {
 			for (i = childClusters.length - 1; i >= 0; i--) {
 				c = childClusters[i];
 				if (boundsToApplyTo.intersects(c._bounds)) {
 					c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
-				}
-			}
-		} else { //In required depth
-
-			if (runAtEveryLevel) {
-				runAtEveryLevel(this);
-			}
-			if (runAtBottomLevel && this._zoom === zoomLevelToStop) {
-				runAtBottomLevel(this);
-			}
-
-			//TODO: This loop is almost the same as above
-			if (zoomLevelToStop > zoom) {
-				for (i = childClusters.length - 1; i >= 0; i--) {
-					c = childClusters[i];
-					if (boundsToApplyTo.intersects(c._bounds)) {
-						c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
-					}
 				}
 			}
 		}
