@@ -55,24 +55,19 @@ L.MarkerCluster = L.Marker.extend({
 	arithmetic: function (type, propertyName, accuracy) {
 		accuracy = accuracy || 0;
 		var values = [];
+		var sum = 0;
 		var markers = this.getAllChildMarkers();
 		for (var i = 0; i < markers.length; i++) {
 			var val = markers[i].feature.properties[propertyName];
 			if (!isNaN(parseFloat(val))) {//if is numeric
 				values.push(+val);
+				sum += val;
 			}
 		}
-		var sum = 0;
 		switch (type) {
 		case 'sum':
-			for (var s = 0; s < values.length; s++) {
-				sum += values[s];
-			}
 			return sum.toFixed(accuracy);
 		case 'avg':
-			for (var a = 0; a < values.length; a++) {
-				sum += values[a];
-			}
 			return values.length > 0 ? (sum / values.length).toFixed(accuracy) : 0;
 		default:
 			console.log('MarkerCluster arithmetic: unknown type ' + type);
