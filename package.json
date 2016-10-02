@@ -10,7 +10,7 @@
 		"uglify-js": "~2.3.6",
 		"jake": "~0.5.16",
 		"magic-string": "^0.7.0",
-		"leaflet": "~1.0.0-rc.1"
+		"leaflet": "~1.0.0"
 	},
 	"main": "dist/leaflet.markercluster.js",
 	"scripts": {
