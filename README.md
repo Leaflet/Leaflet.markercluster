@@ -44,7 +44,7 @@ removed link to h1 and indented back 2 spaces all links.
 
 ## Using the plugin
 
-Install with npm: `npm install git+https://github.com/Leaflet/Leaflet.markercluster.git#v1.0.0`
+Install with npm: `npm install leaflet.markercluster`
 
 See the included examples for usage.
 
