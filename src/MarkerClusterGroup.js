@@ -28,11 +28,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		// 'clock-concentric' - in case of one circle, elements are places based on the concentric style, more circles are in clock style
 		elementsPlacementStrategy: 'default',
 
-
 		// Options that are valid for placement strategies 'concentric', 'clock' and 'clock-concentric'
-		// Number of elements in the first circle
+		// number of elements in the first circle
 		firstCircleElements: 10,
-		// multiplicator of elements number for the next circle
+		// multiplicator of elements number in the next circle
 		elementsMultiplier: 1.5,
 		// Value to be added to each new circle
 		spiderfyDistanceSurplus: 30,
@@ -40,7 +39,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		helpingCircles: true,
 
 		// Possibility to specify helpingCircle style
-		clockHelpingCircleOptions: { fillOpacity: 0, color: 'black', weight: 0.4 },
+		helpingCircleOptions: { fillOpacity: 0, color: 'grey', weight: 0.6 },
 
 		// Set to false to disable all animations (zoom and spiderfy).
 		// If false, option animateAddingMarkers below has no effect.
@@ -53,7 +52,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		// Increase to increase the distance away that spiderfied markers appear from the center
 		spiderfyDistanceMultiplier: 1,
-
 
 		// Make it possible to specify a polyline options on a spider leg
 		spiderLegPolylineOptions: { weight: 1.5, color: '#222', opacity: 0.5 },
