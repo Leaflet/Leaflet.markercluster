@@ -45,7 +45,15 @@ removed link to h1 and indented back 2 spaces all links.
 
 
 ## Using the plugin
-Install with npm: `npm install leaflet.markercluster`
+Include the plugin CSS and JS files on your page after Leaflet files, using your method of choice:
+* [Download the `v1.0.0` release](https://github.com/Leaflet/Leaflet.markercluster/archive/v1.0.0.zip)
+* Use unpkg CDN: `https://unpkg.com/leaflet.markercluster@1.0.0/dist/`
+* Install with npm: `npm install leaflet.markercluster`
+
+In each case, use files in the `dist` folder:
+* `MarkerCluster.css`
+* `MarkerCluster.Default.css` (not needed if you use your own `createIconFunction` instead of the default one)
+* `leaflet.markercluster.js` (or `leaflet.markercluster-src.js` for the non-minified version)
 
 ### Building, testing and linting scripts
 Install jake `npm install -g jake` then run `npm install`
