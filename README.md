@@ -49,9 +49,9 @@ Install with npm: `npm install leaflet.markercluster`
 
 ### Building, testing and linting scripts
 Install jake `npm install -g jake` then run `npm install`
-* To check the code for errors and build Leaflet from source, run "jake".
-* To run the tests, run "jake test".
-* For a custom build, open build/build.html in the browser and follow the instructions
+* To check the code for errors and build Leaflet from source, run `jake`.
+* To run the tests, run `jake test`.
+* For a custom build, open `build/build.html` in the browser and follow the instructions
 
 ### Examples
 See the included examples for usage.
