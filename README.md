@@ -16,9 +16,9 @@ removed link to h1 and indented back 2 spaces all links.
 -->
 ## Table of Contents
   * [Using the plugin](#using-the-plugin)
-    * [Usage](#usage)
     * [Building, testing and linting scripts](#building-testing-and-linting-scripts)
     * [Examples](#examples)
+    * [Usage](#usage)
   * [Options](#options)
     * [Defaults](#defaults)
     * [Customising the Clustered Markers](#customising-the-clustered-markers)
