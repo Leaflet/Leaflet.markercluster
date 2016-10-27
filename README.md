@@ -17,6 +17,8 @@ removed link to h1 and indented back 2 spaces all links.
 ## Table of Contents
   * [Using the plugin](#using-the-plugin)
     * [Usage](#usage)
+    * [Building, testing and linting scripts](#building-testing-and-linting-scripts)
+    * [Examples](#examples)
   * [Options](#options)
     * [Defaults](#defaults)
     * [Customising the Clustered Markers](#customising-the-clustered-markers)
@@ -43,9 +45,15 @@ removed link to h1 and indented back 2 spaces all links.
 
 
 ## Using the plugin
-
 Install with npm: `npm install leaflet.markercluster`
 
+### Building, testing and linting scripts
+Install jake `npm install -g jake` then run `npm install`
+* To check the code for errors and build Leaflet from source, run `jake`.
+* To run the tests, run `jake test`.
+* For a custom build, open `build/build.html` in the browser and follow the instructions
+
+### Examples
 See the included examples for usage.
 
 The [realworld example](http://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-realworld.388.html) is a good place to start, it uses all of the defaults of the clusterer.
