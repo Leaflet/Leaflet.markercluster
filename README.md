@@ -5,6 +5,8 @@ Provides Beautiful Animated Marker Clustering functionality for [Leaflet](http:/
 
 *Requires Leaflet 1.0.0*
 
+![cluster map example](http://i.imgur.com/AwCxRye.png)
+
 For a Leaflet 0.7 compatible version, [use the leaflet-0.7 branch](https://github.com/Leaflet/Leaflet.markercluster/tree/leaflet-0.7)<br>
 For a Leaflet 0.5 compatible version, [Download b128e950](https://github.com/Leaflet/Leaflet.markercluster/archive/b128e950d8f5d7da5b60bd0aa9a88f6d3dd17c98.zip)<br>
 For a Leaflet 0.4 compatible version, [Download the 0.2 release](https://github.com/Leaflet/Leaflet.markercluster/archive/0.2.zip)
