@@ -20,6 +20,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		disableClusteringAtZoom: null,
 
+        // Automatically spiderfy when the max zoom has reached.
+        autoSpiderfyOnMaxZoom: false,
+
+        // Prevent unspiderfy on click (except for other clusters)
+        preventUnspiderfyOnClick: false,
+
 		// Setting this to false prevents the removal of any clusters outside of the viewpoint, which
 		// is the default behaviour for performance reasons.
 		removeOutsideVisibleBounds: true,
@@ -70,7 +76,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._queue = [];
 
 		// Hook the appropriate animation methods.
-		var animate = L.DomUtil.TRANSITION && this.options.animate;
+		var animate = L.DomUtil.TRANSITION && this.options.animate && !this.options.autoSpiderfyOnMaxZoom;
 		L.extend(this, animate ? this._withAnimation : this._noAnimation);
 		// Remember which MarkerCluster class to instantiate (animated or not).
 		this._markerCluster = animate ? L.MarkerCluster : L.MarkerClusterNonAnimated;
@@ -410,7 +416,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides LayerGroup.getLayer, WARNING: Really bad performance
 	getLayer: function (id) {
 		var result = null;
-		
+
 		id = parseInt(id, 10);
 
 		this.eachLayer(function (l) {
@@ -448,7 +454,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	//Zoom down to show the given layer (spiderfying if necessary) then calls the callback
 	zoomToShowLayer: function (layer, callback) {
-		
+
 		if (typeof callback !== 'function') {
 			callback = function () {};
 		}
@@ -801,7 +807,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var maxZoom = this._map.getMaxZoom(),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
-	
+
 		//If we just set maxClusterRadius to a single number, we need to create
 		//a simple function to return that number. Otherwise, we just have to
 		//use the function we've passed in.
@@ -815,7 +821,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._maxZoom = maxZoom;
 		this._gridClusters = {};
 		this._gridUnclustered = {};
-	
+
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= 0; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
@@ -1929,7 +1935,7 @@ L.MarkerCluster.include({
 								// 0 -> always spiral; Infinity -> always circle
 
 	spiderfy: function () {
-		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
+		if (this._group._spiderfied === this) {
 			return;
 		}
 
@@ -1955,10 +1961,11 @@ L.MarkerCluster.include({
 	},
 
 	unspiderfy: function (zoomDetails) {
-		/// <param Name="zoomDetails">Argument from zoomanim if being called in a zoom animation or null otherwise</param>
-		if (this._group._inZoomAnimation) {
+        /// <param Name="zoomDetails">Argument from zoomanim if being called in a zoom animation or null otherwise</param>
+		if (this._group._spiderfied === null && this._group._inZoomAnimation) {
 			return;
 		}
+
 		this._animationUnspiderfy(zoomDetails);
 
 		this._group._spiderfied = null;
@@ -2027,7 +2034,7 @@ L.MarkerCluster.include({
 				delete m._spiderLeg;
 			}
 		}
-		
+
 		group.fire('unspiderfied', {
 			cluster: this,
 			markers: childMarkers
@@ -2156,7 +2163,7 @@ L.MarkerCluster.include({
 			//Move marker to new position
 			m._preSpiderfyLatlng = m._latlng;
 			m.setLatLng(newPos);
-			
+
 			if (m.clusterShow) {
 				m.clusterShow();
 			}
@@ -2276,6 +2283,7 @@ L.MarkerCluster.include({
 L.MarkerClusterGroup.include({
 	//The MarkerCluster currently spiderfied (if any)
 	_spiderfied: null,
+	_spiderfiedByZoom: false,
 
 	_spiderfierOnAdd: function () {
 		this._map.on('click', this._unspiderfyWrapper, this);
@@ -2285,6 +2293,11 @@ L.MarkerClusterGroup.include({
 		}
 		//Browsers without zoomAnimation or a big zoom don't fire zoomstart
 		this._map.on('zoomend', this._noanimationUnspiderfy, this);
+
+		if (this.options.autoSpiderfyOnMaxZoom) {
+            // this._featureGroup.on('layeradd', this._spiderfyOnAdd, this);
+			this._map.on('zoomend', this.spiderfyOnZoom, this);
+		}
 	},
 
 	_spiderfierOnRemove: function () {
@@ -2292,10 +2305,37 @@ L.MarkerClusterGroup.include({
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
 		this._map.off('zoomend', this._noanimationUnspiderfy, this);
+        // this._featureGroup.off('layeradd', this._spiderfyOnAdd, this);
+		this._map.off('zoomend', this.spiderfyOnZoom, this);
 
 		//Ensure that markers are back where they should be
 		// Use no animation to avoid a sticky leaflet-cluster-anim class on mapPane
 		this._noanimationUnspiderfy();
+	},
+
+    _isZoomMax: function () {
+        return this._map.getZoom() === this._map.getMaxZoom();
+    },
+
+	// Spiderfy the clusten when the max zoom level has reached.
+	spiderfyOnZoom: function () {
+        if (this._spiderfied) {
+            return;
+        }
+
+        if (this._isZoomMax()) {
+			this._spiderfiedByZoom = true;
+            this._unspiderfy();
+
+			var layers = this._featureGroup.getLayers();
+			for (var i in layers) {
+                if (layers[i].spiderfy) {
+                    layers[i].spiderfy();
+                }
+			}
+		} else {
+			this._spiderfiedByZoom = false;
+		}
 	},
 
 	//On zoom start we add a zoomanim handler so that we are guaranteed to be last (after markers are animated)
@@ -2319,18 +2359,24 @@ L.MarkerClusterGroup.include({
 	},
 
 	_unspiderfyWrapper: function () {
+		if (this._spiderfiedByZoom || this.options.preventUnspiderfyOnClick) {
+            return;
+        }
+
 		/// <summary>_unspiderfy but passes no arguments</summary>
 		this._unspiderfy();
 	},
 
 	_unspiderfy: function (zoomDetails) {
 		if (this._spiderfied) {
+            this._spiderfiedByZoom = false;
 			this._spiderfied.unspiderfy(zoomDetails);
 		}
 	},
 
 	_noanimationUnspiderfy: function () {
 		if (this._spiderfied) {
+            this._spiderfiedByZoom = false;
 			this._spiderfied._noanimationUnspiderfy();
 		}
 	},
