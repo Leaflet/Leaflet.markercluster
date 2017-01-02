@@ -409,7 +409,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this.eachLayer(function (marker) {
 			marker.off('move', this._childMarkerMoved, this);
 			delete marker.__parent;
-		});
+		}, this);
 
 		if (this._map) {
 			//Reset _topClusterLevel and the DistanceGrids
