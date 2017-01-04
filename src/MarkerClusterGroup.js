@@ -542,10 +542,13 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this.on('animationend', showMarker, this);
 			layer.__parent.zoomToBounds();
 
-			if (moveStart) {
-				//Never started moving, must already be there, probably need clustering however
-				showMarker.call(this);
-			}
+			//Delay execution to handle events
+			setTimeout(function () {
+				if (moveStart) {
+					//Never started moving, must already be there, probably need clustering however
+					showMarker.call(this);
+				}
+			});
 		}
 	},
 
