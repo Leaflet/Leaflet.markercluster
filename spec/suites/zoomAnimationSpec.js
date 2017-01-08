@@ -202,6 +202,203 @@
 
 	});
 
+	describe('zoomToShowLayer', function () {
+
+		it('zoom to single marker inside map view', function () {
+			group = new L.MarkerClusterGroup();
+
+			var marker = new L.Marker([59.9520, 30.3307]);
+
+			group.addLayer(marker);
+			map.addLayer(group);
+
+			var zoomCallbackSpy = sinon.spy();
+
+			map.setView(marker.getLatLng(), 10);
+
+			clock.tick(1000);
+
+			var initialCenter = map.getCenter();
+			var initialZoom = map.getZoom();
+
+			group.zoomToShowLayer(marker, zoomCallbackSpy);
+
+			//Run the the animation
+			clock.tick(1000);
+
+			//Marker should be visible, map center and zoom level should stay the same, callback called once
+			expect(marker._icon).to.not.be(undefined);
+			expect(marker._icon).to.not.be(null);
+			expect(map.getBounds().contains(marker.getLatLng())).to.be.true;
+			expect(map.getCenter()).to.eql(initialCenter);
+			expect(map.getZoom()).to.equal(initialZoom);
+			sinon.assert.calledOnce(zoomCallbackSpy);
+		});
+
+		it('pan map to single marker outside map view', function () {
+			group = new L.MarkerClusterGroup();
+
+			var marker = new L.Marker([59.9520, 30.3307]);
+
+			group.addLayer(marker);
+			map.addLayer(group);
+
+			var zoomCallbackSpy = sinon.spy();
+
+			//Show none of them
+			map.setView([53.0676, 170.6835], 16);
+
+			clock.tick(1000);
+
+			var initialZoom = map.getZoom();
+
+			group.zoomToShowLayer(marker, zoomCallbackSpy);
+
+			//Run the the animation
+			clock.tick(1000);
+
+			//Marker should be visible, map center should be equal to marker center,
+			//zoom level should stay the same, callback called once
+			expect(marker._icon).to.not.be(undefined);
+			expect(marker._icon).to.not.be(null);
+			expect(map.getBounds().contains(marker.getLatLng())).to.be.true;
+			expect(map.getCenter()).to.eql(marker.getLatLng());
+			expect(map.getZoom()).to.equal(initialZoom);
+			sinon.assert.calledOnce(zoomCallbackSpy);
+		});
+
+		it('change view and zoom to marker in cluster inside map view', function () {
+			group = new L.MarkerClusterGroup();
+
+			var marker1 = new L.Marker([59.9520, 30.3307]);
+			var marker2 = new L.Marker([59.9516, 30.3308]);
+			var marker3 = new L.Marker([59.9513, 30.3312]);
+
+			group.addLayer(marker1);
+			group.addLayer(marker2);
+			group.addLayer(marker3);
+			map.addLayer(group);
+
+			var zoomCallbackSpy = sinon.spy();
+
+			map.setView(marker1.getLatLng(), 16);
+
+			clock.tick(1000);
+
+			group.zoomToShowLayer(marker1, zoomCallbackSpy);
+
+			//Run the the animation
+			clock.tick(1000);
+
+			//Now the markers should all be visible, there should be no visible clusters, and callback called once
+			expect(marker1._icon.parentNode).to.be(map._panes.markerPane);
+			expect(marker2._icon.parentNode).to.be(map._panes.markerPane);
+			expect(marker3._icon.parentNode).to.be(map._panes.markerPane);
+			expect(map._panes.markerPane.childNodes.length).to.be(3);
+			expect(map.getBounds().contains(marker1.getLatLng())).to.be.true;
+			sinon.assert.calledOnce(zoomCallbackSpy);
+		});
+
+		it('change view and zoom to marker in cluster outside map view', function () {
+			group = new L.MarkerClusterGroup();
+
+			var marker1 = new L.Marker([59.9520, 30.3307]);
+			var marker2 = new L.Marker([59.9516, 30.3308]);
+			var marker3 = new L.Marker([59.9513, 30.3312]);
+
+			group.addLayer(marker1);
+			group.addLayer(marker2);
+			group.addLayer(marker3);
+			map.addLayer(group);
+
+			var zoomCallbackSpy = sinon.spy();
+
+			//Show none of them
+			map.setView([53.0676, 170.6835], 16);
+
+			clock.tick(1000);
+
+			group.zoomToShowLayer(marker1, zoomCallbackSpy);
+
+			//Run the the animation
+			clock.tick(1000);
+
+			//Now the markers should all be visible, there should be no visible clusters, and callback called once
+			expect(marker1._icon.parentNode).to.be(map._panes.markerPane);
+			expect(marker2._icon.parentNode).to.be(map._panes.markerPane);
+			expect(marker3._icon.parentNode).to.be(map._panes.markerPane);
+			expect(map._panes.markerPane.childNodes.length).to.be(3);
+			expect(map.getBounds().contains(marker1.getLatLng())).to.be.true;
+			sinon.assert.calledOnce(zoomCallbackSpy);
+		});
+
+		it('spiderfy overlapping markers', function () {
+			group = new L.MarkerClusterGroup();
+
+			var marker1 = new L.Marker([59.9520, 30.3307]);
+			var marker2 = new L.Marker([59.9520, 30.3307]);
+			var marker3 = new L.Marker([59.9520, 30.3307]);
+
+			group.addLayer(marker1);
+			group.addLayer(marker2);
+			group.addLayer(marker3);
+			map.addLayer(group);
+
+			var zoomCallbackSpy = sinon.spy();
+
+			//Show none of them
+			map.setView([53.0676, 170.6835], 16);
+
+			clock.tick(1000);
+
+			group.zoomToShowLayer(marker1, zoomCallbackSpy);
+
+			//Run the the animation
+			clock.tick(1000);
+
+			//Now the markers should all be visible, parent cluster should be spiderfied, and callback called once
+			expect(marker1._icon.parentNode).to.be(map._panes.markerPane);
+			expect(marker2._icon.parentNode).to.be(map._panes.markerPane);
+			expect(marker3._icon.parentNode).to.be(map._panes.markerPane);
+			expect(map._panes.markerPane.childNodes.length).to.be(4);//3 markers + spiderfied parent cluster
+			sinon.assert.calledOnce(zoomCallbackSpy);
+		});
+
+		it('zoom or spiderfy markers if they visible on next level of zoom', function () {
+			group = new L.MarkerClusterGroup();
+
+			var marker1 = new L.Marker([59.9520, 30.3307]);
+			var marker2 = new L.Marker([59.9516, 30.3308]);
+			var marker3 = new L.Marker([59.9513, 30.3312]);
+
+			group.addLayer(marker1);
+			group.addLayer(marker2);
+			group.addLayer(marker3);
+			map.addLayer(group);
+
+			var zoomCallbackSpy = sinon.spy();
+
+			//Markers will be visible on zoom 18
+			map.setView([59.9520, 30.3307], 17);
+
+			clock.tick(1000);
+
+			group.zoomToShowLayer(marker1, zoomCallbackSpy);
+
+			//Run the the animation
+			clock.tick(1000);
+
+			//Now the markers should all be visible (zoomed or spiderfied), and callback called once
+			expect(marker1._icon).to.not.be(undefined);
+			expect(marker1._icon).to.not.be(null);
+			expect(marker2._icon).to.not.be(undefined);
+			expect(marker2._icon).to.not.be(null);
+			expect(marker3._icon).to.not.be(undefined);
+			expect(marker3._icon).to.not.be(null);
+			sinon.assert.calledOnce(zoomCallbackSpy);
+		});
+	});
+
 
 	/////////////////////////////
 	// CLEAN UP CODE
