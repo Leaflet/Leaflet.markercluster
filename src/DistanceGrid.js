@@ -73,10 +73,12 @@ L.DistanceGrid.prototype = {
 		}
 	},
 
-	getNearObject: function (point) {
+	getNearObject: function (point, filter) {
 		var x = this._getCoord(point.x),
 		    y = this._getCoord(point.y),
-		    i, j, k, row, cell, len, obj, dist,
+		    i, j, k,
+		    l = false,
+		    row, cell, len, obj, dist,
 		    objectPoint = this._objectPoint,
 		    closestDistSq = this._sqCellSize,
 		    closest = null;
@@ -92,9 +94,13 @@ L.DistanceGrid.prototype = {
 						for (k = 0, len = cell.length; k < len; k++) {
 							obj = cell[k];
 							dist = this._sqDist(objectPoint[L.Util.stamp(obj)], point);
-							if (dist < closestDistSq) {
+							
+							l = this._findAChild(obj);
+							
+							if (l[filter[0]] === filter[1] && dist < closestDistSq) {
 								closestDistSq = dist;
 								closest = obj;
+								l = false;
 							}
 						}
 					}
@@ -102,6 +108,16 @@ L.DistanceGrid.prototype = {
 			}
 		}
 		return closest;
+	},
+	
+	_findAChild: function (obj) {
+		if (obj.feature) {
+			return obj.feature.properties;
+		} else if (obj._markers.length > 0) {
+			return this._findAChild(obj._markers[0]);
+		} else {
+			return this._findAChild(obj._childClusters[0]);
+		}
 	},
 
 	_getCoord: function (x) {
