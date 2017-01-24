@@ -161,7 +161,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._refreshClustersIcons();
 
+		layer.off('dragstart', this._childMarkerDragStart, this);
 		layer.off('move', this._childMarkerMoved, this);
+		layer.off('dragend', this._childMarkerDragEnd, this);
 
 		if (this._featureGroup.hasLayer(layer)) {
 			this._featureGroup.removeLayer(layer);
@@ -407,7 +409,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._nonPointGroup.clearLayers();
 
 		this.eachLayer(function (marker) {
+			marker.off('dragstart', this._childMarkerDragStart, this);
 			marker.off('move', this._childMarkerMoved, this);
+			marker.off('dragend', this._childMarkerDragEnd, this);
 			delete marker.__parent;
 		}, this);
 
@@ -653,15 +657,31 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 	},
 
-	_childMarkerMoved: function (e) {
-		if (!this._ignoreMove) {
-			e.target._latlng = e.oldLatLng;
-			this.removeLayer(e.target);
+	_childMarkerDragStart: function (e) {
+		e.target.__dragStart = e.target._latlng;
+	},
 
-			e.target._latlng = e.latlng;
-			this.addLayer(e.target);
+	_childMarkerMoved: function (e) {
+		if (!this._ignoreMove && !e.target.__dragStart) {
+			this._moveChild(e.target, e.oldLatLng, e.latlng);
 		}
 	},
+
+	_moveChild: function (layer, from, to) {
+		layer._latlng = from;
+		this.removeLayer(layer);
+
+		layer._latlng = to;
+		this.addLayer(layer);
+	},
+
+	_childMarkerDragEnd: function (e) {
+		if (e.target.__dragStart) {
+			this._moveChild(e.target, e.target.__dragStart, e.target._latlng);
+		}
+		delete e.target.__dragStart;
+	},
+	
 
 	//Internal function for removing a marker from everything.
 	//dontUpdateMap: set to true if you will handle updating the map manually (for bulk functions)
@@ -908,7 +928,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this._overrideMarkerIcon(layer);
 		}
 
+		layer.on('dragstart', this._childMarkerDragStart, this);
 		layer.on('move', this._childMarkerMoved, this);
+		layer.on('dragend', this._childMarkerDragEnd, this);
 
 		//Find the lowest zoom level to slot this one in
 		for (; zoom >= 0; zoom--) {
