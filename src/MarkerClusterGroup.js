@@ -509,7 +509,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	//Zoom down to show the given layer (spiderfying if necessary) then calls the callback
 	zoomToShowLayer: function (layer, callback) {
-		
+
 		if (typeof callback !== 'function') {
 			callback = function () {};
 		}
@@ -536,20 +536,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this._map.on('moveend', showMarker, this);
 			this._map.panTo(layer.getLatLng());
 		} else {
-			var moveStart = function () {
-				this._map.off('movestart', moveStart, this);
-				moveStart = null;
-			};
-
-			this._map.on('movestart', moveStart, this);
 			this._map.on('moveend', showMarker, this);
 			this.on('animationend', showMarker, this);
 			layer.__parent.zoomToBounds();
-
-			if (moveStart) {
-				//Never started moving, must already be there, probably need clustering however
-				showMarker.call(this);
-			}
 		}
 	},
 
