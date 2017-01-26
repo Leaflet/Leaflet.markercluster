@@ -213,7 +213,7 @@ L.MarkerCluster = L.Marker.extend({
 	},
 
 	_recursivelyAnimateChildrenIn: function (bounds, center, maxZoom) {
-		this._recursively(bounds, 0, maxZoom - 1,
+		this._recursively(bounds, this._group._map.getMinZoom(), maxZoom - 1,
 			function (c) {
 				var markers = c._markers,
 					i, m;
@@ -242,7 +242,7 @@ L.MarkerCluster = L.Marker.extend({
 	},
 
 	_recursivelyAnimateChildrenInAndAddSelfToMap: function (bounds, previousZoomLevel, newZoomLevel) {
-		this._recursively(bounds, newZoomLevel, 0,
+		this._recursively(bounds, newZoomLevel, this._group._map.getMinZoom(),
 			function (c) {
 				c._recursivelyAnimateChildrenIn(bounds, c._group._map.latLngToLayerPoint(c.getLatLng()).round(), previousZoomLevel);
 
@@ -261,7 +261,7 @@ L.MarkerCluster = L.Marker.extend({
 	},
 
 	_recursivelyBecomeVisible: function (bounds, zoomLevel) {
-		this._recursively(bounds, 0, zoomLevel, null, function (c) {
+		this._recursively(bounds, this._group._map.getMinZoom(), zoomLevel, null, function (c) {
 			c.clusterShow();
 		});
 	},
@@ -331,7 +331,7 @@ L.MarkerCluster = L.Marker.extend({
 	//exceptBounds: If set, don't remove any markers/clusters in it
 	_recursivelyRemoveChildrenFromMap: function (previousBounds, zoomLevel, exceptBounds) {
 		var m, i;
-		this._recursively(previousBounds, -1, zoomLevel - 1,
+		this._recursively(previousBounds, this._group._map.getMinZoom() - 1, zoomLevel - 1,
 			function (c) {
 				//Remove markers at every level
 				for (i = c._markers.length - 1; i >= 0; i--) {
