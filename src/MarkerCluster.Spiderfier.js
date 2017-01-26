@@ -301,6 +301,9 @@ L.MarkerCluster.include({
 				continue;
 			}
 
+			//Close any popup on the marker first, otherwise setting the location of the marker will make the map scroll
+			m.closePopup();
+
 			//Fix up the location to the real one
 			m.setLatLng(m._preSpiderfyLatlng);
 			delete m._preSpiderfyLatlng;
