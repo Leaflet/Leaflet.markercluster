@@ -64,6 +64,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._queue = [];
 
+		this._childMarkerEventHandlers = {
+			'dragstart': this._childMarkerDragStart,
+			'move': this._childMarkerMoved,
+			'dragend': this._childMarkerDragEnd,
+		};
+
 		// Hook the appropriate animation methods.
 		var animate = L.DomUtil.TRANSITION && this.options.animate;
 		L.extend(this, animate ? this._withAnimation : this._noAnimation);
@@ -161,9 +167,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._refreshClustersIcons();
 
-		layer.off('dragstart', this._childMarkerDragStart, this);
-		layer.off('move', this._childMarkerMoved, this);
-		layer.off('dragend', this._childMarkerDragEnd, this);
+		layer.off(this._childMarkerEventHandlers, this);
 
 		if (this._featureGroup.hasLayer(layer)) {
 			this._featureGroup.removeLayer(layer);
@@ -409,9 +413,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._nonPointGroup.clearLayers();
 
 		this.eachLayer(function (marker) {
-			marker.off('dragstart', this._childMarkerDragStart, this);
-			marker.off('move', this._childMarkerMoved, this);
-			marker.off('dragend', this._childMarkerDragEnd, this);
+			marker.off(this._childMarkerEventHandlers, this);
 			delete marker.__parent;
 		}, this);
 
@@ -921,9 +923,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			this._overrideMarkerIcon(layer);
 		}
 
-		layer.on('dragstart', this._childMarkerDragStart, this);
-		layer.on('move', this._childMarkerMoved, this);
-		layer.on('dragend', this._childMarkerDragEnd, this);
+		layer.on(this._childMarkerEventHandlers, this);
 
 		//Find the lowest zoom level to slot this one in
 		for (; zoom >= minZoom; zoom--) {
