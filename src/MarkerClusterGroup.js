@@ -143,6 +143,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Non point layers
 		if (!layer.getLatLng) {
 			this._nonPointGroup.removeLayer(layer);
+			this.fire('layerremove', { layer: layer });
 			return this;
 		}
 
@@ -150,6 +151,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			if (!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer)) {
 				this._needsRemoving.push(layer);
 			}
+			this.fire('layerremove', { layer: layer });
 			return this;
 		}
 
@@ -164,6 +166,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Remove the marker from clusters
 		this._removeLayer(layer, true);
+		this.fire('layerremove', { layer: layer });
 
 		// Refresh bounds and weighted positions.
 		this._topClusterLevel._recalculateBounds();
@@ -338,6 +341,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				if (this.hasLayer(m)) {
 					this._needsRemoving.push(m);
 				}
+				this.fire('layerremove', { layer: m });
 			}
 			return this;
 		}
@@ -378,10 +382,12 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 			if (!m.__parent) {
 				npg.removeLayer(m);
+				this.fire('layerremove', { layer: m });
 				continue;
 			}
 
 			this._removeLayer(m, true, true);
+			this.fire('layerremove', { layer: m });
 
 			if (fg.hasLayer(m)) {
 				fg.removeLayer(m);
