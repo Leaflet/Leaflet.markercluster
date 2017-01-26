@@ -86,11 +86,13 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Don't cluster non point data
 		if (!layer.getLatLng) {
 			this._nonPointGroup.addLayer(layer);
+			this.fire('layeradd', { layer: layer });
 			return this;
 		}
 
 		if (!this._map) {
 			this._needsClustering.push(layer);
+			this.fire('layeradd', { layer: layer });
 			return this;
 		}
 
@@ -106,6 +108,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 
 		this._addLayer(layer, this._maxZoom);
+		this.fire('layeradd', { layer: layer });
 
 		// Refresh bounds and weighted positions.
 		this._topClusterLevel._recalculateBounds();
@@ -180,7 +183,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	//Takes an array of markers and adds them in bulk
-	addLayers: function (layersArray) {
+	addLayers: function (layersArray, skipLayerAddEvent) {
 		if (!L.Util.isArray(layersArray)) {
 			return this.addLayer(layersArray);
 		}
@@ -229,6 +232,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					//Not point data, can't be clustered
 					if (!m.getLatLng) {
 						npg.addLayer(m);
+						if (!skipLayerAddEvent) {
+							this.fire('layeradd', { layer: m });
+						}
 						continue;
 					}
 
@@ -237,6 +243,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 					}
 
 					this._addLayer(m, this._maxZoom);
+					if (!skipLayerAddEvent) {
+						this.fire('layeradd', { layer: m });
+					}
 
 					//If we just made a cluster of size 2 then we need to remove the other marker from the map (if it is) or we never will
 					if (m.__parent) {
@@ -584,7 +593,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//Actually add our markers to the map:
 		l = this._needsClustering;
 		this._needsClustering = [];
-		this.addLayers(l);
+		this.addLayers(l, true);
 	},
 
 	//Overrides FeatureGroup.onRemove

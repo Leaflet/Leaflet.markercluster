@@ -191,6 +191,82 @@
 
 			expect(callback.called).to.be(true);
 		});
+
+		it('fires layeradd when markers are added while not on the map', function() {
+			var callback = sinon.spy();
+
+			group = new L.MarkerClusterGroup();
+			group.on('layeradd', callback);
+
+			var marker = new L.Marker([1.5, 1.5]);
+			group.addLayer(marker);
+
+			expect(callback.callCount).to.be(1);
+		});
+
+		it('fires layeradd when vectors are added while not on the map', function() {
+			var callback = sinon.spy();
+
+			group = new L.MarkerClusterGroup();
+			group.on('layeradd', callback);
+
+			var polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
+			group.addLayer(polygon);
+
+			expect(callback.callCount).to.be(1);
+		});
+		
+		it('fires layeradd when markers are added while on the map', function() {
+			var callback = sinon.spy();
+
+			group = new L.MarkerClusterGroup();
+			group.on('layeradd', callback);
+			map.addLayer(group);
+
+			var marker = new L.Marker([1.5, 1.5]);
+			group.addLayer(marker);
+
+			expect(callback.callCount).to.be(1);
+		});
+
+		it('fires layeradd when vectors are added while on the map', function() {
+			var callback = sinon.spy();
+
+			group = new L.MarkerClusterGroup();
+			group.on('layeradd', callback);
+			map.addLayer(group);
+
+			var polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
+			group.addLayer(polygon);
+
+			expect(callback.callCount).to.be(1);
+		});
+		
+		it('fires layeradd when markers are added using addLayers while on the map with chunked loading', function() {
+			var callback = sinon.spy();
+
+			group = new L.MarkerClusterGroup({ chunkedLoading: true });
+			group.on('layeradd', callback);
+			map.addLayer(group);
+
+			var marker = new L.Marker([1.5, 1.5]);
+			group.addLayers([marker]);
+
+			expect(callback.callCount).to.be(1);
+		});
+
+		it('fires layeradd when vectors are added using addLayers while on the map with chunked loading', function() {
+			var callback = sinon.spy();
+
+			group = new L.MarkerClusterGroup({ chunkedLoading: true });
+			group.on('layeradd', callback);
+			map.addLayer(group);
+
+			var polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
+			group.addLayers([polygon]);
+
+			expect(callback.callCount).to.be(1);
+		});
 	});
 
 	/*
