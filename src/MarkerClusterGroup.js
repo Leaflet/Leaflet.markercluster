@@ -670,7 +670,13 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	_childMarkerMoved: function (e) {
 		if (!this._ignoreMove && !e.target.__dragStart) {
+			var isPopupOpen = e.target._popup && e.target._popup.isOpen();
+
 			this._moveChild(e.target, e.oldLatLng, e.latlng);
+
+			if (isPopupOpen) {
+				e.target.openPopup();
+			}
 		}
 	},
 
