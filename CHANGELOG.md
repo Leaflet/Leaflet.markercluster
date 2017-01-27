@@ -3,7 +3,7 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
-## Master
+## 1.0.0 (2016-10-03)
 
 ### Improvements
 
@@ -22,6 +22,12 @@ Leaflet.markercluster
  * Add unspiderfied event
  * Readme updates (by [@ghybs](https://github.com/ghybs), [@tomchadwin](https://github.com/tomchadwin) [@Cyrille37](https://github.com/Cyrille37) [@franckl](https://github.com/franckl) [@mikeatlas](https://github.com/mikeatlas) 
  [@rdenniston](https://github.com/rdenniston) [@maackle](https://github.com/maackle) [@fureigh](https://github.com/fureigh) [@Wildhoney](https://github.com/Wildhoney) [@Schwanksta](https://github.com/Schwanksta) [@frankrowe](https://github.com/frankrowe))
+ * Improve adding and removing nested LayerGroups (by [@ghybs](https://github.com/ghybs)) [#624](https://github.com/Leaflet/Leaflet.markercluster/pull/624)
+ * Add public unspiderfy method (by [@zverev](https://github.com/zverev)) [#617](https://github.com/Leaflet/Leaflet.markercluster/pull/617)
+ * Optimized performance of bulk add with complex icon create function (by [@mlazowik](https://github.com/mlazowik)) [#697](https://github.com/Leaflet/Leaflet.markercluster/pull/697)
+ * Remove leaflet from peerDependencies (by [@tyleralves](https://github.com/tyleralves)) [#703](https://github.com/Leaflet/Leaflet.markercluster/pull/703)
+ * Simplified _recursively (by [@ghybs](https://github.com/ghybs)) [#656](https://github.com/Leaflet/Leaflet.markercluster/pull/656)
+
 
 
 ### Bugfixes
@@ -42,6 +48,10 @@ Leaflet.markercluster
  * Correct unspiderfy vector (by [@ghybs](https://github.com/ghybs)) [#604](https://github.com/Leaflet/Leaflet.markercluster/issues/604)
  * Remove "leaflet-cluster-anim" class on map remove while spiderfied (by [@ghybs](https://github.com/ghybs)) [#607](https://github.com/Leaflet/Leaflet.markercluster/issues/607)
  * Fix disableClusteringAtZoom maxZoom troubles (by [@OriginalSin](https://github.com/OriginalSin)) [#609](https://github.com/Leaflet/Leaflet.markercluster/issues/609)
+ * Fix clusters not disappearing when they were near the edge on mobile (by [@ghybs](https://github.com/ghybs)) [#529](https://github.com/Leaflet/Leaflet.markercluster/issues/529)
+ * Remove leaflet from dependencies (by [@ghybs](https://github.com/ghybs)) [#639](https://github.com/Leaflet/Leaflet.markercluster/issues/639)
+ * Fix interaction between zoomOrSpiderfy and disableClusteringAtZoom (by [@ghybs](https://github.com/ghybs)) [#633](https://github.com/Leaflet/Leaflet.markercluster/issues/633) [#648](https://github.com/Leaflet/Leaflet.markercluster/issues/648)
+
 
 
 ##0.4 (2013-12-19)
