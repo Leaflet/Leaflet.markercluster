@@ -149,7 +149,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		if (!this._map) {
 			if (!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer)) {
-				this._needsRemoving.push(layer);
+				this._needsRemoving.push({ layer: layer, latlng: layer._latlng });
 			}
 			this.fire('layerremove', { layer: layer });
 			return this;
@@ -339,7 +339,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 				this._arraySplice(this._needsClustering, m);
 				npg.removeLayer(m);
 				if (this.hasLayer(m)) {
-					this._needsRemoving.push(m);
+					this._needsRemoving.push({ layer: m, latlng: m._latlng });
 				}
 				this.fire('layerremove', { layer: m });
 			}
@@ -461,14 +461,23 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	eachLayer: function (method, context) {
 		var markers = this._needsClustering.slice(),
 			needsRemoving = this._needsRemoving,
-			i;
+			thisNeedsRemoving, i, j;
 
 		if (this._topClusterLevel) {
 			this._topClusterLevel.getAllChildMarkers(markers);
 		}
 
 		for (i = markers.length - 1; i >= 0; i--) {
-			if (needsRemoving.indexOf(markers[i]) === -1) {
+			thisNeedsRemoving = true;
+
+			for (j = needsRemoving.length - 1; j >= 0; j--) {
+				if (needsRemoving[j].layer === markers[i]) {
+					thisNeedsRemoving = false;
+					break;
+				}
+			}
+
+			if (thisNeedsRemoving) {
 				method.call(context, markers[i]);
 			}
 		}
@@ -516,7 +525,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		anArray = this._needsRemoving;
 		for (i = anArray.length - 1; i >= 0; i--) {
-			if (anArray[i] === layer) {
+			if (anArray[i].layer === layer) {
 				return false;
 			}
 		}
@@ -562,7 +571,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides FeatureGroup.onAdd
 	onAdd: function (map) {
 		this._map = map;
-		var i, l, layer;
+		var i, l, layer, latlngbk;
 
 		if (!isFinite(this._map.getMaxZoom())) {
 			throw "Map has no maxZoom specified";
@@ -579,7 +588,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		for (i = 0, l = this._needsRemoving.length; i < l; i++) {
 			layer = this._needsRemoving[i];
-			this._removeLayer(layer, true);
+			latlngbk = layer.layer._latlng;
+			layer.layer._latlng = layer.latlng;
+			this._removeLayer(layer.layer, true);
+			layer.layer._latlng = latlngbk;
 		}
 		this._needsRemoving = [];
 
