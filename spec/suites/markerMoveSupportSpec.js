@@ -78,6 +78,28 @@ describe('moving markers', function () {
 		expect(group.getLayers().length).to.be(1);
 	});
 
+	it('moves multiple markers that were moved while off the map', function () {
+
+		group = new L.MarkerClusterGroup();
+		map.addLayer(group);
+
+		var markers = [];
+		for (var i = 0; i < 10; i++) {
+			var marker = new L.Marker([10, 10]);
+			group.addLayer(marker);
+			markers.push(marker);
+		}
+
+		map.removeLayer(group);
+		for (var i = 0; i < 10; i++) {
+			var marker = markers[i];
+			marker.setLatLng([1.5, 1.5]);
+		}
+		map.addLayer(group);
+
+		expect(group.getLayers().length).to.be(10);
+	});
+
 
 	/////////////////////////////
 	// CLEAN UP CODE

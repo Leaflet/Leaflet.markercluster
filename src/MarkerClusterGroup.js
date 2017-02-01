@@ -571,7 +571,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides FeatureGroup.onAdd
 	onAdd: function (map) {
 		this._map = map;
-		var i, l, layer, latlngbk;
+		var i, l, layer;
 
 		if (!isFinite(this._map.getMaxZoom())) {
 			throw "Map has no maxZoom specified";
@@ -586,12 +586,17 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		this._maxLat = map.options.crs.projection.MAX_LATITUDE;
 
+		//Restore all the positions as they are in the MCG before removing them
 		for (i = 0, l = this._needsRemoving.length; i < l; i++) {
 			layer = this._needsRemoving[i];
-			latlngbk = layer.layer._latlng;
+			layer.newlatlng = layer.layer._latlng;
 			layer.layer._latlng = layer.latlng;
+		}
+		//Remove them, then restore their new positions
+		for (i = 0, l = this._needsRemoving.length; i < l; i++) {
+			layer = this._needsRemoving[i];
 			this._removeLayer(layer.layer, true);
-			layer.layer._latlng = latlngbk;
+			layer.layer._latlng = layer.newlatlng;
 		}
 		this._needsRemoving = [];
 
