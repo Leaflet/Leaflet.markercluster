@@ -3,11 +3,17 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
-## 1.0.2 (2016-01-27)
+## 1.0.3 (2017-02-02)
+
+### Bugfixes
+
+ * Fix moving markers while the MarkerClusterGroup is not on the map [#753](https://github.com/Leaflet/Leaflet.markercluster/issues/753)
+
+## 1.0.2 (2017-01-27)
 
 ### Improvements
 
- * Support `layeradd` and `layerremove` events [#647](https://github.com/Leaflet/Leaflet.markercluster/issues/647) 
+ * Support `layeradd` and `layerremove` events [#647](https://github.com/Leaflet/Leaflet.markercluster/issues/647)
 
 ### Bugfixes
 
@@ -17,7 +23,7 @@ Leaflet.markercluster
  * If a marker is moved with an open popup on it, re-open the popup after moving it. [#651](https://github.com/Leaflet/Leaflet.markercluster/issues/651)
 
 
-## 1.0.1 (2016-01-25)
+## 1.0.1 (2017-01-25)
 
 ### Improvements
 
