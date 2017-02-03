@@ -48,8 +48,8 @@ removed link to h1 and indented back 2 spaces all links.
 
 ## Using the plugin
 Include the plugin CSS and JS files on your page after Leaflet files, using your method of choice:
-* [Download the `v1.0.0` release](https://github.com/Leaflet/Leaflet.markercluster/archive/v1.0.0.zip)
-* Use unpkg CDN: `https://unpkg.com/leaflet.markercluster@1.0.0/dist/`
+* [Download the `v1.0.3` release](https://github.com/Leaflet/Leaflet.markercluster/archive/v1.0.3.zip)
+* Use unpkg CDN: `https://unpkg.com/leaflet.markercluster@1.0.3/dist/`
 * Install with npm: `npm install leaflet.markercluster`
 
 In each case, use files in the `dist` folder:
