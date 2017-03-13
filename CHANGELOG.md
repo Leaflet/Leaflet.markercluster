@@ -3,6 +3,12 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
+## 1.0.4 (2017-03-14)
+
+### Bugfixes
+
+ * Fix errors removing a MarkerClusterGroup from the map during an animation [#758](https://github.com/Leaflet/Leaflet.markercluster/issues/758)
+
 ## 1.0.3 (2017-02-02)
 
 ### Bugfixes
