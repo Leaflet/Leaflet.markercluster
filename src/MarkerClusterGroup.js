@@ -933,7 +933,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			radiusFn = function () { return radius; };
 		}
 
-		if (this.options.disableClusteringAtZoom) {
+		if (this.options.disableClusteringAtZoom != null) {
 			maxZoom = this.options.disableClusteringAtZoom - 1;
 		}
 		this._maxZoom = maxZoom;
