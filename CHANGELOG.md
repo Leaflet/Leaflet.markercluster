@@ -90,7 +90,7 @@ Leaflet.markercluster
  * Fix interaction between zoomOrSpiderfy and disableClusteringAtZoom (by [@ghybs](https://github.com/ghybs)) [#633](https://github.com/Leaflet/Leaflet.markercluster/issues/633) [#648](https://github.com/Leaflet/Leaflet.markercluster/issues/648)
 
 
-##0.4 (2013-12-19)
+## 0.4 (2013-12-19)
 
 ### Improvements
 
@@ -102,7 +102,7 @@ Leaflet.markercluster
  * Fix some cases zoomToShowLayer wouldn't work  (Reported by [@absemetov](https://github.com/absemetov)) [#203](https://github.com/Leaflet/Leaflet.markercluster/issues/203) [#228](https://github.com/Leaflet/Leaflet.markercluster/issues/228) [#286](https://github.com/Leaflet/Leaflet.markercluster/issues/286)
 
 
-##0.3 (2013-12-18)
+## 0.3 (2013-12-18)
 
 ### Improvements
 
