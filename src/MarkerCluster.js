@@ -45,8 +45,6 @@ L.MarkerCluster = L.Marker.extend({
 
 	//Zoom to the minimum of showing all of the child markers, or the extents of this cluster
 	zoomToBounds: function (fitBoundsOptions) {
-        fitBoundsOptions = fitBoundsOptions || {};
-
 		var childClusters = this._childClusters.slice(),
 			map = this._group._map,
 			boundsZoom = map.getBoundsZoom(this._bounds),
