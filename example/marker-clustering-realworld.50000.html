@@ -60,7 +60,7 @@
 			markerList.push(marker);
 		}
 		for (var i = 0; i < addressPoints2.length; i++) {
-			var a = addressPoints[i];
+			var a = addressPoints2[i];
 			var title = a[2];
 			var marker = L.marker(L.latLng(a[0], a[1]), { title: title });
 			marker.bindPopup(title);
