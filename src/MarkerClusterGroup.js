@@ -7,6 +7,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	options: {
 		maxClusterRadius: 80, //A cluster will cover at most this many pixels from its center
 		iconCreateFunction: null,
+		iconHtmlClass: 'marker-cluster',
 
 		spiderfyOnMaxZoom: true,
 		showCoverageOnHover: true,
@@ -804,7 +805,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_defaultIconCreateFunction: function (cluster) {
 		var childCount = cluster.getChildCount();
 
-		var c = ' marker-cluster-';
+		var c = ' ' + this.options.iconHtmlClass + '-';
 		if (childCount < 10) {
 			c += 'small';
 		} else if (childCount < 100) {
