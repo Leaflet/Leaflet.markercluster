@@ -117,8 +117,9 @@ exports.build = function (compsBase32, buildName) {
 
 	var copy = fs.readFileSync('src/copyright.js', 'utf8'),
 	    intro = '(function (window, document, undefined) {',
+	    noParent = 'if(!window.L){return false;}'
 	    outro = '}(window, document));',
-	    newSrc = copy + intro + combineFiles(files) + outro,
+	    newSrc = copy + intro + noParent + combineFiles(files) + outro,
 
 	    pathPart = 'dist/leaflet.markercluster' + (buildName ? '-' + buildName : ''),
 	    srcPath = pathPart + '-src.js',
