@@ -61,7 +61,6 @@ In each case, use files in the `dist` folder:
 Install jake `npm install -g jake` then run `npm install`
 * To check the code for errors and build Leaflet from source, run `jake`.
 * To run the tests, run `jake test`.
-* For a custom build, open `build/build.html` in the browser and follow the instructions
 
 ### Examples
 See the included examples for usage.
