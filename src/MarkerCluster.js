@@ -43,6 +43,40 @@ L.MarkerCluster = L.Marker.extend({
 		return this._childCount;
 	},
 
+
+/**
+ * arithmetic - performs simple calculations on the children based on a feature property
+ *
+ * @param  {string} type         The type of calculation to perform. sum/avg
+ * @param  {string} propertyName name of the property used in calculation
+ * @param  {number} accuracy How many decimals to display on return value. Default 0
+ * @return {number}              The result of the calculation
+ */
+	arithmetic: function (type, propertyName, accuracy) {
+		accuracy = accuracy || 0;
+		var values = [];
+		var sum = 0;
+		var markers = this.getAllChildMarkers();
+		for (var i = 0; i < markers.length; i++) {
+			var val = markers[i].feature.properties[propertyName];
+			if (!isNaN(parseFloat(val))) {//if is numeric
+				values.push(+val);
+				sum += val;
+			}
+		}
+		switch (type) {
+		case 'sum':
+			return sum.toFixed(accuracy);
+		case 'avg':
+			return values.length > 0 ? (sum / values.length).toFixed(accuracy) : 0;
+		default:
+			console.log('MarkerCluster arithmetic: unknown type ' + type);
+			return 0;
+		}
+	},
+
+
+
 	//Zoom to the minimum of showing all of the child markers, or the extents of this cluster
 	zoomToBounds: function (fitBoundsOptions) {
 		var childClusters = this._childClusters.slice(),
