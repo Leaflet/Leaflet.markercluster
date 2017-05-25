@@ -19,16 +19,38 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		// is the default behaviour for performance reasons.
 		removeOutsideVisibleBounds: true,
 
+		// Method of cluster elements placements
+		// 'default' - one-circle strategy up to 8 elements (could be changed), then spiral strategy
+		// 'spiral' - snail/spiral placement
+		// 'one-circle' - put all the elements into one circle
+		// 'concentric' - elements are placed automatically into concentric circles, there is a maximum of 4 circles
+		// 'clock' - fills circles around the cluster marker in the style of clocks
+		// 'clock-concentric' - in case of one circle, elements are places based on the concentric style, more circles are in clock style
+		elementsPlacementStrategy: 'default',
+
+		// Options that are valid for placement strategies 'concentric', 'clock' and 'clock-concentric'
+		// number of elements in the first circle
+		firstCircleElements: 10,
+		// multiplicator of elements number in the next circle
+		elementsMultiplier: 1.5,
+		// Value to be added to each new circle
+		spiderfyDistanceSurplus: 30,
+		// will draw additional helping circles
+		helpingCircles: true,
+
+		// Possibility to specify helpingCircle style
+		helpingCircleOptions: { fillOpacity: 0, color: 'grey', weight: 0.6 },
+
 		// Set to false to disable all animations (zoom and spiderfy).
 		// If false, option animateAddingMarkers below has no effect.
 		// If L.DomUtil.TRANSITION is falsy, this option has no effect.
 		animate: true,
 
-		//Whether to animate adding markers after adding the MarkerClusterGroup to the map
+		// Whether to animate adding markers after adding the MarkerClusterGroup to the map
 		// If you are adding individual markers set to true, if adding bulk markers leave false for massive performance gains.
 		animateAddingMarkers: false,
 
-		//Increase to increase the distance away that spiderfied markers appear from the center
+		// Increase to increase the distance away that spiderfied markers appear from the center
 		spiderfyDistanceMultiplier: 1,
 
 		// Make it possible to specify a polyline options on a spider leg
@@ -40,7 +62,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		chunkDelay: 50, // at the end of each interval, give n milliseconds back to system/browser
 		chunkProgress: null, // progress callback: function(processed, total, elapsed) (e.g. for a progress indicator)
 
-		//Options to pass to the L.Polygon constructor
+		// Options to pass to the L.Polygon constructor
 		polygonOptions: {}
 	},
 
@@ -497,7 +519,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides LayerGroup.getLayer, WARNING: Really bad performance
 	getLayer: function (id) {
 		var result = null;
-		
+
 		id = parseInt(id, 10);
 
 		this.eachLayer(function (l) {
@@ -925,7 +947,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			minZoom = this._map.getMinZoom(),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
-	
+
 		//If we just set maxClusterRadius to a single number, we need to create
 		//a simple function to return that number. Otherwise, we just have to
 		//use the function we've passed in.
@@ -939,7 +961,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._maxZoom = maxZoom;
 		this._gridClusters = {};
 		this._gridUnclustered = {};
-	
+
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= minZoom; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));

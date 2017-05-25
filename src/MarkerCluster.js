@@ -303,6 +303,7 @@ L.MarkerCluster = L.Marker.extend({
 		//Fix positions of child markers
 		for (var i = this._markers.length - 1; i >= 0; i--) {
 			var nm = this._markers[i];
+
 			if (nm._backupLatlng) {
 				nm.setLatLng(nm._backupLatlng);
 				delete nm._backupLatlng;
