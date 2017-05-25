@@ -116,9 +116,8 @@ exports.build = function (compsBase32, buildName) {
 	console.log('Concatenating ' + files.length + ' files...');
 
 	var copy = fs.readFileSync('src/copyright.js', 'utf8'),
-	    intro = '(function (window, document, undefined) {',
-	    outro = '}(window, document));',
-	    newSrc = copy + intro + combineFiles(files) + outro,
+	    umd = fs.readFileSync('build/umd.js', 'utf8'),
+	    newSrc = copy + umd.replace('// $COMBINED', combineFiles(files)),
 
 	    pathPart = 'dist/leaflet.markercluster' + (buildName ? '-' + buildName : ''),
 	    srcPath = pathPart + '-src.js',
