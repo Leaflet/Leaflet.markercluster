@@ -925,7 +925,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			minZoom = this._map.getMinZoom(),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
-	
+
 		//If we just set maxClusterRadius to a single number, we need to create
 		//a simple function to return that number. Otherwise, we just have to
 		//use the function we've passed in.
@@ -939,7 +939,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._maxZoom = maxZoom;
 		this._gridClusters = {};
 		this._gridUnclustered = {};
-	
+
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= minZoom; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
@@ -977,7 +977,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 			//Try find a marker close by to form a new cluster with
 			closest = gridUnclustered[zoom].getNearObject(markerPoint);
-			if (closest) {
+			if (closest && closest.hasOwnProperty('__parent')) {
 				var parent = closest.__parent;
 				if (parent) {
 					this._removeLayer(closest, false);
