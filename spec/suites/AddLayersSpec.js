@@ -148,6 +148,43 @@
 		expect(map._panes.markerPane.childNodes.length).to.be(2);
 	});
 
+	it('handles ES6 iterators that yield Markers and LayerGroups', function () {
+
+		group = new L.MarkerClusterGroup();
+
+		var marker1 = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+		var marker3 = new L.Marker([3.0, 1.5]);
+		var layerGroup = new L.LayerGroup([marker1, new L.LayerGroup([marker2])]);
+
+		// Simulate an ES6 iterator which is ES5 compatible where generator
+		// functions are not. This allows us to test the functionality without the
+		// need to skip the test in non ES6 compatible browsers like we would need
+		// to if we used a generator function. This functionality will allow users
+		// of ES6 to interface with Leaflet eventhough leaflet is not strickly ES6
+		// based.
+		var fakeIterator = {
+			_pointer: 0;
+			next: function() {
+				this._pointer++;
+				switch (this._pointer) {
+					case 1: return {done: false, value: layerGroup};
+					case 2: return {done: false, value: marker3};
+					default: return {done: true};
+				}
+			}
+		};
+
+		map.addLayer(group);
+		group.addLayers(fakeIterator);
+
+		expect(marker1._icon).to.be(undefined);
+		expect(marker2._icon).to.be(undefined);
+		expect(marker3._icon.parentNode).to.be(map._panes.markerPane);
+
+		expect(map._panes.markerPane.childNodes.length).to.be(2);
+	});
+
 
 	/////////////////////////////
 	// CLEAN UP CODE
