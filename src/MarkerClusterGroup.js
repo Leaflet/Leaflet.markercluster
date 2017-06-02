@@ -501,7 +501,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		id = parseInt(id, 10);
 
 		this.eachLayer(function (l) {
-			if (L.stamp(l) === id) {
+			if (L.stamp(l) === parseInt(id, 10)) {
 				result = l;
 			}
 		});
