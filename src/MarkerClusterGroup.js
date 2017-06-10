@@ -921,8 +921,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_generateInitialClusters: function () {
-		var maxZoom = this._map.getMaxZoom(),
-			minZoom = this._map.getMinZoom(),
+		var maxZoom = Math.ceil(this._map.getMaxZoom()),
+			minZoom = Math.floor(this._map.getMinZoom()),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
 	
