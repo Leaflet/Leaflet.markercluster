@@ -25,13 +25,17 @@ describe('non-integer min/max zoom', function () {
 		var group = new L.MarkerClusterGroup();
 		var marker = new L.Marker([1.5, 1.5]);
 		var marker2 = new L.Marker([1.5, 1.5]);
+		var marker3 = new L.Marker([1.5, 1.5]);
 
 		group.addLayer(marker);
 		group.addLayer(marker2);
 		map.addLayer(group);
 
+		group.addLayer(marker3);
+
 		expect(marker._icon).to.be(undefined);
 		expect(marker2._icon).to.be(undefined);
+		expect(marker3._icon).to.be(undefined);
 
 		expect(map._panes.markerPane.childNodes.length).to.be(1);
 
