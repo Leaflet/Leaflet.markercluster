@@ -3,6 +3,13 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
+## 1.0.6 (2017-06-19)
+
+### Bugfixes
+
+ * Fix some issues when used with non-integer zoom [#789](https://github.com/Leaflet/Leaflet.markercluster/issues/789)
+ * Change examples to use https (by [@ghybs](https://github.com/ghybs)) [#794](https://github.com/Leaflet/Leaflet.markercluster/pull/794)
+
 ## 1.0.5 (2017-04-26)
 
 ### Improvements
