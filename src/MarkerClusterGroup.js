@@ -75,6 +75,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		L.extend(this, animate ? this._withAnimation : this._noAnimation);
 		// Remember which MarkerCluster class to instantiate (animated or not).
 		this._markerCluster = animate ? L.MarkerCluster : L.MarkerClusterNonAnimated;
+		//Set the initial clear layers count to 0
+		this._clearLayersCallCount = 0;
 	},
 
 	addLayer: function (layer) {
@@ -199,13 +201,17 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    l = layersArray.length,
 		    offset = 0,
 		    originalArray = true,
-		    m;
+		    m,
+		    clearLayerIndexWhenStarted = this._clearLayersCallCount;
 
 		if (this._map) {
 			var started = (new Date()).getTime();
 			var process = L.bind(function () {
 				var start = (new Date()).getTime();
 				for (; offset < l; offset++) {
+					if (clearLayerIndexWhenStarted !== this._clearLayersCallCount) {
+						break;
+					}
 					if (chunked && offset % 200 === 0) {
 						// every couple hundred markers, instrument the time elapsed since processing started:
 						var elapsed = (new Date()).getTime() - start;
@@ -258,6 +264,10 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 							fg.removeLayer(otherMarker);
 						}
 					}
+				}
+
+				if (clearLayerIndexWhenStarted !== this._clearLayersCallCount) {
+					return;
 				}
 
 				if (chunkProgress) {
@@ -419,6 +429,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			delete this._gridUnclustered;
 		}
 
+		++this._clearLayersCallCount;
+
 		if (this._noanimationUnspiderfy) {
 			this._noanimationUnspiderfy();
 		}
@@ -497,7 +509,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides LayerGroup.getLayer, WARNING: Really bad performance
 	getLayer: function (id) {
 		var result = null;
-		
+
 		id = parseInt(id, 10);
 
 		this.eachLayer(function (l) {
@@ -711,7 +723,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 		delete e.target.__dragStart;
 	},
-	
+
 
 	//Internal function for removing a marker from everything.
 	//dontUpdateMap: set to true if you will handle updating the map manually (for bulk functions)
@@ -925,7 +937,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			minZoom = Math.floor(this._map.getMinZoom()),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
-	
+
 		//If we just set maxClusterRadius to a single number, we need to create
 		//a simple function to return that number. Otherwise, we just have to
 		//use the function we've passed in.
@@ -939,7 +951,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._maxZoom = maxZoom;
 		this._gridClusters = {};
 		this._gridUnclustered = {};
-	
+
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= minZoom; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
