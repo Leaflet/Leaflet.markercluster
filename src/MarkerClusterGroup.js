@@ -509,7 +509,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Overrides LayerGroup.getLayer, WARNING: Really bad performance
 	getLayer: function (id) {
 		var result = null;
-
+		
 		id = parseInt(id, 10);
 
 		this.eachLayer(function (l) {
@@ -723,7 +723,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}
 		delete e.target.__dragStart;
 	},
-
+	
 
 	//Internal function for removing a marker from everything.
 	//dontUpdateMap: set to true if you will handle updating the map manually (for bulk functions)
@@ -937,7 +937,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			minZoom = Math.floor(this._map.getMinZoom()),
 			radius = this.options.maxClusterRadius,
 			radiusFn = radius;
-
+	
 		//If we just set maxClusterRadius to a single number, we need to create
 		//a simple function to return that number. Otherwise, we just have to
 		//use the function we've passed in.
@@ -951,7 +951,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._maxZoom = maxZoom;
 		this._gridClusters = {};
 		this._gridUnclustered = {};
-
+	
 		//Set up DistanceGrids for each zoom
 		for (var zoom = maxZoom; zoom >= minZoom; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
