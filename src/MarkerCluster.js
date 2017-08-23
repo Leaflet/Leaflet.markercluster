@@ -2,8 +2,8 @@ L.MarkerCluster = L.Marker.extend({
 	initialize: function (group, zoom, a, b) {
 
 		var options = { icon: this };
-		if (group.options.mapPane) {
-		    options.pane = group.options.mapPane;
+		if (group.options.clusterPane) {
+		    options.pane = group.options.clusterPane;
         }
 
 		L.Marker.prototype.initialize.call(this, a ? (a._cLatLng || a.getLatLng()) : new L.LatLng(0, 0), options);

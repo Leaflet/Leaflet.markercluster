@@ -64,7 +64,7 @@ describe('Map pane selection', function() {
     /////////////////////////////
 
     it('recognizes and applies option', function() {
-        group = new L.MarkerClusterGroup({mapPane: 'testPane'});
+        group = new L.MarkerClusterGroup({clusterPane: 'testPane'});
 
         var marker = new L.Marker([1.5, 1.5]);
         var marker2 = new L.Marker([1.5, 1.5]);
