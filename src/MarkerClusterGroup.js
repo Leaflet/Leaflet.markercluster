@@ -49,6 +49,9 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		if (!this.options.iconCreateFunction) {
 			this.options.iconCreateFunction = this._defaultIconCreateFunction;
 		}
+		if (!this.options.clusterPane) {
+		    this.options.clusterPane = L.Marker.prototype.options.pane;
+        }
 
 		this._featureGroup = L.featureGroup();
 		this._featureGroup.addEventParent(this);

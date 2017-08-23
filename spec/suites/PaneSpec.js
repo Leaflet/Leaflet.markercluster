@@ -75,7 +75,7 @@ describe('Map pane selection', function() {
         expect(map._panes.testPane.childNodes.length).to.be(1);
     });
 
-    it('defaults to markerPane', function() {
+    it('defaults to default marker pane', function() {
         group = new L.MarkerClusterGroup();
 
         var marker = new L.Marker([1.5, 1.5]);
@@ -84,7 +84,7 @@ describe('Map pane selection', function() {
         group.addLayers([marker, marker2]);
         map.addLayer(group);
 
-        expect(map._panes.markerPane.childNodes.length).to.be(1);
+        expect(map._panes[L.Marker.prototype.options.pane].childNodes.length).to.be(1);
     });
 
     /////////////////////////////
