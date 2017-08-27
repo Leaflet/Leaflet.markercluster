@@ -257,7 +257,7 @@ markers.on('clusterclick', function (a) {
 #### Other clusters methods
 * **getChildCount**: Returns the total number of markers contained within that cluster.
 * **getAllChildMarkers**: Returns the array of total markers contained within that cluster.
-* **spiderfy**: Spiderfies the child markers of this cluster
+* **spiderfy**(keepPositions): Spiderfies the child markers of this cluster. If optional argument `keepPositions` is true, markers will appear at their original position instead of placing them on a spiral.
 * **unspiderfy**: Unspiderfies a cluster (opposite of spiderfy)
 
 ## Handling LOTS of markers

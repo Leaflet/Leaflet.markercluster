@@ -14,7 +14,7 @@ L.MarkerCluster.include({
 	_circleSpiralSwitchover: 9, //show spiral instead of circle from this marker count upwards.
 								// 0 -> always spiral; Infinity -> always circle
 
-	spiderfy: function () {
+	spiderfy: function (keepPositions) {
 		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
 			return;
 		}
@@ -28,13 +28,20 @@ L.MarkerCluster.include({
 		this._group._unspiderfy();
 		this._group._spiderfied = this;
 
-		//TODO Maybe: childMarkers order by distance to center
-
-		if (childMarkers.length >= this._circleSpiralSwitchover) {
-			positions = this._generatePointsSpiral(childMarkers.length, center);
+		if (keepPositions) {
+			positions = [];
+			childMarkers.forEach(function (marker) {
+				positions.push(map.latLngToLayerPoint(marker.getLatLng()));
+			});
 		} else {
-			center.y += 10; // Otherwise circles look wrong => hack for standard blue icon, renders differently for other icons.
-			positions = this._generatePointsCircle(childMarkers.length, center);
+			//TODO Maybe: childMarkers order by distance to center
+			
+			if (childMarkers.length >= this._circleSpiralSwitchover) {
+				positions = this._generatePointsSpiral(childMarkers.length, center);
+			} else {
+				center.y += 10; // Otherwise circles look wrong => hack for standard blue icon, renders differently for other icons.
+				positions = this._generatePointsCircle(childMarkers.length, center);
+			}
 		}
 
 		this._animationSpiderfy(childMarkers, positions);
