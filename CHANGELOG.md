@@ -3,6 +3,12 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
+## 1.1.0 (2017-08-27)
+
+### Improvements
+
+ * Add `clusterPane` option to allow putting clusters in a different pane [#819](https://github.com/Leaflet/Leaflet.markercluster/issues/819) by (by [@ckrahe](https://github.com/ckrahe))
+ 
 ## 1.0.6 (2017-06-19)
 
 ### Bugfixes
