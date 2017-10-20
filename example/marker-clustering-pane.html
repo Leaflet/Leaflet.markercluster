@@ -51,19 +51,25 @@
 		var markersB = createMarkerClusterGroup('myclusterB', 'paneB');
 
 		function createMarkerClusterGroup(className, pane) {
-		    var mcg = L.markerClusterGroup({
-                maxClusterRadius: 120,
-                iconCreateFunction: function (cluster) {
-                    var markers = cluster.getAllChildMarkers();
-                    var n = 0;
-                    for (var i = 0; i < markers.length; i++) {
-                        n += markers[i].number;
-                    }
-                    return L.divIcon({ html: n, className: className, iconSize: L.point(40, 40) });
-                },
-                //Disable all of the defaults & specify the pane:
-                spiderfyOnMaxZoom: false, showCoverageOnHover: false, zoomToBoundsOnClick: false, clusterPane: pane
-            });
+			var options = {
+				maxClusterRadius: 120,
+				iconCreateFunction: function (cluster) {
+					var markers = cluster.getAllChildMarkers();
+					var n = 0;
+					for (var i = 0; i < markers.length; i++) {
+						n += markers[i].number;
+					}
+					return L.divIcon({ html: n, className: className, iconSize: L.point(40, 40) });
+				},
+				//Disable all of the defaults & specify the pane:
+				spiderfyOnMaxZoom: false,
+				showCoverageOnHover: false,
+				zoomToBoundsOnClick: false
+			};
+			if (pane) {
+				options.clusterPane = pane;
+			}
+		    var mcg = L.markerClusterGroup(options);
 		    return(mcg);
         }
 

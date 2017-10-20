@@ -7,6 +7,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	options: {
 		maxClusterRadius: 80, //A cluster will cover at most this many pixels from its center
 		iconCreateFunction: null,
+		clusterPane: L.Marker.prototype.options.pane,
 
 		spiderfyOnMaxZoom: true,
 		showCoverageOnHover: true,
@@ -49,9 +50,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		if (!this.options.iconCreateFunction) {
 			this.options.iconCreateFunction = this._defaultIconCreateFunction;
 		}
-		if (!this.options.clusterPane) {
-		    this.options.clusterPane = L.Marker.prototype.options.pane;
-        }
 
 		this._featureGroup = L.featureGroup();
 		this._featureGroup.addEventParent(this);
