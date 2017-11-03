@@ -106,7 +106,8 @@ L.DistanceGrid.prototype = {
 	},
 
 	_getCoord: function (x) {
-		return Math.floor(x / this._cellSize);
+		var coord = Math.floor(x / this._cellSize);
+		return isFinite(coord) ? coord : x;
 	},
 
 	_sqDist: function (p, p2) {
