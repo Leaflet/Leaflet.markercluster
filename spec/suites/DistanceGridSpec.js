@@ -18,4 +18,14 @@
 			done();
 		});
 	});
+
+	it('getNearObject', function () {
+		var grid = new L.DistanceGrid(100),
+			obj = {};
+
+		grid.addObject(obj, { x: 0, y: 0 });
+
+		expect(grid.getNearObject({ x: 50, y: 50 })).to.equal(obj);
+		expect(grid.getNearObject({ x: 100, y: 0 })).to.equal(obj);
+	});
 });
