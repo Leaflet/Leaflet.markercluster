@@ -3,11 +3,21 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
+## 1.2.0 (2017-11-06)
+
+### Improvements
+
+ * Move `clusterPane` option in to `options` field (by [@ghybs](https://github.com/ghybs)) [#832](https://github.com/Leaflet/Leaflet.markercluster/pull/832)
+
+### Bugfixes
+
+ * Fix very small `maxClusterRadius` hanging the browser (by [@lucaswerkmeister](https://github.com/lucaswerkmeister)) [#838](https://github.com/Leaflet/Leaflet.markercluster/pull/838)
+
 ## 1.1.0 (2017-08-27)
 
 ### Improvements
 
- * Add `clusterPane` option to allow putting clusters in a different pane [#819](https://github.com/Leaflet/Leaflet.markercluster/issues/819) by (by [@ckrahe](https://github.com/ckrahe))
+ * Add `clusterPane` option to allow putting clusters in a different pane (by [@ckrahe](https://github.com/ckrahe)) [#819](https://github.com/Leaflet/Leaflet.markercluster/issues/819)
  
 ## 1.0.6 (2017-06-19)
 
