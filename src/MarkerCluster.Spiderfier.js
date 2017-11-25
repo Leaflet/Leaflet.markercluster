@@ -5,7 +5,7 @@ L.MarkerCluster.include({
 
 	_2PI: Math.PI * 2,
 	_circleFootSeparation: 25, //related to circumference of circle
-	_circleStartAngle: Math.PI / 6,
+	_circleStartAngle: 0,
 
 	_spiralFootSeparation:  28, //related to size of spiral (experiment!)
 	_spiralLengthStart: 11,
@@ -57,6 +57,8 @@ L.MarkerCluster.include({
 			res = [],
 			i, angle;
 
+		legLength = Math.max(legLength, 35); // Minimum distance to get outside the cluster icon.
+
 		res.length = count;
 
 		for (i = count - 1; i >= 0; i--) {
@@ -79,9 +81,13 @@ L.MarkerCluster.include({
 		res.length = count;
 
 		// Higher index, closer position to cluster center.
-		for (i = count - 1; i >= 0; i--) {
+		for (i = count; i >= 0; i--) {
+			// Skip the first position, so that we are already farther from center and we avoid
+			// being under the default cluster icon (especially important for Circle Markers).
+			if (i < count) {
+				res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle))._round();
+			}
 			angle += separation / legLength + i * 0.0005;
-			res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle))._round();
 			legLength += lengthFactor / angle;
 		}
 		return res;
