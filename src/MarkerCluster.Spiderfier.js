@@ -61,7 +61,7 @@ L.MarkerCluster.include({
 
 		res.length = count;
 
-		for (i = count - 1; i >= 0; i--) {
+		for (i = 0; i < count; i++) { // Clockwise, like spiral.
 			angle = this._circleStartAngle + i * angleStep;
 			res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle))._round();
 		}
