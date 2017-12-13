@@ -79,7 +79,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	addLayer: function (layer) {
-
 		if (layer instanceof L.LayerGroup) {
 			return this.addLayers([layer]);
 		}
@@ -101,7 +100,6 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 			return this;
 		}
 
-
 		//If we have already clustered we'll need to add this one to a cluster
 
 		if (this._unspiderfy) {
@@ -114,18 +112,20 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
 		// Refresh bounds and weighted positions.
 		this._topClusterLevel._recalculateBounds();
 
-		this._refreshClustersIcons();
+		if (typeof this._refreshClustersIcons === 'function') {
+			this._refreshClustersIcons();
+		}
 
 		//Work out what is visible
 		var visibleLayer = layer,
-		    currentZoom = this._zoom;
+			currentZoom = this._zoom;
 		if (layer.__parent) {
-			while (visibleLayer.__parent._zoom >= currentZoom) {
+			while (visibleLayer.__parent && visibleLayer.__parent._zoom >= currentZoom) {
 				visibleLayer = visibleLayer.__parent;
 			}
 		}
 
-		if (this._currentShownBounds.contains(visibleLayer.getLatLng())) {
+		if (visibleLayer.__parent && this._currentShownBounds.contains(visibleLayer.getLatLng())) {
 			if (this.options.animateAddingMarkers) {
 				this._animationAddLayer(layer, visibleLayer);
 			} else {
