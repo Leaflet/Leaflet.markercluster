@@ -20,4 +20,4 @@
 - [ ] this example is as simple as possible
 - [ ] this example does not rely on any third party code
 
-Using http://playground-leaflet.rhcloud.com/beg/1/edit?html,output or any other jsfiddle like site.
+Using http://leafletjs.com/edit.html or any other jsfiddle-like site.
