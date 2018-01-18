@@ -16,7 +16,7 @@ var path = require('path');
 
 desc('Check Leaflet.markercluster source for errors with JSHint');
 task('lint', function(){
-		jake.exec('node node_modules/.bin/jshint ', {
+		jake.exec('jshint', {
 			printStdout: true
 		}, function () {
 			console.log('\tCheck passed.\n');
