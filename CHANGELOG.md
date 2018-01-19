@@ -3,6 +3,17 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
+## 1.3.0 (2018-01-19)
+
+### Improvements
+
+ * Use Rollup for builds (by [@IvanSanchez](https://github.com/IvanSanchez)) [#769](https://github.com/Leaflet/Leaflet.markercluster/pull/769)
+
+### Bugfixes
+
+ * Fix Spiderfier positioning for small markers (by [@ghybs](https://github.com/ghybs)) [#846](https://github.com/Leaflet/Leaflet.markercluster/pull/846)
+ * Fix anchor usage with latest leaflet version [#861](https://github.com/Leaflet/Leaflet.markercluster/issues/861)
+
 ## 1.2.0 (2017-11-06)
 
 ### Improvements
