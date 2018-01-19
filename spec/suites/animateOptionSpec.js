@@ -113,7 +113,9 @@ describe('animate option', function () {
 	it('always hooks non-animated methods version when L.DomUtil.TRANSITION is false', function () {
 
 		// Fool Leaflet, make it think the browser does not support transitions.
-		L.DomUtil.TRANSITION = false;
+		var realDomUtil = L.DomUtil;
+		var fakeDomUtil = Object.assign({}, L.DomUtil, { TRANSITION: false });
+		L.DomUtil = fakeDomUtil;
 
 		// Need to add to map so that we have the top cluster level created.
 		group = L.markerClusterGroup({animate: true}).addTo(map);
@@ -134,6 +136,7 @@ describe('animate option', function () {
 		expect(cluster._animationSpiderfy).to.be(noAnimation._animationSpiderfy);
 		expect(cluster._animationUnspiderfy).to.be(noAnimation._animationUnspiderfy);
 
+		L.DomUtil = realDomUtil;
 	});
 
 
@@ -141,7 +144,8 @@ describe('animate option', function () {
 	// CLEAN UP CODE
 	/////////////////////////////
 
-	map.remove();
-	document.body.removeChild(div);
-
+	after(function() {
+		map.remove();
+		document.body.removeChild(div);
+	});
 });

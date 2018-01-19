@@ -404,6 +404,8 @@
 	// CLEAN UP CODE
 	/////////////////////////////
 
-	map.remove();
-	document.body.removeChild(div);
+	after(function() {
+		map.remove();
+		document.body.removeChild(div);
+	});
 });

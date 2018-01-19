@@ -15,6 +15,26 @@
 	 */
 
 	/////////////////////////////
+	// PREPARATION CODE
+	/////////////////////////////
+
+	var div, map, group, clock;
+
+	div = document.createElement('div');
+	div.style.width = '200px';
+	div.style.height = '200px';
+	document.body.appendChild(div);
+
+	map = L.map(div, { maxZoom: 18 });
+
+	// Corresponds to zoom level 8 for the above div dimensions.
+	map.fitBounds(new L.LatLngBounds([
+		[1, 1],
+		[2, 2]
+	]));
+
+
+	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
 
@@ -39,26 +59,6 @@
 		clock = null;
 
 	});
-
-
-	/////////////////////////////
-	// PREPARATION CODE
-	/////////////////////////////
-
-	var div, map, group, clock;
-
-	div = document.createElement('div');
-	div.style.width = '200px';
-	div.style.height = '200px';
-	document.body.appendChild(div);
-
-	map = L.map(div, { maxZoom: 18 });
-
-	// Corresponds to zoom level 8 for the above div dimensions.
-	map.fitBounds(new L.LatLngBounds([
-		[1, 1],
-		[2, 2]
-	]));
 
 
 	/////////////////////////////
@@ -375,7 +375,8 @@
 	// CLEAN UP CODE
 	/////////////////////////////
 
-	map.remove();
-	document.body.removeChild(div);
-
+	after(function() {
+		map.remove();
+		document.body.removeChild(div);
+	});
 });

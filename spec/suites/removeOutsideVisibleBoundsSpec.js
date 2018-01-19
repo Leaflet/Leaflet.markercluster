@@ -15,38 +15,6 @@ describe('Option removeOutsideVisibleBounds', function () {
 	 */
 
 	/////////////////////////////
-	// SETUP FOR EACH TEST
-	/////////////////////////////
-
-	beforeEach(function () {
-
-		// Nothing for this test suite.
-		clock = sinon.useFakeTimers();
-
-	});
-
-	afterEach(function () {
-
-		// Restore the previous setting, so that even in case of test failure, next tests are not affected.
-		L.Browser.mobile = previousMobileSetting;
-
-		if (group instanceof L.MarkerClusterGroup) {
-			//group.removeLayers(group.getLayers());
-			group.clearLayers();
-			map.removeLayer(group);
-		}
-
-		// group must be thrown away since we are testing it with a potentially
-		// different configuration at each test.
-		group = null;
-
-		clock.restore();
-		clock = null;
-
-	});
-
-
-	/////////////////////////////
 	// PREPARATION CODE
 	/////////////////////////////
 
@@ -76,6 +44,38 @@ describe('Option removeOutsideVisibleBounds', function () {
 	for (i = 0; i < markers.length; i++) {
 		map.removeLayer(markers[i].addTo(map));
 	}
+
+
+	/////////////////////////////
+	// SETUP FOR EACH TEST
+	/////////////////////////////
+
+	beforeEach(function () {
+
+		// Nothing for this test suite.
+		clock = sinon.useFakeTimers();
+
+	});
+
+	afterEach(function () {
+
+		// Restore the previous setting, so that even in case of test failure, next tests are not affected.
+		L.Browser.mobile = previousMobileSetting;
+
+		if (group instanceof L.MarkerClusterGroup) {
+			//group.removeLayers(group.getLayers());
+			group.clearLayers();
+			map.removeLayer(group);
+		}
+
+		// group must be thrown away since we are testing it with a potentially
+		// different configuration at each test.
+		group = null;
+
+		clock.restore();
+		clock = null;
+
+	});
 
 
 	function prepareGroup() {
@@ -272,7 +272,8 @@ describe('Option removeOutsideVisibleBounds', function () {
 	// CLEAN UP CODE
 	/////////////////////////////
 
-	map.remove();
-	document.body.removeChild(div);
-
+	after(function() {
+		map.remove();
+		document.body.removeChild(div);
+	});
 });

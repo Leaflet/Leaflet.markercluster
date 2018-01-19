@@ -15,6 +15,27 @@
 	 */
 
 	/////////////////////////////
+	// PREPARATION CODE
+	/////////////////////////////
+
+	var previousMobileSetting = L.Browser.mobile,
+		div, map, group, clock;
+
+	div = document.createElement('div');
+	div.style.width = '200px';
+	div.style.height = '200px';
+	document.body.appendChild(div);
+
+	map = L.map(div, { maxZoom: 18 });
+
+	// Corresponds to zoom level 8 for the above div dimensions.
+	map.fitBounds(new L.LatLngBounds([
+		[1, 1],
+		[2, 2]
+	]));
+
+
+	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
 
@@ -42,27 +63,6 @@
 		clock = null;
 
 	});
-
-
-	/////////////////////////////
-	// PREPARATION CODE
-	/////////////////////////////
-
-	var previousMobileSetting = L.Browser.mobile,
-		div, map, group, clock;
-
-	div = document.createElement('div');
-	div.style.width = '200px';
-	div.style.height = '200px';
-	document.body.appendChild(div);
-
-	map = L.map(div, { maxZoom: 18 });
-
-	// Corresponds to zoom level 8 for the above div dimensions.
-	map.fitBounds(new L.LatLngBounds([
-		[1, 1],
-		[2, 2]
-	]));
 
 
 	/////////////////////////////
@@ -147,9 +147,12 @@
 		expect(map._panes.markerPane.childNodes.length).to.be(3);
 	});
 
-	it('removes clicked clusters on the edge of a mobile screen', function () {
+	it('removes clicked clusters on the edge of a mobile screen', function (done) {
 
-		L.Browser.mobile = true;
+		//Make leaflet think we are on mobile
+		var fakeBrowser = Object.assign({}, L.Browser, { mobile: true });
+		var realBrowser = L.Browser;
+		L.Browser = fakeBrowser;
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -189,16 +192,26 @@
 
 		expect(parentCluster._icon.parentNode).to.be(map._panes.markerPane);
 
+		debugger;
+		setTimeout(function() {
+			//map.off('moveend', cb);
+
+			expect(map.getZoom()).to.equal(initialZoom + 1); // The fitBounds with 200px height should result in zooming 1 level in.
+
+			// Finally make sure that the cluster has been removed from map.
+			debugger;
+			expect(parentCluster._icon).to.be(null);
+			expect(map._panes.markerPane.childNodes.length).to.be(2); // The bottomMarker + cluster for the 10 above markers.
+	
+			L.Browser = realBrowser;
+			done();
+		}, 1000);
+		//map.on('moveend', cb);
+
 		parentCluster.fireEvent('click', null, true);
 
 		//Run the the animation
 		clock.tick(1000);
-
-		expect(map.getZoom()).to.equal(initialZoom + 1); // The fitBounds with 200px height should result in zooming 1 level in.
-
-		// Finally make sure that the cluster has been removed from map.
-		expect(parentCluster._icon).to.be(null);
-		expect(map._panes.markerPane.childNodes.length).to.be(2); // The bottomMarker + cluster for the 10 above markers.
 
 	});
 
@@ -404,7 +417,8 @@
 	// CLEAN UP CODE
 	/////////////////////////////
 
-	map.remove();
-	document.body.removeChild(div);
-
+	after(function() {
+		map.remove();
+		document.body.removeChild(div);
+	});
 });
