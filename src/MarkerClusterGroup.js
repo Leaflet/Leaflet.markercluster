@@ -416,6 +416,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		//If we aren't on the map (yet), blow away the markers we know of
 		if (!this._map) {
 			this._needsClustering = [];
+			this._needsRemoving = [];
 			delete this._gridClusters;
 			delete this._gridUnclustered;
 		}
