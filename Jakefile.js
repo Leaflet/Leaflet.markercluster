@@ -12,15 +12,75 @@ To run the tests, run "jake test".
 For a custom build, open build/build.html in the browser and follow the instructions.
 */
 
-var build = require('./build/build.js');
+var path = require('path');
 
 desc('Check Leaflet.markercluster source for errors with JSHint');
-task('lint', build.lint);
+task('lint', function(){
+		jake.exec('jshint', {
+			printStdout: true
+		}, function () {
+			console.log('\tCheck passed.\n');
+			complete();
+		});
+});
 
-desc('Combine and compress Leaflet.markercluster source files');
-task('build', ['lint'], build.build);
+desc('Combine Leaflet.markercluster source files');
+task('build', ['lint'], function(){
+	jake.exec('npm run-script rollup', function() { console.log('Rolled up.'); });
+});
+
+desc('Compress bundled files');
+task('uglify', ['build'], function(){
+	jake.exec('npm run-script uglify', function() { console.log('Uglyfied.'); });
+});
 
 desc('Run PhantomJS tests');
-task('test', ['lint'], build.test);
+task('test', ['lint'], function() {
 
-task('default', ['build']);
+	var karma = require('karma'),
+	testConfig = {configFile : path.join(__dirname, './spec/karma.conf.js')};
+
+	testConfig.browsers = ['PhantomJS'];
+
+	function isArgv(optName) {
+		 return process.argv.indexOf(optName) !== -1;
+	}
+
+	if (isArgv('--chrome')) {
+		testConfig.browsers.push('Chrome');
+	}
+	if (isArgv('--safari')) {
+		testConfig.browsers.push('Safari');
+	}
+	if (isArgv('--ff')) {
+		testConfig.browsers.push('Firefox');
+	}
+	if (isArgv('--ie')) {
+		testConfig.browsers.push('IE');
+	}
+
+	if (isArgv('--cov')) {
+		testConfig.preprocessors = {
+			'src/**/*.js': 'coverage'
+		};
+		testConfig.coverageReporter = {
+			type : 'html',
+			dir : 'coverage/'
+		};
+		testConfig.reporters = ['coverage'];
+	}
+
+	console.log('Running tests...');
+
+	var server = new karma.Server(testConfig, function(exitCode) {
+		if (!exitCode) {
+			console.log('\tTests ran successfully.\n');
+			complete();
+		} else {
+			process.exit(exitCode);
+		}
+	});
+	server.start();
+});
+
+task('default', ['build', 'uglify']);
