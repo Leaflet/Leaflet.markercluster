@@ -50,13 +50,14 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		var childClusters = this._childClusters.slice(),
 			map = this._group._map,
 			boundsZoom = map.getBoundsZoom(this._bounds),
-			zoom = this._zoom + 1,
+			zoomDelta = this._group._map.options.zoomDelta,
+			zoom = this._zoom + zoomDelta,
 			mapZoom = map.getZoom(),
 			i;
 
 		//calculate how far we need to zoom down to see all of the markers
 		while (childClusters.length > 0 && boundsZoom > zoom) {
-			zoom++;
+			zoom += zoomDelta;
 			var newClusters = [];
 			for (i = 0; i < childClusters.length; i++) {
 				newClusters = newClusters.concat(childClusters[i]._childClusters);
@@ -67,7 +68,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		if (boundsZoom > zoom) {
 			this._group._map.setView(this._latlng, zoom);
 		} else if (boundsZoom <= mapZoom) { //If fitBounds wouldn't zoom us down, zoom us down instead
-			this._group._map.setView(this._latlng, mapZoom + 1);
+			this._group._map.setView(this._latlng, mapZoom + zoomDelta);
 		} else {
 			this._group._map.fitBounds(this._bounds, fitBoundsOptions);
 		}
@@ -98,11 +99,8 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		return this._iconObj.createShadow();
 	},
 
-
 	_addChild: function (new1, isNotificationFromChild) {
-
 		this._iconNeedsUpdate = true;
-
 		this._boundsNeedUpdate = true;
 		this._setClusterCenter(new1);
 
@@ -215,7 +213,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 	},
 
 	_recursivelyAnimateChildrenIn: function (bounds, center, maxZoom) {
-		this._recursively(bounds, this._group._map.getMinZoom(), maxZoom - 1,
+		this._recursively(bounds, this._group._map.getMinZoom(), maxZoom - this._group._map.options.zoomDelta,
 			function (c) {
 				var markers = c._markers,
 					i, m;
@@ -250,7 +248,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 
 				//TODO: depthToAnimateIn affects _isSingleParent, if there is a multizoom we may/may not be.
 				//As a hack we only do a animation free zoom on a single level zoom, if someone does multiple levels then we always animate
-				if (c._isSingleParent() && previousZoomLevel - 1 === newZoomLevel) {
+				if (c._isSingleParent() && previousZoomLevel - c._group._map.options.zoomDelta === newZoomLevel) {
 					c.clusterShow();
 					c._recursivelyRemoveChildrenFromMap(bounds, mapMinZoom, previousZoomLevel); //Immediately remove our children as we are replacing them. TODO previousBounds not bounds
 				} else {
@@ -269,7 +267,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 	},
 
 	_recursivelyAddChildrenToMap: function (startPos, zoomLevel, bounds) {
-		this._recursively(bounds, this._group._map.getMinZoom() - 1, zoomLevel,
+		this._recursively(bounds, this._group._map.getMinZoom() - this._group._map.options.zoomDelta, zoomLevel,
 			function (c) {
 				if (zoomLevel === c._zoom) {
 					return;
@@ -311,7 +309,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 			}
 		}
 
-		if (zoomLevel - 1 === this._zoom) {
+		if (zoomLevel - this._group._map.options.zoomDelta === this._zoom) {
 			//Reposition child clusters
 			for (var j = this._childClusters.length - 1; j >= 0; j--) {
 				this._childClusters[j]._restorePosition();
@@ -333,7 +331,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 	//exceptBounds: If set, don't remove any markers/clusters in it
 	_recursivelyRemoveChildrenFromMap: function (previousBounds, mapMinZoom, zoomLevel, exceptBounds) {
 		var m, i;
-		this._recursively(previousBounds, mapMinZoom - 1, zoomLevel - 1,
+		this._recursively(previousBounds, mapMinZoom - this._group._map.options.zoomDelta, zoomLevel - this._group._map.options.zoomDelta,
 			function (c) {
 				//Remove markers at every level
 				for (i = c._markers.length - 1; i >= 0; i--) {
@@ -397,4 +395,3 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		return this._childClusters.length > 0 && this._childClusters[0]._childCount === this._childCount;
 	}
 });
-
