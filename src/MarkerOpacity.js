@@ -11,12 +11,12 @@
 L.Marker.include({
 	
 	clusterHide: function () {
-		this.options.opacityWhenUnclustered = this.options.opacity || 1;
+		this.options.opacityWhenUnclustered = Number.isFinite(this.options.opacity) ? this.options.opacity : 1;
 		return this.setOpacity(0);
 	},
 	
 	clusterShow: function () {
-		var ret = this.setOpacity(this.options.opacity || this.options.opacityWhenUnclustered);
+		var ret = this.setOpacity(Number.isFinite(this.options.opacity) ? this.options.opacity : this.options.opacityWhenUnclustered);
 		delete this.options.opacityWhenUnclustered;
 		return ret;
 	}
