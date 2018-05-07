@@ -385,7 +385,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 			for (i = childClusters.length - 1; i >= 0; i--) {
 				c = childClusters[i];
 				if (c._boundsNeedUpdate) {
-					c._recalculateBounds();
+					//c._recalculateBounds();
 				}
 				if (boundsToApplyTo.intersects(c._bounds)) {
 					c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
