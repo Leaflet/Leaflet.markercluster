@@ -4,23 +4,20 @@
 	<meta charset="utf-8">
 	<title>Spec Runner</title>
 	<link rel="stylesheet" type="text/css" href="../node_modules/mocha/mocha.css">
+	<link rel="stylesheet" type="text/css" href="../node_modules/leaflet/dist/leaflet.css">
+	<link rel="stylesheet" type="text/css" href="../dist/MarkerCluster.css">
+	<link rel="stylesheet" type="text/css" href="../dist/MarkerCluster.Default.css">
 </head>
 <body>
 	<div id="mocha"></div>
 	<script src="expect.js"></script>
 	<script type="text/javascript" src="../node_modules/mocha/mocha.js"></script>
-	<script type="text/javascript" src="happen.js"></script>
+	<script type="text/javascript" src="../node_modules/happen/happen.js"></script>
 	<script type="text/javascript" src="sinon.js"></script>
 	<script type="text/javascript" src="../node_modules/leaflet/dist/leaflet-src.js"></script>
 
 	<!-- source files -->
-	<script type="text/javascript" src="../src/DistanceGrid.js"></script>
-	<script type="text/javascript" src="../src/MarkerCluster.js"></script>
-	<script type="text/javascript" src="../src/MarkerClusterGroup.js"></script>
-	<script type="text/javascript" src="../src/MarkerCluster.QuickHull.js"></script>
-	<script type="text/javascript" src="../src/MarkerCluster.Spiderfier.js"></script>
-	<script type="text/javascript" src="../src/MarkerOpacity.js"></script>
-	<script type="text/javascript" src="../src/MarkerClusterGroup.Refresh.js"></script>
+	<script type="text/javascript" src="../dist/leaflet.markercluster-src.js"></script>
 
 	<script>
 		mocha.setup('bdd');

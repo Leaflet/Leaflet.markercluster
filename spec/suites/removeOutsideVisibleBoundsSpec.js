@@ -1,96 +1,72 @@
 describe('Option removeOutsideVisibleBounds', function () {
-
-	/**
-	 * Avoid as much as possible creating and destroying objects for each test.
-	 * Instead, try re-using them, except for the ones under test of course.
-	 * PhantomJS does not perform garbage collection for the life of the page,
-	 * i.e. during the entire test process (Karma runs all tests in a single page).
-	 * http://stackoverflow.com/questions/27239708/how-to-get-around-memory-error-with-karma-phantomjs
-	 *
-	 * The `beforeEach` and `afterEach do not seem to cause much issue.
-	 * => they can still be used to initialize some setup between each test.
-	 * Using them keeps a readable spec/index.
-	 *
-	 * But refrain from re-creating div and map every time. Re-use those objects.
-	 */
-
 	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
+	var marker1, marker2, marker3, marker4, marker5, markers, div, map, group, clock, realBrowser;
 
 	beforeEach(function () {
-
-		// Nothing for this test suite.
+		realBrowser = L.Browser;
 		clock = sinon.useFakeTimers();
 
+		marker1 = L.marker([1.5, -0.4]); // 2 screens width away.
+		marker2 = L.marker([1.5, 0.6]); // 1 screen width away.
+		marker3 = L.marker([1.5, 1.5]); // In view port.
+		marker4 = L.marker([1.5, 2.4]); // 1 screen width away.
+		marker5 = L.marker([1.5, 3.4]); // 2 screens width away.
+		markers = [marker1, marker2, marker3, marker4, marker5];
+
+		div = document.createElement('div');
+		div.style.width = '200px';
+		div.style.height = '200px';
+		document.body.appendChild(div);
+
+		map = L.map(div, { maxZoom: 18, trackResize: false });
+
+		// Corresponds to zoom level 8 for the above div dimensions.
+		map.fitBounds(new L.LatLngBounds([
+			[1, 1],
+			[2, 2]
+		]));
+
+		// Add all markers once to map then remove them immediately so that their icon is null (instead of undefined).
+		for (i = 0; i < markers.length; i++) {
+			map.removeLayer(markers[i].addTo(map));
+		}
 	});
 
 	afterEach(function () {
-
-		// Restore the previous setting, so that even in case of test failure, next tests are not affected.
-		L.Browser.mobile = previousMobileSetting;
-
 		if (group instanceof L.MarkerClusterGroup) {
 			//group.removeLayers(group.getLayers());
 			group.clearLayers();
 			map.removeLayer(group);
 		}
 
-		// group must be thrown away since we are testing it with a potentially
-		// different configuration at each test.
-		group = null;
-
+		map.remove();
+		div.remove();
 		clock.restore();
-		clock = null;
 
+		marker1 = marker2 = marker3 = marker4 = marker5 = markers = div = map = group = clock = null;
 	});
 
-
-	/////////////////////////////
-	// PREPARATION CODE
-	/////////////////////////////
-
-	var marker1 = L.marker([1.5, -0.4]), // 2 screens width away.
-	    marker2 = L.marker([1.5, 0.6]), // 1 screen width away.
-	    marker3 = L.marker([1.5, 1.5]), // In view port.
-	    marker4 = L.marker([1.5, 2.4]), // 1 screen width away.
-	    marker5 = L.marker([1.5, 3.4]), // 2 screens width away.
-	    markers = [marker1, marker2, marker3, marker4, marker5],
-	    previousMobileSetting = L.Browser.mobile,
-	    div, map, group, i, clock;
-
-	div = document.createElement('div');
-	div.style.width = '200px';
-	div.style.height = '200px';
-	document.body.appendChild(div);
-
-	map = L.map(div, { maxZoom: 18 });
-
-	// Corresponds to zoom level 8 for the above div dimensions.
-	map.fitBounds(new L.LatLngBounds([
-		[1, 1],
-		[2, 2]
-	]));
-
-	// Add all markers once to map then remove them immediately so that their icon is null (instead of undefined).
-	for (i = 0; i < markers.length; i++) {
-		map.removeLayer(markers[i].addTo(map));
-	}
-
-
 	function prepareGroup() {
-
 		// "group" should be assigned with a Marker Cluster Group before calling this function.
 		group.addTo(map);
 
 		group.addLayers(markers);
 	}
 
+	function setBrowserToMobile() {
+		var fakeBrowser = {};
+		for (k in realBrowser) {
+			fakeBrowser[k] = realBrowser[k];
+		}
+		fakeBrowser.mobile = true;
+		L.Browser = fakeBrowser;
+	}
 
 	/////////////////////////////
 	// TESTS
 	/////////////////////////////
-
 	it('removes objects more than 1 screen away from view port by default', function () {
 
 		group = L.markerClusterGroup();
@@ -104,20 +80,21 @@ describe('Option removeOutsideVisibleBounds', function () {
 	});
 
 	it('removes objects out of view port by default for mobile device', function () {
+		setBrowserToMobile();
+		try {
+			group = L.markerClusterGroup();
 
-		// Fool Leaflet, make it thinks it runs on a mobile device.
-		L.Browser.mobile = true;
+			prepareGroup();
 
-		group = L.markerClusterGroup();
-
-		prepareGroup();
-
-		expect(marker1._icon).to.be(null);
-		expect(marker2._icon).to.be(null);
-		expect(map._panes.markerPane.childNodes.length).to.be(1); // marker 3 only.
-		expect(marker4._icon).to.be(null);
-		expect(marker5._icon).to.be(null);
-
+			expect(marker1._icon).to.be(null);
+			expect(marker2._icon).to.be(null);
+			expect(map._panes.markerPane.childNodes.length).to.be(1); // marker 3 only.
+			expect(marker4._icon).to.be(null);
+			expect(marker5._icon).to.be(null);
+		}
+		finally {
+			L.Browser = realBrowser;
+		}
 	});
 
 	it('leaves all objects on map when set to false', function () {
@@ -223,56 +200,49 @@ describe('Option removeOutsideVisibleBounds', function () {
 	];
 
 	it('includes objects above the Web Mercator projection maximum limit for mobile device', function () {
+		setBrowserToMobile();
+		try {
+			moveMarkersAndMapToMaxLat(latLngsMaxLatMobile);
 
-		// Fool Leaflet, make it thinks it runs on a mobile device.
-		L.Browser.mobile = true;
+			group = L.markerClusterGroup({
+				maxClusterRadius: 10
+			});
 
-		moveMarkersAndMapToMaxLat(latLngsMaxLatMobile);
+			prepareGroup();
 
-		group = L.markerClusterGroup({
-			maxClusterRadius: 10
-		});
+			checkProjection(latLngsMaxLatMobile);
 
-		prepareGroup();
-
-		checkProjection(latLngsMaxLatMobile);
-
-		expect(map._panes.markerPane.childNodes.length).to.be(3); // Markers 1, 2 and 3.
-		expect(marker4._icon).to.be(null);
-		expect(marker5._icon).to.be(null);
-
+			expect(map._panes.markerPane.childNodes.length).to.be(3); // Markers 1, 2 and 3.
+			expect(marker4._icon).to.be(null);
+			expect(marker5._icon).to.be(null);
+		}
+		finally {
+			L.Browser = realBrowser;
+		}
 	});
 
 	it('includes objects below the Web Mercator projection minimum limit for mobile device', function () {
+		setBrowserToMobile();
+		try {
+			moveMarkersAndMapToMaxLat(latLngsMaxLatMobile, true);
 
-		// Fool Leaflet, make it thinks it runs on a mobile device.
-		L.Browser.mobile = true;
+			// Make sure we are really in Southern hemisphere.
+			expect(map.getBounds().getNorth()).to.be.below(-80);
 
-		moveMarkersAndMapToMaxLat(latLngsMaxLatMobile, true);
+			group = L.markerClusterGroup({
+				maxClusterRadius: 10
+			});
 
-		// Make sure we are really in Southern hemisphere.
-		expect(map.getBounds().getNorth()).to.be.below(-80);
+			prepareGroup();
 
-		group = L.markerClusterGroup({
-			maxClusterRadius: 10
-		});
+			checkProjection(latLngsMaxLatMobile);
 
-		prepareGroup();
-
-		checkProjection(latLngsMaxLatMobile);
-
-		expect(map._panes.markerPane.childNodes.length).to.be(3); // Markers 1, 2 and 3.
-		expect(marker4._icon).to.be(null);
-		expect(marker5._icon).to.be(null);
-
+			expect(map._panes.markerPane.childNodes.length).to.be(3); // Markers 1, 2 and 3.
+			expect(marker4._icon).to.be(null);
+			expect(marker5._icon).to.be(null);
+		}
+		finally {
+			L.Browser = realBrowser;
+		}
 	});
-
-
-	/////////////////////////////
-	// CLEAN UP CODE
-	/////////////////////////////
-
-	map.remove();
-	document.body.removeChild(div);
-
 });

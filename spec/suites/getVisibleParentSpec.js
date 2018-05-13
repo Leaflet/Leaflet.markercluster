@@ -1,24 +1,37 @@
 describe('getVisibleParent', function () {
-	var map, div;
+	/////////////////////////////
+	// SETUP FOR EACH TEST
+	/////////////////////////////
+	var group, map, div;
+
 	beforeEach(function () {
 		div = document.createElement('div');
 		div.style.width = '200px';
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, { maxZoom: 18 });
+		map = L.map(div, { maxZoom: 18, trackResize: false });
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
 			[2, 2]
 		]));
 	});
+
 	afterEach(function () {
+		group.clearLayers();
+		map.removeLayer(group);
+		map.remove();
 		document.body.removeChild(div);
+
+		group = map = div = null;
 	});
 
+	/////////////////////////////
+	// TESTS
+	/////////////////////////////
 	it('gets the marker if the marker is visible', function () {
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
 		var marker = new L.Marker([1.5, 1.5]);
 
 		group.addLayer(marker);
@@ -30,7 +43,7 @@ describe('getVisibleParent', function () {
 	});
 
 	it('gets the visible cluster if it is clustered', function () {
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
 		var marker = new L.Marker([1.5, 1.5]);
 		var marker2 = new L.Marker([1.5, 1.5]);
 
@@ -45,7 +58,7 @@ describe('getVisibleParent', function () {
 	});
 
 	it('returns null if the marker and parents are all not visible', function () {
-		var group = new L.MarkerClusterGroup();
+		group = new L.MarkerClusterGroup();
 		var marker = new L.Marker([5.5, 1.5]);
 		var marker2 = new L.Marker([5.5, 1.5]);
 
