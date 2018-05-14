@@ -1,5 +1,9 @@
 ﻿describe('addLayer adding multiple markers', function () {
+	/////////////////////////////
+	// SETUP FOR EACH TEST
+	/////////////////////////////
 	var map, div, clock;
+
 	beforeEach(function () {
 		clock = sinon.useFakeTimers();
 
@@ -8,18 +12,25 @@
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, { maxZoom: 18 });
+		map = L.map(div, { maxZoom: 18, trackResize: false });
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
 			[2, 2]
 		]));
 	});
+
 	afterEach(function () {
-		clock.restore();
+		map.remove();
 		document.body.removeChild(div);
+		clock.restore();
+
+		map = div = clock = null;
 	});
 
+	/////////////////////////////
+	// TESTS
+	/////////////////////////////
 	it('creates a cluster when 2 overlapping markers are added before the group is added to the map', function () {
 
 		var group = new L.MarkerClusterGroup();

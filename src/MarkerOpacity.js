@@ -1,26 +1,22 @@
-
 /*
 * Extends L.Marker to include two extra methods: clusterHide and clusterShow.
 * 
 * They work as setOpacity(0) and setOpacity(1) respectively, but
-* they will remember the marker's opacity when hiding and showing it again.
+* don't overwrite the options.opacity
 * 
 */
 
-
 L.Marker.include({
-	
 	clusterHide: function () {
-		this.options.opacityWhenUnclustered = this.options.opacity || 1;
-		return this.setOpacity(0);
+		var backup = this.options.opacity;
+		this.setOpacity(0);
+		this.options.opacity = backup;
+		return this;
 	},
 	
 	clusterShow: function () {
-		var ret = this.setOpacity(this.options.opacity || this.options.opacityWhenUnclustered);
-		delete this.options.opacityWhenUnclustered;
-		return ret;
+		return this.setOpacity(this.options.opacity);
 	}
-	
 });
 
 

@@ -24,3 +24,7 @@ if (!Array.prototype.map) {
     return res;
   };
 }
+
+Number.isFinite = Number.isFinite || function(value) {
+  return typeof value === 'number' && isFinite(value);
+}

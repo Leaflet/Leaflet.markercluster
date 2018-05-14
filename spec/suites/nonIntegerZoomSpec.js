@@ -1,5 +1,9 @@
 describe('non-integer min/max zoom', function () {
+	/////////////////////////////
+	// SETUP FOR EACH TEST
+	/////////////////////////////
 	var map, div, clock;
+
 	beforeEach(function () {
 		clock = sinon.useFakeTimers();
 
@@ -8,20 +12,24 @@ describe('non-integer min/max zoom', function () {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, { minZoom: 0.5, maxZoom: 18.5 });
+		map = L.map(div, { minZoom: 0.5, maxZoom: 18.5, trackResize: false });
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
 			[2, 2]
 		]));
 	});
+
 	afterEach(function () {
-		clock.restore();
+		map.remove();
 		document.body.removeChild(div);
+		clock.restore();
 	});
 
+	/////////////////////////////
+	// TESTS
+	/////////////////////////////
 	it('dont break adding and removing markers', function () {
-
 		var group = new L.MarkerClusterGroup();
 		var marker = new L.Marker([1.5, 1.5]);
 		var marker2 = new L.Marker([1.5, 1.5]);

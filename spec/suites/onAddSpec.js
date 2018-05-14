@@ -1,23 +1,33 @@
 ﻿describe('onAdd', function () {
+	/////////////////////////////
+	// SETUP FOR EACH TEST
+	/////////////////////////////
 	var map, div;
+
 	beforeEach(function () {
 		div = document.createElement('div');
 		div.style.width = '200px';
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div);
+		map = L.map(div, { trackResize: false });
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
 			[2, 2]
 		]));
 	});
+
 	afterEach(function () {
+		map.remove();
 		document.body.removeChild(div);
+
+		map = div = null;
 	});
 
-
+	/////////////////////////////
+	// TESTS
+	/////////////////////////////
 	it('throws an error if maxZoom is not specified', function () {
 
 		var group = new L.MarkerClusterGroup();
