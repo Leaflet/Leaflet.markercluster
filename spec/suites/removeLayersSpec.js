@@ -11,9 +11,9 @@
 		div.style.width = '200px';
 		div.style.height = '200px';
 		document.body.appendChild(div);
-	
+
 		map = L.map(div, { maxZoom: 18, trackResize: false });
-	
+
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
@@ -171,4 +171,25 @@
 
 		expect(group.getLayers().length).to.be(0);
 	});
+
+    it('chunked loading zoom out', function () {
+        //See #743 for more details
+        var markers = [];
+
+        group = new L.MarkerClusterGroup({
+            chunkedLoading: true, chunkProgress: function () {
+                //Before this provoked an "undefined" exception
+                map.zoomOut();
+                group.removeLayers(markers);
+            }
+        });
+
+        for (var i = 1; i < 1000; i++) {
+            markers.push(new L.Marker([1.0 + (.0001 * i), 1.0 + (.0001 * i)]));
+        }
+
+        map.addLayer(group);
+
+        group.addLayers(markers);
+    });
 });
