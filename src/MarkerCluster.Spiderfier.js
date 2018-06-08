@@ -391,7 +391,9 @@ L.MarkerClusterGroup.include({
 	},
 
 	_spiderfierOnAdd: function () {
-		this._map.on('click', this._unspiderfyWrapper, this);
+		if (!this.options.unspiderfyOnlyOnDirectClick) {
+			this._map.on('click', this._unspiderfyWrapper, this);
+		}
 
 		if (this._map.options.zoomAnimation) {
 			this._map.on('zoomstart', this._unspiderfyZoomStart, this);
