@@ -19,7 +19,7 @@ L.MarkerCluster.include({
 			return;
 		}
 
-		var childMarkers = this.getAllChildMarkers(),
+		var childMarkers = this.getAllChildMarkers(null, true),
 			group = this._group,
 			map = group._map,
 			center = map.latLngToLayerPoint(this._latlng),
@@ -97,7 +97,7 @@ L.MarkerCluster.include({
 		var group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			childMarkers = this.getAllChildMarkers(),
+			childMarkers = this.getAllChildMarkers(null, true),
 			m, i;
 
 		group._ignoreMove = true;
@@ -290,7 +290,7 @@ L.MarkerCluster.include({
 			map = group._map,
 			fg = group._featureGroup,
 			thisLayerPos = zoomDetails ? map._latLngToNewLayerPoint(this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
-			childMarkers = this.getAllChildMarkers(),
+			childMarkers = this.getAllChildMarkers(null, true),
 			svg = L.Path.SVG,
 			m, i, leg, legPath, legLength, nonAnimatable;
 

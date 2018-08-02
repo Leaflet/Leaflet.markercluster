@@ -6,7 +6,7 @@
 	"devDependencies": {
 		"git-rev-sync": "^1.8.0",
 		"happen": "^0.3.1",
-		"jake": "~0.5.16",
+		"jake": "^0.5.18",
 		"jshint": "^2.9.4",
 		"karma": "^1.5.0",
 		"karma-chrome-launcher": "^2.0.0",
