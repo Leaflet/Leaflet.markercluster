@@ -3,6 +3,20 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
+## 1.4.0 (2018-08-22)
+
+Required leaflet version bumped to 1.3.1
+
+### Improvements
+
+ * Tests run against leaflet 1.1.0+ [#863](https://github.com/Leaflet/Leaflet.markercluster/issues/863)
+
+### Bugfixes
+
+ * Fix clearLayers not removing removed markers [#860](https://github.com/Leaflet/Leaflet.markercluster/issues/860)
+ * Remember opacity 0 correctly (by [@r-yanyo](https://github.com/r-yanyo)) [#890](https://github.com/Leaflet/Leaflet.markercluster/pull/890)
+ * Fix chunkedLoading LatLngBounds.intersects() (by [@boldtrn](https://github.com/boldtrn))  [#743](https://github.com/Leaflet/Leaflet.markercluster/issues/743) [#891](https://github.com/Leaflet/Leaflet.markercluster/pull/891)
+ 
 ## 1.3.0 (2018-01-19)
 
 ### Improvements
