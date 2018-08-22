@@ -256,7 +256,7 @@ markers.on('clusterclick', function (a) {
 
 #### Other clusters methods
 * **getChildCount**: Returns the total number of markers contained within that cluster.
-* **getAllChildMarkers**: Returns the array of total markers contained within that cluster. If you set the second parameter ignoreDraggedMarker to true and there is currently a marker dragged, the dragged marker will not be included in the array.
+* **getAllChildMarkers(storage: array | undefined, ignoreDraggedMarker: boolean | undefined)**: Returns an array of all markers contained within this cluster (storage will be used if provided). If ignoreDraggedMarker is true and there is currently a marker dragged, the dragged marker will not be included in the array.
 * **spiderfy**: Spiderfies the child markers of this cluster
 * **unspiderfy**: Unspiderfies a cluster (opposite of spiderfy)
 
