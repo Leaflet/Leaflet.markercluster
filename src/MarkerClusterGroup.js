@@ -708,8 +708,8 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_childMarkerDragEnd: function (e) {
-        var dragStart = e.target.__dragStart;
-        delete e.target.__dragStart;
+		var dragStart = e.target.__dragStart;
+		delete e.target.__dragStart;
 		if (dragStart) {
 			this._moveChild(e.target, dragStart, e.target._latlng);
 		}		
