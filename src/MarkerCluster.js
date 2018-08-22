@@ -34,8 +34,8 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		}
 
 		for (var j = this._markers.length - 1; j >= 0; j--) {
-            if (ignoreDraggedMarker && this._markers[j].__dragStart)
-              continue;            
+			if (ignoreDraggedMarker && this._markers[j].__dragStart)
+				continue;            
 			storageArray.push(this._markers[j]);
 		}
 
