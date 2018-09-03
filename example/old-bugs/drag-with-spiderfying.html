@@ -32,45 +32,48 @@
 
 		var map = new L.Map('map', {center: latlng, zoom: 12, layers: [tiles]});
 
-    var mcg = L.markerClusterGroup().addTo(map);
+		var mcg = new L.MarkerClusterGroup();
+		map.addLayer(mcg);
+	
+		var dragMarker;
+		var lastCluster;
+		var oldZIndex;
+		for (var i = 0; i < 25; i += 1) {
+			L.marker(getRandomLatLng(), {
+				draggable: true
+			}).addTo(mcg).on("dragstart", function(event) {
+				oldZIndex = event.target._zIndex;
+				event.target.setZIndexOffset(-1000);
+				dragMarker = this;
+			}).on("dragend", function(event) {
+				event.target.setZIndexOffset(oldZIndex);
+				dragMarker = null;
+				if (lastCluster) {
+					lastCluster.unspiderfy();
+				}
+				lastCluster = null
+			});
+		}
+		mcg.on('clustermouseover', function (event) {
+			if (dragMarker && lastCluster !== event.layer) {
+				if (lastCluster) {
+					mcg.once("unspiderfied", function() { // wait for animation end
+						event.layer.spiderfy();	
+					});
+					lastCluster.unspiderfy();
+				} else {
+					event.layer.spiderfy();
+				}
+				lastCluster = event.layer;
+			}
+		});
 
-    var dragMarker;
-    var lastCluster;
-    var oldZIndex;
-    for (var i = 0; i < 25; i += 1) {
-      L.marker(getRandomLatLng(), {
-        draggable: true
-      }).addTo(mcg).on("dragstart", function(event) {
-        oldZIndex = event.target._zIndex;
-        event.target.setZIndexOffset(-1000);
-        dragMarker = this;
-      }).on("dragend", function(event) {
-        event.target.setZIndexOffset(oldZIndex);
-        dragMarker = null;
-        if (lastCluster)
-          lastCluster.unspiderfy();
-        lastCluster = null
-      });
-    }
-    mcg.on('clustermouseover', function (event) {
-      if (dragMarker && lastCluster !== event.layer) {
-        if (lastCluster) {
-          mcg.once("unspiderfied", function() { // wait for animation end
-            event.layer.spiderfy();	
-          });
-          lastCluster.unspiderfy();
-        } else
-          event.layer.spiderfy();
-        lastCluster = event.layer;
-      }
-    });
-
-    function getRandomLatLng() {
-      return [
-        48.8 + 0.1 * Math.random(),
-        2.25 + 0.2 * Math.random()
-      ];
-    }
+		function getRandomLatLng() {
+			return [
+				48.8 + 0.1 * Math.random(),
+				2.25 + 0.2 * Math.random()
+			];
+		}
 	</script>
 </body>
 </html>
