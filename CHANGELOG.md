@@ -3,6 +3,12 @@ Leaflet.markercluster
 
 (all changes without author notice are by [@danzel](https://github.com/danzel))
 
+## 1.4.1 (2018-09-14)
+
+### Bugfixes
+
+ * Better support stopping dragged markers from being clustered (by [@DerGuteWolf](https://github.com/DerGuteWolf))  [#909](https://github.com/Leaflet/Leaflet.markercluster/pull/909)
+
 ## 1.4.0 (2018-08-22)
 
 Required leaflet version bumped to 1.3.1
