@@ -708,10 +708,11 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 	},
 
 	_childMarkerDragEnd: function (e) {
-		if (e.target.__dragStart) {
-			this._moveChild(e.target, e.target.__dragStart, e.target._latlng);
-		}
+		var dragStart = e.target.__dragStart;
 		delete e.target.__dragStart;
+		if (dragStart) {
+			this._moveChild(e.target, dragStart, e.target._latlng);
+		}		
 	},
 
 

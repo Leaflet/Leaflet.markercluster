@@ -26,7 +26,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 	},
 
 	//Recursively retrieve all child markers of this cluster
-	getAllChildMarkers: function (storageArray) {
+	getAllChildMarkers: function (storageArray, ignoreDraggedMarker) {
 		storageArray = storageArray || [];
 
 		for (var i = this._childClusters.length - 1; i >= 0; i--) {
@@ -34,6 +34,9 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		}
 
 		for (var j = this._markers.length - 1; j >= 0; j--) {
+			if (ignoreDraggedMarker && this._markers[j].__dragStart) {
+				continue;
+			}
 			storageArray.push(this._markers[j]);
 		}
 
