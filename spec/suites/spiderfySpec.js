@@ -265,6 +265,27 @@
 
 	});
 
+	it('overrides spiderfy shape positions when custom function has been provided', function () {
+		
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+
+		var spiderfyShapePositionsFuntion =  sinon.spy(function (){
+			return [{x: 1.6, y: 1.6}, {x: 1.6, y: 1.6} ];
+			}
+		);
+
+		group = new L.MarkerClusterGroup({spiderfyShapePositions: spiderfyShapePositionsFuntion});
+
+		group.addLayer(marker);
+		group.addLayer(marker2)
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+
+		sinon.assert.calledOnce(spiderfyShapePositionsFuntion);
+	});
+
 	describe('zoomend event listener', function () {
 
 		it('unspiderfies correctly', function () {
