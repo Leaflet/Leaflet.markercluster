@@ -30,7 +30,9 @@ L.MarkerCluster.include({
 
 		//TODO Maybe: childMarkers order by distance to center
 
-		if (childMarkers.length >= this._circleSpiralSwitchover) {
+		if (this._group.options.spiderfyShapePositions) {
+			positions = this._group.options.spiderfyShapePositions(childMarkers.length, center);
+		} else if (childMarkers.length >= this._circleSpiralSwitchover) {
 			positions = this._generatePointsSpiral(childMarkers.length, center);
 		} else {
 			center.y += 10; // Otherwise circles look wrong => hack for standard blue icon, renders differently for other icons.

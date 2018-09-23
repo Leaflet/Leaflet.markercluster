@@ -29,6 +29,9 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		// If you are adding individual markers set to true, if adding bulk markers leave false for massive performance gains.
 		animateAddingMarkers: false,
 
+		// Make it possible to provide custom function to calculate spiderfy shape positions
+		spiderfyShapePositions: null,
+
 		//Increase to increase the distance away that spiderfied markers appear from the center
 		spiderfyDistanceMultiplier: 1,
 

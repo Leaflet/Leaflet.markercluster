@@ -24,6 +24,7 @@ removed link to h1 and indented back 2 spaces all links.
   * [Options](#options)
     * [Defaults](#defaults)
     * [Customising the Clustered Markers](#customising-the-clustered-markers)
+    * [Customising Spiderfy shape positions](#customising-spiderfy-shape-positions)
     * [All Options](#all-options)
       * [Enabled by default (boolean options)](#enabled-by-default-boolean-options)
       * [Other options](#other-options)
@@ -109,9 +110,34 @@ var markers = L.markerClusterGroup({
 	}
 });
 ```
+
 Check out the [custom example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-custom.html) for an example of this.
 
 If you need to update the clusters icon (e.g. they are based on markers real-time data), use the method [refreshClusters()](#refreshing-the-clusters-icon).
+
+### Customising Spiderfy shape positions
+You can also provide a custom function as an option to MarkerClusterGroup to override the spiderfy shape positions. The example below implements linear spiderfy positions which overrides the default circular shape.
+
+```javascript
+var markers = L.markerClusterGroup({
+	spiderfyShapePositions: function(count, centerPt) {
+                var distanceFromCenter = 35,
+                    markerDistance = 45,
+                    lineLength = markerDistance * (count - 1),
+                    lineStart = centerPt.y - lineLength / 2,
+                    res = [],
+                    i;
+
+                res.length = count;
+
+                for (i = count - 1; i >= 0; i--) {
+                    res[i] = new Point(centerPt.x + distanceFromCenter, lineStart + markerDistance * i);
+                }
+
+                return res;
+            }
+});
+```
 
 ### All Options
 #### Enabled by default (boolean options)
@@ -130,6 +156,7 @@ If you need to update the clusters icon (e.g. they are based on markers real-tim
 * **spiderLegPolylineOptions**: Allows you to specify [PolylineOptions](http://leafletjs.com/reference.html#polyline-options) to style spider legs. By default, they are `{ weight: 1.5, color: '#222', opacity: 0.5 }`.
 * **spiderfyDistanceMultiplier**: Increase from 1 to increase the distance away from the center that spiderfied markers are placed. Use if you are using big marker icons (Default: 1).
 * **iconCreateFunction**: Function used to create the cluster icon. See [the default implementation](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542) or the [custom example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-custom.html).
+* **spiderfyShapePositions**: Function used to override spiderfy default shape positions. 
 * **clusterPane**: Map pane where the cluster icons will be added. Defaults to L.Marker's default (currently 'markerPane'). [See the pane example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-pane.html).
 
 #### Chunked addLayers options
