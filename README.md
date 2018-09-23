@@ -111,8 +111,12 @@ var markers = L.markerClusterGroup({
 });
 ```
 
+Check out the [custom example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-custom.html) for an example of this.
+
+If you need to update the clusters icon (e.g. they are based on markers real-time data), use the method [refreshClusters()](#refreshing-the-clusters-icon).
+
 ### Customising Spiderfy shape positions
-You could also privide a custom function as an option to MarkerClusterGroup to override spiderfy default shape positions. Example below implements linear spiderfy positions which overrides default circular shape.
+You can also provide a custom function as an option to MarkerClusterGroup to override the spiderfy shape positions. The example below implements linear spiderfy positions which overrides the default circular shape.
 
 ```javascript
 var markers = L.markerClusterGroup({
@@ -134,10 +138,6 @@ var markers = L.markerClusterGroup({
             }
 });
 ```
-
-Check out the [custom example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-custom.html) for an example of this.
-
-If you need to update the clusters icon (e.g. they are based on markers real-time data), use the method [refreshClusters()](#refreshing-the-clusters-icon).
 
 ### All Options
 #### Enabled by default (boolean options)
