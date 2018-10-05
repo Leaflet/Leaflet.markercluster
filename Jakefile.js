@@ -15,7 +15,9 @@ For a custom build, open build/build.html in the browser and follow the instruct
 var path = require('path');
 
 desc('Check Leaflet.markercluster source for errors with JSHint');
-task('lint', function(){
+task('lint', {
+	async: true
+}, function(){
 		jake.exec('jshint', {
 			printStdout: true
 		}, function () {
@@ -25,8 +27,13 @@ task('lint', function(){
 });
 
 desc('Combine Leaflet.markercluster source files');
-task('build', ['lint'], function(){
-	jake.exec('npm run-script rollup', function() { console.log('Rolled up.'); });
+task('build', ['lint'], {
+	async: true
+}, function(){
+	jake.exec('npm run-script rollup', function() {
+		console.log('Rolled up.');
+		complete();
+	});
 });
 
 desc('Compress bundled files');
