@@ -212,8 +212,8 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 				// Make sure to unspiderfy before starting to add some layers
 				if (this._map && this._unspiderfy) {
-          this._unspiderfy();
-        }
+					this._unspiderfy();
+				}
 
 				for (; offset < l; offset++) {
 					if (chunked && offset % 200 === 0) {
