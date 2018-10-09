@@ -209,6 +209,12 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 			var started = (new Date()).getTime();
 			var process = L.bind(function () {
 				var start = (new Date()).getTime();
+
+				// Make sure to unspiderfy before starting to add some layers
+				if (this._map && this._unspiderfy) {
+					this._unspiderfy();
+				}
+
 				for (; offset < l; offset++) {
 					if (chunked && offset % 200 === 0) {
 						// every couple hundred markers, instrument the time elapsed since processing started:
