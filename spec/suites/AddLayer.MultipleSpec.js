@@ -122,4 +122,39 @@
 
 		expect(map._panes.markerPane.childNodes.length).to.be(2);
 	});
+
+	it('unspiderfies before adding a new Marker', function () {
+
+		group = new L.MarkerClusterGroup();
+
+		var marker = new L.Marker([1.5, 1.5]);
+		var marker2 = new L.Marker([1.5, 1.5]);
+		var marker3 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		expect(marker._icon).to.be(undefined);
+		expect(marker2._icon).to.be(undefined);
+
+		group.zoomToShowLayer(marker);
+		//Run the the animation
+		clock.tick(1000);
+
+		expect(marker._icon).to.not.be(undefined);
+		expect(marker._icon).to.not.be(null);
+		expect(marker2._icon).to.not.be(undefined);
+		expect(marker2._icon).to.not.be(null);
+
+		group.addLayer(marker3);
+		//Run the the animation
+		clock.tick(1000);
+
+		expect(marker._icon).to.be(null);
+		expect(marker2._icon).to.be(null);
+		expect(marker3._icon).to.be(undefined);
+		expect(marker3.__parent._icon).to.not.be(undefined);
+		expect(marker3.__parent._icon).to.not.be(null);
+		expect(marker3.__parent._icon.innerText.trim()).to.equal('3');
+	});
 });
