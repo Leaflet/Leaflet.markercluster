@@ -378,5 +378,40 @@
 			expect(marker3._icon).to.not.be(null);
 			sinon.assert.calledOnce(zoomCallbackSpy);
 		});
+
+		it('zoom and executes callback even for non-icon-based Marker', function () {
+			group = new L.MarkerClusterGroup();
+
+			var marker1 = new L.CircleMarker([59.9520, 30.3307]);
+			var marker2 = new L.CircleMarker([59.9516, 30.3308]);
+			var marker3 = new L.CircleMarker([59.9513, 30.3312]);
+
+			group.addLayer(marker1);
+			group.addLayer(marker2);
+			group.addLayer(marker3);
+			map.addLayer(group);
+
+			var zoomCallbackSpy = sinon.spy();
+
+			//Markers will be visible on zoom 18
+			map.setView([59.9520, 30.3307], 16);
+
+			clock.tick(1000);
+
+			expect(map.hasLayer(marker1)).to.be(false);
+			expect(map.hasLayer(marker2)).to.be(false);
+			expect(map.hasLayer(marker3)).to.be(false);
+
+			group.zoomToShowLayer(marker1, zoomCallbackSpy);
+
+			//Run the the animation
+			clock.tick(1000);
+
+			//Now the markers should all be visible (zoomed or spiderfied), and callback called once
+			expect(map.hasLayer(marker1)).to.be(true);
+			expect(map.hasLayer(marker2)).to.be(true);
+			expect(map.hasLayer(marker3)).to.be(true);
+			sinon.assert.calledOnce(zoomCallbackSpy);
+		});
 	});
 });
