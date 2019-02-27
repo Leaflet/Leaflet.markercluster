@@ -28,14 +28,16 @@ const banner = `/*
  */`;
 
 export default {
-	format: 'umd',
-	moduleName: 'Leaflet.markercluster',
-	banner: banner,
-	entry: 'src/index.js',
-	dest: 'dist/leaflet.markercluster-src.js',
+	output: {
+	  banner: banner,
+	  file: 'dist/leaflet.markercluster-src.js',
+	  format: 'umd',
+	  name: 'Leaflet.markercluster',
+	  sourceMap: true,
+	},
+	input: 'src/index.js',
 	plugins: [
 		release ? json() : rollupGitVersion(),
 	],
-	sourceMap: true,
 	legacy: true // Needed to create files loadable by IE8
 };

@@ -3,7 +3,7 @@ var json = require('rollup-plugin-json');
 // Karma configuration
 module.exports = function (config) {
 
-	// 	var libSources = require(__dirname + '/../build/build.js').getFiles();
+	//	var libSources = require(__dirname + '/../build/build.js').getFiles();
 
 	var files = [
 		"spec/sinon.js",
@@ -24,7 +24,7 @@ module.exports = function (config) {
 		basePath: '../',
 
 		plugins: [
-			'karma-rollup-plugin',
+			'karma-rollup-preprocessor',
 			'karma-mocha',
 			'karma-coverage',
 			'karma-phantomjs-launcher',
@@ -38,9 +38,9 @@ module.exports = function (config) {
 
 		// list of files / patterns to load in the browser
 		files: files,
-// 		proxies: {
-// 			'/base/dist/images/': 'dist/images/'
-// 		},
+//		proxies: {
+//			'/base/dist/images/': 'dist/images/'
+//		},
 		exclude: [],
 
 		// Rollup the ES6 Leaflet.markercluster sources into just one file, before tests
@@ -51,8 +51,10 @@ module.exports = function (config) {
 			plugins: [
 				json()
 			],
-			format: 'umd',
-			moduleName: 'Leaflet.markercluster'
+			output: {
+				format: 'umd',
+				name: 'Leaflet.markercluster',
+			},
 		},
 
 		// test results reporter to use
