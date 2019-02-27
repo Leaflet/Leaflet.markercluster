@@ -6,9 +6,9 @@
 	"devDependencies": {
 		"git-rev-sync": "^1.8.0",
 		"happen": "^0.3.1",
-		"jake": "~0.5.16",
+		"jake": "8.0.19",
 		"jshint": "^2.9.4",
-		"karma": "^1.5.0",
+		"karma": "4.0.0",
 		"karma-chrome-launcher": "^2.0.0",
 		"karma-coverage": "^1.1.1",
 		"karma-firefox-launcher": "^1.0.1",
