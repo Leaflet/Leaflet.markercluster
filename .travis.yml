@@ -1,10 +1,12 @@
 sudo: false
 language: node_js
 node_js:
-  - 6
+  - 8
 cache:
   directories:
     - "travis_phantomjs"
+    - "$HOME/.npm"
+
 before_install:
   - "export PHANTOMJS_VERSION=2.1.1"
   - "hash -r"
@@ -18,3 +20,6 @@ before_install:
   - "if [ $(phantomjs --version) != \"$PHANTOMJS_VERSION\" ]; then tar -xvf $PWD/travis_phantomjs/phantomjs-$PHANTOMJS_VERSION-linux-x86_64.tar.bz2 -C $PWD/travis_phantomjs; fi"
   - "hash -r"
   - "phantomjs --version"
+
+install:
+  - npm ci

@@ -38,7 +38,7 @@ task('build', ['lint'], {
 
 desc('Compress bundled files');
 task('uglify', ['build'], function(){
-	jake.exec('npm run-script uglify', function() { console.log('Uglyfied.'); });
+  jake.exec('npm run-script uglify', function() { console.log('Uglyfied.'); });
 });
 
 desc('Run PhantomJS tests');
