@@ -1150,6 +1150,14 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		for (; i < layers.length; i++) {
 			layer = layers[i];
 
+			//Copy characteristics of the group onto each layer in the group, since the group itself will be discarded
+			if (group.getPopup()) {
+				layer.addPopup(group.getPopup());
+			}
+			if (group.getTooltip()) {
+				layer.bindTooltip(group.getTooltip());
+			}
+
 			if (layer instanceof L.LayerGroup) {
 				this._extractNonGroupLayers(layer, output);
 				continue;
