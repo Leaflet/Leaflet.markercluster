@@ -73,7 +73,7 @@ Or check out the [custom example](https://leaflet.github.io/Leaflet.markercluste
 Create a new MarkerClusterGroup, add your markers to it, then add it to the map
 
 ```javascript
-var markers = L.markerClusterGroup();
+var markers = L.MarkerClusterGroup();
 markers.addLayer(L.marker(getRandomLatLng(map)));
 ... Add more layers ...
 map.addLayer(markers);
@@ -90,7 +90,7 @@ By default the Clusterer enables some nice defaults for you:
 
 You can disable any of these as you want in the options when you create the MarkerClusterGroup:
 ```javascript
-var markers = L.markerClusterGroup({
+var markers = L.MarkerClusterGroup({
 	spiderfyOnMaxZoom: false,
 	showCoverageOnHover: false,
 	zoomToBoundsOnClick: false
@@ -104,7 +104,7 @@ You do not need to include the .Default css if you go this way.
 You are passed a MarkerCluster object, you'll probably want to use `getChildCount()` or `getAllChildMarkers()` to work out the icon to show.
 
 ```javascript
-var markers = L.markerClusterGroup({
+var markers = L.MarkerClusterGroup({
 	iconCreateFunction: function(cluster) {
 		return L.divIcon({ html: '<b>' + cluster.getChildCount() + '</b>' });
 	}
@@ -119,7 +119,7 @@ If you need to update the clusters icon (e.g. they are based on markers real-tim
 You can also provide a custom function as an option to MarkerClusterGroup to override the spiderfy shape positions. The example below implements linear spiderfy positions which overrides the default circular shape.
 
 ```javascript
-var markers = L.markerClusterGroup({
+var markers = L.MarkerClusterGroup({
 	spiderfyShapePositions: function(count, centerPt) {
                 var distanceFromCenter = 35,
                     markerDistance = 45,
