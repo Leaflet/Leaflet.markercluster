@@ -1,6 +1,7 @@
 
 // Config file for running Rollup in "normal" mode (non-watch)
 
+import inject from '@rollup/plugin-inject';
 import rollupGitVersion from 'rollup-plugin-git-version'
 import json from 'rollup-plugin-json'
 
@@ -36,8 +37,14 @@ export default {
 		legacy: true, // Needed to create files loadable by IE8
 		name: 'Leaflet.markercluster',
 		sourcemap: true,
+		globals: {
+			"leaflet": "L"
+		}
 	},
 	plugins: [
 		release ? json() : rollupGitVersion(),
+		inject({
+			L: "leaflet"
+		})
 	],
 };
