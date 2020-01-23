@@ -41,6 +41,9 @@ export default {
 			"leaflet": "L"
 		}
 	},
+	external: [
+		"leaflet"
+	],
 	plugins: [
 		release ? json() : rollupGitVersion(),
 		inject({
