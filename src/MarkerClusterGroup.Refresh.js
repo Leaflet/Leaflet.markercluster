@@ -1,32 +1,34 @@
 /**
- * Adds 1 public method to MCG and 1 to L.Marker to facilitate changing
+ * Adds 1 public method to MCG and 1 to Marker to facilitate changing
  * markers' icon options and refreshing their icon and their parent clusters
  * accordingly (case where their iconCreateFunction uses data of childMarkers
  * to make up the cluster icon).
  */
 
+import { MarkerClusterGroup } from './MarkerClusterGroup.js';
+import { Marker } from 'leaflet/src/layer/marker';
 
-L.MarkerClusterGroup.include({
+MarkerClusterGroup.include({
 	/**
 	 * Updates the icon of all clusters which are parents of the given marker(s).
 	 * In singleMarkerMode, also updates the given marker(s) icon.
-	 * @param layers L.MarkerClusterGroup|L.LayerGroup|Array(L.Marker)|Map(L.Marker)|
-	 * L.MarkerCluster|L.Marker (optional) list of markers (or single marker) whose parent
+	 * @param layers MarkerClusterGroup|LayerGroup|Array(Marker)|Map(Marker)|
+	 * MarkerCluster|Marker (optional) list of markers (or single marker) whose parent
 	 * clusters need to be updated. If not provided, retrieves all child markers of this.
-	 * @returns {L.MarkerClusterGroup}
+	 * @returns {MarkerClusterGroup}
 	 */
 	refreshClusters: function (layers) {
 		if (!layers) {
 			layers = this._topClusterLevel.getAllChildMarkers();
-		} else if (layers instanceof L.MarkerClusterGroup) {
+		} else if (layers instanceof MarkerClusterGroup) {
 			layers = layers._topClusterLevel.getAllChildMarkers();
-		} else if (layers instanceof L.LayerGroup) {
+		} else if (layers instanceof LayerGroup) {
 			layers = layers._layers;
-		} else if (layers instanceof L.MarkerCluster) {
+		} else if (layers instanceof MarkerCluster) {
 			layers = layers.getAllChildMarkers();
-		} else if (layers instanceof L.Marker) {
+		} else if (layers instanceof Marker) {
 			layers = [layers];
-		} // else: must be an Array(L.Marker)|Map(L.Marker)
+		} // else: must be an Array(Marker)|Map(Marker)
 		this._flagParentsIconsNeedUpdate(layers);
 		this._refreshClustersIcons();
 
@@ -40,7 +42,7 @@ L.MarkerClusterGroup.include({
 
 	/**
 	 * Simply flags all parent clusters of the given markers as having a "dirty" icon.
-	 * @param layers Array(L.Marker)|Map(L.Marker) list of markers.
+	 * @param layers Array(Marker)|Map(Marker) list of markers.
 	 * @private
 	 */
 	_flagParentsIconsNeedUpdate: function (layers) {
@@ -64,7 +66,7 @@ L.MarkerClusterGroup.include({
 	/**
 	 * Re-draws the icon of the supplied markers.
 	 * To be used in singleMarkerMode only.
-	 * @param layers Array(L.Marker)|Map(L.Marker) list of markers.
+	 * @param layers Array(Marker)|Map(Marker) list of markers.
 	 * @private
 	 */
 	_refreshSingleMarkerModeMarkers: function (layers) {
@@ -82,18 +84,18 @@ L.MarkerClusterGroup.include({
 	}
 });
 
-L.Marker.include({
+Marker.include({
 	/**
 	 * Updates the given options in the marker's icon and refreshes the marker.
 	 * @param options map object of icon options.
 	 * @param directlyRefreshClusters boolean (optional) true to trigger
 	 * MCG.refreshClustersOf() right away with this single marker.
-	 * @returns {L.Marker}
+	 * @returns {Marker}
 	 */
 	refreshIconOptions: function (options, directlyRefreshClusters) {
 		var icon = this.options.icon;
 
-		L.setOptions(icon, options);
+		setOptions(icon, options);
 
 		this.setIcon(icon);
 
