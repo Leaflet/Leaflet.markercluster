@@ -1393,6 +1393,6 @@ MarkerClusterGroup.include({
 	}
 });
 
-let markerClusterGroup = function (options) {
+var markerClusterGroup = function (options) {
 	return new MarkerClusterGroup(options);
 };
