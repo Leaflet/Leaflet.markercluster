@@ -13,6 +13,7 @@ L.MarkerCluster.include({
 
 	_circleSpiralSwitchover: 9, //show spiral instead of circle from this marker count upwards.
 								// 0 -> always spiral; Infinity -> always circle
+	_spiderfiedCssClass: ' leaflet-marker-spiderfied',
 
 	spiderfy: function () {
 		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
@@ -105,6 +106,9 @@ L.MarkerCluster.include({
 		group._ignoreMove = true;
 
 		this.setOpacity(1);
+		if (this._icon) {
+			this._icon.className = this._icon.className.replace(new RegExp(this._spiderfiedCssClass, 'g'), '');
+		}
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			m = childMarkers[i];
 
@@ -165,6 +169,9 @@ L.MarkerClusterNonAnimated = L.MarkerCluster.extend({
 			fg.addLayer(m);
 		}
 		this.setOpacity(0.3);
+		if (this._icon) {
+			this._icon.className += this._spiderfiedCssClass;
+		}
 
 		group._ignoreMove = false;
 		group.fire('spiderfied', {
@@ -274,6 +281,9 @@ L.MarkerCluster.include({
 			}
 		}
 		this.setOpacity(0.3);
+		if (this._icon) {
+			this._icon.className += this._spiderfiedCssClass;
+		}
 
 		group._ignoreMove = false;
 
@@ -301,6 +311,9 @@ L.MarkerCluster.include({
 
 		//Make us visible and bring the child markers back in
 		this.setOpacity(1);
+		if (this._icon) {
+			this._icon.className = this._icon.className.replace(new RegExp(this._spiderfiedCssClass, 'g'), '');
+		}
 		for (i = childMarkers.length - 1; i >= 0; i--) {
 			m = childMarkers[i];
 
