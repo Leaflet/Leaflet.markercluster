@@ -840,7 +840,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		//Zoom on cluster click or spiderfy if we are at the lowest level
 		if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
-			this.on('clusterclick', this._zoomOrSpiderfy, this);
+			this.on('clusterclick clusterkeypress', this._zoomOrSpiderfy, this);
 		}
 
 		//Show convex hull (boundary) polygon on mouse over
@@ -854,6 +854,10 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 	_zoomOrSpiderfy: function (e) {
 		var cluster = e.layer,
 		    bottomCluster = cluster;
+
+		if (e.type === 'clusterkeypress' && e.originalEvent && e.originalEvent.keyCode !== 13) {
+			return;
+		}
 
 		while (bottomCluster._childClusters.length === 1) {
 			bottomCluster = bottomCluster._childClusters[0];
@@ -903,7 +907,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 			map = this._map;
 
 		if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
-			this.off('clusterclick', this._zoomOrSpiderfy, this);
+			this.off('clusterclick clusterkeypress', this._zoomOrSpiderfy, this);
 		}
 		if (showCoverageOnHover) {
 			this.off('clustermouseover', this._showCoverage, this);
