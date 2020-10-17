@@ -819,17 +819,26 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 	//Default functionality
 	_defaultIconCreateFunction: function (cluster) {
 		var childCount = cluster.getChildCount();
-
+		var isAllRCA = cluster.getAllChildMarkers().every(marker => marker.options.isRCA);
+		var isAllWAC = cluster.getAllChildMarkers().every(marker => !marker.options.isRCA);
+		var numberRCA = cluster.getAllChildMarkers().filter(marker => marker.options.isRCA).length;
+		var numberWAC = cluster.getAllChildMarkers().filter(marker => !marker.options.isRCA).length;
+		
 		var c = ' marker-cluster-';
-		if (childCount < 10) {
+		if (isAllRCA) {
 			c += 'small';
-		} else if (childCount < 100) {
-			c += 'medium';
-		} else {
+		} else if (isAllWAC) {
 			c += 'large';
+		} else {
+			c += 'medium';
 		}
 
-		return new L.DivIcon({ html: '<div><span>' + childCount + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(40, 40) });
+		var tooltiptext = childCount < 10000 ? '' : '<span class="tooltiptext">RCA : ' + numberRCA + '<br> WAC : ' + numberWAC + '</span>';
+		var fontSize = childCount < 10000 ? '' : 'font-size: 10.5px';
+
+		childCount = childCount < 10000 ? childCount : '+' + (childCount  + '').substring(0, (childCount  + '').length - 3) + 'K';
+
+		return new L.DivIcon({ html: '<div><span style="' + fontSize + '" class="tooltip">' +  childCount + '' + tooltiptext + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(40, 40) });
 	},
 
 	_bindEvents: function () {
