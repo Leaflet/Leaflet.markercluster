@@ -838,7 +838,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    spiderfyOnMaxZoom = this.options.spiderfyOnMaxZoom,
 		    showCoverageOnHover = this.options.showCoverageOnHover,
 		    zoomToBoundsOnClick = this.options.zoomToBoundsOnClick,
-		    spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom,;
+		    spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom;
 
 		//Zoom on cluster click or spiderfy if we are at the lowest level
 		if (spiderfyOnMaxZoom || zoomToBoundsOnClick || spiderfyOnEveryZoom) {
