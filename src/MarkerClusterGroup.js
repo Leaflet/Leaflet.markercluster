@@ -9,7 +9,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		iconCreateFunction: null,
 		clusterPane: L.Marker.prototype.options.pane,
 
-		spiderfyOnEveryZoom: true,
+		spiderfyOnEveryZoom: false,
 		spiderfyOnMaxZoom: true,
 		showCoverageOnHover: true,
 		zoomToBoundsOnClick: true,
