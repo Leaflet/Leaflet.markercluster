@@ -31,7 +31,7 @@ L.MarkerCluster.include({
 		//TODO Maybe: childMarkers order by distance to center
 
 		if (this._group.options.spiderfyShapePositions) {
-			positions = this._group.options.spiderfyShapePositions(childMarkers.length, center);
+			positions = this._group.options.spiderfyShapePositions(childMarkers.length, center, childMarkers);
 		} else if (childMarkers.length >= this._circleSpiralSwitchover) {
 			positions = this._generatePointsSpiral(childMarkers.length, center);
 		} else {
