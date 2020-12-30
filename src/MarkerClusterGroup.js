@@ -9,6 +9,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		iconCreateFunction: null,
 		clusterPane: L.Marker.prototype.options.pane,
 
+		spiderfyOnEveryZoom: true,
 		spiderfyOnMaxZoom: true,
 		showCoverageOnHover: true,
 		zoomToBoundsOnClick: true,
@@ -836,10 +837,11 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var map = this._map,
 		    spiderfyOnMaxZoom = this.options.spiderfyOnMaxZoom,
 		    showCoverageOnHover = this.options.showCoverageOnHover,
-		    zoomToBoundsOnClick = this.options.zoomToBoundsOnClick;
+		    zoomToBoundsOnClick = this.options.zoomToBoundsOnClick,
+		    spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom,;
 
 		//Zoom on cluster click or spiderfy if we are at the lowest level
-		if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
+		if (spiderfyOnMaxZoom || zoomToBoundsOnClick || spiderfyOnEveryZoom) {
 			this.on('clusterclick', this._zoomOrSpiderfy, this);
 		}
 
@@ -867,6 +869,10 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 			cluster.spiderfy();
 		} else if (this.options.zoomToBoundsOnClick) {
 			cluster.zoomToBounds();
+		}
+
+		if (this.options.spiderfyOnEveryZoom) {
+			cluster.spiderfy();
 		}
 
 		// Focus the map again for keyboard users.
@@ -900,9 +906,10 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var spiderfyOnMaxZoom = this.options.spiderfyOnMaxZoom,
 			showCoverageOnHover = this.options.showCoverageOnHover,
 			zoomToBoundsOnClick = this.options.zoomToBoundsOnClick,
+			spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom,
 			map = this._map;
 
-		if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
+		if (spiderfyOnMaxZoom || zoomToBoundsOnClick || spiderfyOnEveryZoom) {
 			this.off('clusterclick', this._zoomOrSpiderfy, this);
 		}
 		if (showCoverageOnHover) {
