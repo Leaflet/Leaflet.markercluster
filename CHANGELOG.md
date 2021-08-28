@@ -3,11 +3,13 @@ Leaflet.markercluster
 
 (part of repo mgmt responsibilities transferred to [@ykzeng](https://github.com/ykzeng))
 
-## 1.5.0 (2021-08-28)
+## 1.5.1 (2021-08-28)
 
 ### Improvements
 
  * Spiderfy on keypress [1005](https://github.com/Leaflet/Leaflet.markercluster/pull/1005) by [@neorth](https://github.com/neorth), a fix for issue [940](https://github.com/Leaflet/Leaflet.markercluster/issues/940) and [947](https://github.com/Leaflet/Leaflet.markercluster/issues/947)
+
+## 1.5.0 (2021-03-12)
 
 ### Bugfixes
 
