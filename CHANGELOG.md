@@ -2,7 +2,7 @@
 
 (part of repo mgmt responsibilities transferred to [@ykzeng](https://github.com/ykzeng))
 
-## 1.5.2 (2021-08-28)
+## 1.5.2 (2021-10-17)
 
 ### Improvements
 
