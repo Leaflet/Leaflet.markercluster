@@ -2,6 +2,13 @@
 
 (part of repo mgmt responsibilities transferred to [@ykzeng](https://github.com/ykzeng))
 
+## 1.5.3 (2021-10-18)
+
+### Bugfixes
+
+- Removing unnecessary files on npm package
+- Inlucding correct versioning on Github repo
+
 ## 1.5.2 (2021-10-18)
 
 ### Improvements
