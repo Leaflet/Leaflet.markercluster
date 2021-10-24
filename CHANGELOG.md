@@ -2,6 +2,12 @@
 
 (part of repo mgmt responsibilities transferred to [@ykzeng](https://github.com/ykzeng))
 
+## 1.5.4 (2021-10-18)
+
+### Bugfixes
+
+- Resolve "mismatch Version declared in the json (1.4.1) is different than the resolved one (1.5.3)" issue
+
 ## 1.5.3 (2021-10-18)
 
 ### Bugfixes
