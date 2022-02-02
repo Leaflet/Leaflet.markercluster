@@ -125,6 +125,10 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    currentZoom = this._zoom;
 		if (layer.__parent) {
 			while (visibleLayer.__parent._zoom >= currentZoom) {
+				// Check if visibleLayer.__parent is undefined to avoid crashing in the next loop.
+				if (visibleLayer.__parent === undefined) {
+					break;
+				}
 				visibleLayer = visibleLayer.__parent;
 			}
 		}
@@ -726,7 +730,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		delete e.target.__dragStart;
 		if (dragStart) {
 			this._moveChild(e.target, dragStart, e.target._latlng);
-		}		
+		}
 	},
 
 
