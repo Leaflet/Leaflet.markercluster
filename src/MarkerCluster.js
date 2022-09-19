@@ -1,9 +1,12 @@
-export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
-	options: L.Icon.prototype.options,
+import { Icon, Marker } from 'leaflet/src/layer/marker';
+import { LatLng, LatLngBounds } from 'leaflet/src/geo';
+
+export var MarkerCluster = Marker.extend({
+	options: Icon.prototype.options,
 
 	initialize: function (group, zoom, a, b) {
 
-		L.Marker.prototype.initialize.call(this, a ? (a._cLatLng || a.getLatLng()) : new L.LatLng(0, 0),
+		Marker.prototype.initialize.call(this, a ? (a._cLatLng || a.getLatLng()) : new LatLng(0, 0),
             { icon: this, pane: group.options.clusterPane });
 
 		this._group = group;
@@ -15,7 +18,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		this._iconNeedsUpdate = true;
 		this._boundsNeedUpdate = true;
 
-		this._bounds = new L.LatLngBounds();
+		this._bounds = new LatLngBounds();
 
 		if (a) {
 			this._addChild(a);
@@ -77,7 +80,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 	},
 
 	getBounds: function () {
-		var bounds = new L.LatLngBounds();
+		var bounds = new LatLngBounds();
 		bounds.extend(this._bounds);
 		return bounds;
 	},
@@ -109,7 +112,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		this._boundsNeedUpdate = true;
 		this._setClusterCenter(new1);
 
-		if (new1 instanceof L.MarkerCluster) {
+		if (new1 instanceof MarkerCluster) {
 			if (!isNotificationFromChild) {
 				this._childClusters.push(new1);
 				new1.__parent = this;
@@ -129,7 +132,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 
 	/**
 	 * Makes sure the cluster center is set. If not, uses the child center if it is a cluster, or the marker position.
-	 * @param child L.MarkerCluster|L.Marker that will be used as cluster center if not defined yet.
+	 * @param child MarkerCluster|Marker that will be used as cluster center if not defined yet.
 	 * @private
 	 */
 	_setClusterCenter: function (child) {
@@ -141,7 +144,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 
 	/**
 	 * Assigns impossible bounding values so that the next extend entirely determines the new bounds.
-	 * This method avoids having to trash the previous L.LatLngBounds object and to create a new one, which is much slower for this class.
+	 * This method avoids having to trash the previous LatLngBounds object and to create a new one, which is much slower for this class.
 	 * As long as the bounds are not extended, most other methods would probably fail, as they would with bounds initialized but not extended.
 	 * @private
 	 */
@@ -202,7 +205,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 			lngSum += childLatLng.lng * childCount;
 		}
 
-		this._latlng = this._wLatLng = new L.LatLng(latSum / totalCount, lngSum / totalCount);
+		this._latlng = this._wLatLng = new LatLng(latSum / totalCount, lngSum / totalCount);
 
 		// Reset dirty flag.
 		this._boundsNeedUpdate = false;
@@ -365,11 +368,11 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 	},
 
 	//Run the given functions recursively to this and child clusters
-	// boundsToApplyTo: a L.LatLngBounds representing the bounds of what clusters to recurse in to
+	// boundsToApplyTo: a LatLngBounds representing the bounds of what clusters to recurse in to
 	// zoomLevelToStart: zoom level to start running functions (inclusive)
 	// zoomLevelToStop: zoom level to stop running functions (inclusive)
-	// runAtEveryLevel: function that takes an L.MarkerCluster as an argument that should be applied on every level
-	// runAtBottomLevel: function that takes an L.MarkerCluster as an argument that should be applied at only the bottom level
+	// runAtEveryLevel: function that takes an MarkerCluster as an argument that should be applied on every level
+	// runAtBottomLevel: function that takes an MarkerCluster as an argument that should be applied at only the bottom level
 	_recursively: function (boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel) {
 		var childClusters = this._childClusters,
 		    zoom = this._zoom,
