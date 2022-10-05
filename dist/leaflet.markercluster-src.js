@@ -1,5 +1,5 @@
 /*
- * Leaflet.markercluster 1.4.1+master.e1cceb5,
+ * Leaflet.markercluster 1.5.4+main.50072a6,
  * Provides Beautiful Animated Marker Clustering functionality for Leaflet, a JS library for interactive maps.
  * https://github.com/Leaflet/Leaflet.markercluster
  * (c) 2012-2017, Dave Leaver, smartrak
@@ -21,6 +21,7 @@
 			iconCreateFunction: null,
 			clusterPane: L.Marker.prototype.options.pane,
 
+			spiderfyOnEveryZoom: false,
 			spiderfyOnMaxZoom: true,
 			showCoverageOnHover: true,
 			zoomToBoundsOnClick: true,
@@ -852,11 +853,12 @@
 			var map = this._map,
 			    spiderfyOnMaxZoom = this.options.spiderfyOnMaxZoom,
 			    showCoverageOnHover = this.options.showCoverageOnHover,
-			    zoomToBoundsOnClick = this.options.zoomToBoundsOnClick;
+			    zoomToBoundsOnClick = this.options.zoomToBoundsOnClick,
+			    spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom;
 
 			//Zoom on cluster click or spiderfy if we are at the lowest level
-			if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
-				this.on('clusterclick', this._zoomOrSpiderfy, this);
+			if (spiderfyOnMaxZoom || zoomToBoundsOnClick || spiderfyOnEveryZoom) {
+				this.on('clusterclick clusterkeypress', this._zoomOrSpiderfy, this);
 			}
 
 			//Show convex hull (boundary) polygon on mouse over
@@ -871,6 +873,10 @@
 			var cluster = e.layer,
 			    bottomCluster = cluster;
 
+			if (e.type === 'clusterkeypress' && e.originalEvent && e.originalEvent.keyCode !== 13) {
+				return;
+			}
+
 			while (bottomCluster._childClusters.length === 1) {
 				bottomCluster = bottomCluster._childClusters[0];
 			}
@@ -883,6 +889,10 @@
 				cluster.spiderfy();
 			} else if (this.options.zoomToBoundsOnClick) {
 				cluster.zoomToBounds();
+			}
+
+			if (this.options.spiderfyOnEveryZoom) {
+				cluster.spiderfy();
 			}
 
 			// Focus the map again for keyboard users.
@@ -916,10 +926,11 @@
 			var spiderfyOnMaxZoom = this.options.spiderfyOnMaxZoom,
 				showCoverageOnHover = this.options.showCoverageOnHover,
 				zoomToBoundsOnClick = this.options.zoomToBoundsOnClick,
+				spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom,
 				map = this._map;
 
-			if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
-				this.off('clusterclick', this._zoomOrSpiderfy, this);
+			if (spiderfyOnMaxZoom || zoomToBoundsOnClick || spiderfyOnEveryZoom) {
+				this.off('clusterclick clusterkeypress', this._zoomOrSpiderfy, this);
 			}
 			if (showCoverageOnHover) {
 				this.off('clustermouseover', this._showCoverage, this);
@@ -1434,7 +1445,7 @@
 			storageArray = storageArray || [];
 
 			for (var i = this._childClusters.length - 1; i >= 0; i--) {
-				this._childClusters[i].getAllChildMarkers(storageArray);
+				this._childClusters[i].getAllChildMarkers(storageArray, ignoreDraggedMarker);
 			}
 
 			for (var j = this._markers.length - 1; j >= 0; j--) {
