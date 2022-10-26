@@ -323,7 +323,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 			}
 
 			needsClustering = needsClustering.slice(0, tail);	// truncate empty elements
-			this._needsClustering.push.apply(this._needsClustering, needsClustering);
+			this._needsClustering = this._needsClustering.concat(needsClustering);
 		}
 		return this;
 	},
