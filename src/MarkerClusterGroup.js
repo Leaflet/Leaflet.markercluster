@@ -9,6 +9,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		iconCreateFunction: null,
 		clusterPane: L.Marker.prototype.options.pane,
 
+		spiderfyOnEveryZoom: false,
 		spiderfyOnMaxZoom: true,
 		showCoverageOnHover: true,
 		zoomToBoundsOnClick: true,
@@ -840,11 +841,12 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var map = this._map,
 		    spiderfyOnMaxZoom = this.options.spiderfyOnMaxZoom,
 		    showCoverageOnHover = this.options.showCoverageOnHover,
-		    zoomToBoundsOnClick = this.options.zoomToBoundsOnClick;
+		    zoomToBoundsOnClick = this.options.zoomToBoundsOnClick,
+		    spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom;
 
 		//Zoom on cluster click or spiderfy if we are at the lowest level
-		if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
-			this.on('clusterclick', this._zoomOrSpiderfy, this);
+		if (spiderfyOnMaxZoom || zoomToBoundsOnClick || spiderfyOnEveryZoom) {
+			this.on('clusterclick clusterkeypress', this._zoomOrSpiderfy, this);
 		}
 
 		//Show convex hull (boundary) polygon on mouse over
@@ -859,6 +861,10 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var cluster = e.layer,
 		    bottomCluster = cluster;
 
+		if (e.type === 'clusterkeypress' && e.originalEvent && e.originalEvent.keyCode !== 13) {
+			return;
+		}
+
 		while (bottomCluster._childClusters.length === 1) {
 			bottomCluster = bottomCluster._childClusters[0];
 		}
@@ -871,6 +877,10 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 			cluster.spiderfy();
 		} else if (this.options.zoomToBoundsOnClick) {
 			cluster.zoomToBounds();
+		}
+
+		if (this.options.spiderfyOnEveryZoom) {
+			cluster.spiderfy();
 		}
 
 		// Focus the map again for keyboard users.
@@ -904,10 +914,11 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var spiderfyOnMaxZoom = this.options.spiderfyOnMaxZoom,
 			showCoverageOnHover = this.options.showCoverageOnHover,
 			zoomToBoundsOnClick = this.options.zoomToBoundsOnClick,
+			spiderfyOnEveryZoom = this.options.spiderfyOnEveryZoom,
 			map = this._map;
 
-		if (spiderfyOnMaxZoom || zoomToBoundsOnClick) {
-			this.off('clusterclick', this._zoomOrSpiderfy, this);
+		if (spiderfyOnMaxZoom || zoomToBoundsOnClick || spiderfyOnEveryZoom) {
+			this.off('clusterclick clusterkeypress', this._zoomOrSpiderfy, this);
 		}
 		if (showCoverageOnHover) {
 			this.off('clustermouseover', this._showCoverage, this);
