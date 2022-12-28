@@ -1,0 +1,29 @@
+{
+  "extends": [
+    "config:base"
+  ],
+
+  "dependencies": {
+    "updateTypes": ["minor", "patch"],
+    "automerge": true
+  },
+  "devDependencies": {
+    "updateTypes": ["minor", "patch"],
+    "automerge": true
+  },
+
+  "digest": {
+    "enabled": false
+  },
+
+  "labels": [
+    "renovate"
+  ],
+
+  "packageRules": [
+      {
+        "packagePatterns": ["^eslint"],
+        "groupName": "eslint packages"
+      },
+    ],
+}
