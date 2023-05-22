@@ -968,6 +968,13 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		this._gridUnclustered = {};
 
 		//Set up DistanceGrids for each zoom
+				
+		if (!isFinite(maxZoom) ) {
+          		throw "Map has no maxZoom specified";
+        	}
+        	if (!isFinite(minZoom)) {
+            		throw "Map has no minZoom specified";
+        	}
 		for (var zoom = maxZoom; zoom >= minZoom; zoom--) {
 			this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
 			this._gridUnclustered[zoom] = new L.DistanceGrid(radiusFn(zoom));
