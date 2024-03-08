@@ -857,7 +857,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		var cluster = e.layer,
 		    bottomCluster = cluster;
 
-		if (e.type === 'clusterkeypress' && e.originalEvent && e.originalEvent.keyCode !== 13) {
+		if (e.type === 'clusterkeypress' && e.originalEvent && e.originalEvent.keyCode !== 13 || e.originalEvent.defaultPrevented) {
 			return;
 		}
 
