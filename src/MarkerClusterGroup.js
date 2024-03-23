@@ -80,6 +80,8 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		L.extend(this, animate ? this._withAnimation : this._noAnimation);
 		// Remember which MarkerCluster class to instantiate (animated or not).
 		this._markerCluster = animate ? L.MarkerCluster : L.MarkerClusterNonAnimated;
+		//Set the initial clear layers count to 0
+		this._clearLayersCallCount = 0;
 	},
 
 	addLayer: function (layer) {
@@ -204,7 +206,8 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		    l = layersArray.length,
 		    offset = 0,
 		    originalArray = true,
-		    m;
+		    m,
+		    clearLayerIndexWhenStarted = this._clearLayersCallCount;
 
 		if (this._map) {
 			var started = (new Date()).getTime();
@@ -217,6 +220,9 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 				}
 
 				for (; offset < l; offset++) {
+					if (clearLayerIndexWhenStarted !== this._clearLayersCallCount) {
+						break;
+					}
 					if (chunked && offset % 200 === 0) {
 						// every couple hundred markers, instrument the time elapsed since processing started:
 						var elapsed = (new Date()).getTime() - start;
@@ -269,6 +275,10 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 							fg.removeLayer(otherMarker);
 						}
 					}
+				}
+
+				if (clearLayerIndexWhenStarted !== this._clearLayersCallCount) {
+					return;
 				}
 
 				if (chunkProgress) {
@@ -430,6 +440,8 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 			delete this._gridClusters;
 			delete this._gridUnclustered;
 		}
+
+		++this._clearLayersCallCount;
 
 		if (this._noanimationUnspiderfy) {
 			this._noanimationUnspiderfy();
