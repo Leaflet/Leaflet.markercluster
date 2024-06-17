@@ -1,46 +1,170 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<title>Leaflet debug page</title>
+  <head>
+    <title>Leaflet debug page</title>
 
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js" integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA==" crossorigin=""></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="screen.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
+      integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js"
+      integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA=="
+      crossorigin=""
+    ></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="screen.css" />
 
-	<link rel="stylesheet" href="../dist/MarkerCluster.css" />
-	<link rel="stylesheet" href="../dist/MarkerCluster.Default.css" />
-	<script src="../dist/leaflet.markercluster-src.js"></script>
-	
-	<script src="realworld.10000.js"></script>
+    <link rel="stylesheet" href="../dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="../dist/MarkerCluster.Default.css" />
+    <script src="../dist/leaflet.markercluster-src.js"></script>
+    <script src="realworld.10000.js"></script>
+    <style>
+      #info-table {
+        width: 500px;
+        margin: 20px;
+        padding: 20px;
+        background-color: antiquewhite;
+        font-family: 'simHei';
+        .list {
+          li {
+            height: 60px;
+          }
+        }
+      }
+    </style>
+  </head>
 
-</head>
-<body>
+  <body>
+    <div>
+      <div id="map"></div>
+      <div id="info-table">
+        <div>
+          输入maxClusterNum(输入完毕自动更新):<input type="number" name="输入1" id="input1" value="50" /><br/>
+          输入聚合半径(输入完毕自动更新):<input type="number" name="输入2" id="input2" value="80" />
+        </div>
+        <ul class="list">
+          <li>分类1的图标:<img src="./asset/icon/group1.png" alt="" /></li>
+          <li>分类2的图标:<img src="./asset/icon/group2.png" alt="" /></li>
+          <li>分类3的图标:<img src="./asset/icon/group3.png" alt="" /></li>
+          <li>
+            超过maxClusterNum后聚合的新图标<img
+              src="./asset/icon/cluster.png"
+              alt=""
+            />
+          </li>
+        </ul>
+      </div>
+    </div>
 
-	<div id="map"></div>
-	<span>Mouse over a cluster to see the bounds of its children and click a cluster to zoom to those bounds</span>
-	<script type="text/javascript">
+    <script type="text/javascript">
+      var tiles = L.tileLayer(
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            maxZoom: 18,
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ',
+          }
+        ),
+        latlng = L.latLng(-37.89, 175.46);
 
-		var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ'
-			}),
-			latlng = L.latLng(-37.89, 175.46);
+      // 设置最小聚类层级
+      // 小于此值则不组内独立聚类
+      // 大于等于此值，则按照默认聚类方式
+      let clusterGroup;
 
-		var map = L.map('map', {center: latlng, zoom: 13, layers: [tiles]});
+      var map = L.map("map", { center: latlng, zoom: 13, layers: [tiles] });
 
-		var markers = L.markerClusterGroup({ chunkedLoading: true });
-		
-		for (var i = 0; i < addressPoints.length; i++) {
-			var a = addressPoints[i];
-			var title = a[2];
-			var marker = L.marker(L.latLng(a[0], a[1]), { title: title });
-			marker.bindPopup(title);
-			markers.addLayer(marker);
-		}
+      // 创建clusterGroup
+      function createClusterGroup(maxClusterNum,clusterRadius) {
+        let markers = L.markerClusterGroup({
+          chunkedLoading: true,
+          singleMarkerMode:true,
+          collideStrategy:'adjust',
+          maxClusterNum,
+          maxClusterRadius:clusterRadius,
+          iconCreateFunction: function (cluster) {
+            var childCount = cluster.getChildCount();
+            var markers = cluster.getAllChildMarkers();
+            var c = " marker-cluster-";
+            // 如果cluster内图标都相同，则就用该图标
+            var first = markers[0]
+            var isSame = markers.every((marker)=> marker.options.groupName === first.options.groupName)
+            
+            if (childCount >= maxClusterNum && !isSame) {
+              c += "large";
+            } else if (markers[0].options.groupName === "group1" && isSame) {
+              c += "medium";
+            } else if(markers[0].options.groupName === "group2" && isSame) {
+              c += "small";
+            }else if(markers[0].options.groupName === "group3" && isSame) {
+              c += "small1";
+            }else if(markers[0].options.groupName === "group4" && isSame) {
+              c += "small2";
+            }else if(markers[0].options.groupName === "group5" && isSame) {
+              c += "small3";
+            }else if(markers[0].options.groupName === "group6" && isSame) {
+              c += "small4";
+            }else{
+              c += "large";
+            }
 
-		map.addLayer(markers);
+            return new L.DivIcon({
+              html:
+                "<div><span>" +
+                childCount +
+                ' <span aria-label="markers"></span>' +
+                "</span></div>",
+              className: "marker-cluster" + c,
+              iconSize: new L.Point(40, 40),
+            });
+          },
+        });
+        // 组1
+        for (var i = 0; i < addressPoints.length; i++) {
+          var a = addressPoints[i];
+          var title = a[2];
+          var marker = L.marker(L.latLng(a[0], a[1]), { title: title });
+          if(i<3000){
+            marker.options.groupName = "group1";
+          } else if(i>=3000 && i<6000){
+            marker.options.groupName = "group2";
+          }else{
+            marker.options.groupName = "group3";
+          }
+          markers.addLayer(marker);
+        }
+      
+        markers.on("clusterclick", (e) => {
+          console.log("e: ", e);
+        });
+        return markers;
+      }
+    
+      clusterGroup = createClusterGroup(50, 80);
+      map.addLayer(clusterGroup);
+      clusterGroup.forceAnimation()
+      const input1 = document.getElementById('input1')
+      const input2 = document.getElementById('input2')
+      let t = null;
+      const func = function (e) {
+        if (t !== null) {
+          clearTimeout(t);
+        }
+        t = setTimeout(() => {
+          // 删除
+          map.removeLayer(clusterGroup);
+          // 添加
+          clusterGroup = createClusterGroup(input1.valueAsNumber, input2.valueAsNumber);
+          map.addLayer(clusterGroup);
+          clusterGroup.forceAnimation()
 
-	</script>
-</body>
+        }, 500);
+      };
+      input1.oninput = func
+      input2.oninput = func
+    </script>
+  </body>
 </html>

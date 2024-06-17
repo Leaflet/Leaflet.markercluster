@@ -2,6 +2,8 @@
  * L.MarkerClusterGroup extends L.FeatureGroup by clustering the markers contained within
  */
 
+import RBush from "./thirdParty/rbush";
+
 export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 	options: {
@@ -46,7 +48,11 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		chunkProgress: null, // progress callback: function(processed, total, elapsed) (e.g. for a progress indicator)
 
 		//Options to pass to the L.Polygon constructor
-		polygonOptions: {}
+		polygonOptions: {},
+		// 新增参数用于控制默认聚类或独立聚类，小于此数值，按照分组独立进行聚类，大于等于此数值，按照默认聚类处理。
+		maxClusterNum:20,
+		// 聚类簇冲突解决模式
+		collideStrategy:'none'		
 	},
 
 	initialize: function (options) {
@@ -75,6 +81,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 			'dragend': this._childMarkerDragEnd,
 		};
 
+		this._rbush = new RBush()
 		// Hook the appropriate animation methods.
 		var animate = L.DomUtil.TRANSITION && this.options.animate;
 		L.extend(this, animate ? this._withAnimation : this._noAnimation);
@@ -284,7 +291,7 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 					this._refreshClustersIcons();
 
-					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
+					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds, this._rbush, this.options.collideStrategy);
 				} else {
 					setTimeout(process, this.options.chunkDelay);
 				}
@@ -729,7 +736,6 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 		}		
 	},
 
-
 	//Internal function for removing a marker from everything.
 	//dontUpdateMap: set to true if you will handle updating the map manually (for bulk functions)
 	_removeLayer: function (marker, removeFromDistanceGrid, dontUpdateMap) {
@@ -997,45 +1003,103 @@ export var MarkerClusterGroup = L.MarkerClusterGroup = L.FeatureGroup.extend({
 
 		layer.on(this._childMarkerEventHandlers, this);
 
+		// 获取最大聚类数量
+		const maxClusterNum = this.options.maxClusterNum
+
 		//Find the lowest zoom level to slot this one in
 		for (; zoom >= minZoom; zoom--) {
 			markerPoint = this._map.project(layer.getLatLng(), zoom); // calculate pixel position
-
-			//Try find a cluster close by
-			var closest = gridClusters[zoom].getNearObject(markerPoint);
-			if (closest) {
-				closest._addChild(layer);
-				layer.__parent = closest;
-				return;
+			//获取附近的cluster点
+			let nearClusters = gridClusters[zoom].getNearObjectArr(markerPoint);
+			if (
+				nearClusters &&
+				Array.isArray(nearClusters) &&
+				nearClusters.length > 0
+			) {
+				// 找到最接近的同类组
+				for (let i = 0; i < nearClusters.length; i++) {
+					const nearCluster = nearClusters[i].obj;
+					const count = nearCluster.getChildCount();
+					const markers = nearCluster.getAllChildMarkers();
+					// 超过maxClusterNum限制或者找到同类组则添加
+					if (
+						count >= maxClusterNum - 1 ||
+						(markers &&
+						Array.isArray(markers) &&
+						markers.length > 0 &&
+						markers[0].options &&
+						layer.options &&
+						layer.options.groupName === markers[0].options.groupName)
+					) {
+						nearCluster._addChild(layer);
+						layer.__parent = nearCluster;
+						return;
+					}
+				}
 			}
-
+			// 查找未聚类点，组成新的cluster
 			//Try find a marker close by to form a new cluster with
-			closest = gridUnclustered[zoom].getNearObject(markerPoint);
-			if (closest) {
-				var parent = closest.__parent;
-				if (parent) {
-					this._removeLayer(closest, false);
+			const nearMarkers = gridUnclustered[zoom].getNearObjectArr(markerPoint);
+			if (nearMarkers && Array.isArray(nearMarkers)) {
+				let waitToRemove = []
+				let waitToAdd = []
+				var parent
+				const markerNum = nearMarkers.length
+				if(nearMarkers.length>0){
+					if(markerNum>=maxClusterNum-1){
+						// 大于等于限额，需要合并所有markers组合成新的cluster
+						nearMarkers.forEach((marker)=>{
+							waitToRemove.push(marker.obj)
+							waitToAdd.push(marker.obj)
+						})
+						waitToAdd.push(layer)
+						parent = waitToAdd[0].__parent
+					}else{
+						// 小于限额，则对最近且同组的marker进行合并
+						for(let i=0;i<nearMarkers.length;i++){
+							const {obj,dist} = nearMarkers[i]
+							if(obj.options && layer.options && layer.options.groupName === obj.options.groupName){
+								waitToAdd = [obj, layer]
+								waitToRemove = [obj]
+								break
+							}
+						}
+						if(waitToAdd.length>0){
+							parent = waitToAdd[0].__parent
+						}
+					}
 				}
 
-				//Create new cluster with these 2 in it
-
-				var newCluster = new this._markerCluster(this, zoom, closest, layer);
-				gridClusters[zoom].addObject(newCluster, this._map.project(newCluster._cLatLng, zoom));
-				closest.__parent = newCluster;
-				layer.__parent = newCluster;
-
-				//First create any new intermediate parent clusters that don't exist
-				var lastParent = newCluster;
-				for (z = zoom - 1; z > parent._zoom; z--) {
-					lastParent = new this._markerCluster(this, z, lastParent);
-					gridClusters[z].addObject(lastParent, this._map.project(closest.getLatLng(), z));
+				if(waitToAdd.length>0 && parent){
+					// 删除
+					waitToRemove.forEach((rem)=>{
+						var parent = rem.__parent;
+						if (parent) {
+							this._removeLayer(rem, false);
+						}
+					})
+					// 新建
+					//Create new cluster with these 2 in it
+					var newCluster = new this._markerCluster(this, zoom);
+					// 添加
+					waitToAdd.forEach((add)=>{
+						newCluster._addChild(add)
+						add.__parent = newCluster;
+					})
+					gridClusters[zoom].addObject(newCluster, this._map.project(newCluster._cLatLng, zoom));
+					//First create any new intermediate parent clusters that don't exist
+					var lastParent = newCluster;
+					for (z = zoom - 1; z > parent._zoom; z--) {
+						lastParent = new this._markerCluster(this, z, lastParent);
+						gridClusters[z].addObject(lastParent, this._map.project(newCluster._cLatLng, z));
+					}
+					parent._addChild(lastParent);
+					waitToRemove.forEach((rem)=>{
+		               //Remove closest from this zoom level and any above that it is in, replace with newCluster
+					   this._removeFromGridUnclustered(rem, zoom);
+					})
+					return;
 				}
-				parent._addChild(lastParent);
-
-				//Remove closest from this zoom level and any above that it is in, replace with newCluster
-				this._removeFromGridUnclustered(closest, zoom);
-
-				return;
 			}
 
 			//Didn't manage to cluster in at this zoom, record us as a marker here and continue upwards
@@ -1243,7 +1307,8 @@ L.MarkerClusterGroup.include({
 			    i;
 
 			this._ignoreMove = true;
-
+			this._rbush.clear()
+			const self = this
 			//Add all children of current clusters to map and remove those clusters from map
 			this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, function (c) {
 				var startPos = c._latlng,
@@ -1253,7 +1318,6 @@ L.MarkerClusterGroup.include({
 				if (!bounds.contains(startPos)) {
 					startPos = null;
 				}
-
 				if (c._isSingleParent() && previousZoomLevel + 1 === newZoomLevel) { //Immediately add the new child and remove us
 					fg.removeLayer(c);
 					c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
@@ -1287,7 +1351,11 @@ L.MarkerClusterGroup.include({
 
 			//update the positions of the just added clusters/markers
 			this._topClusterLevel._recursively(bounds, previousZoomLevel, newZoomLevel, function (c) {
-				c._recursivelyRestoreChildPositions(newZoomLevel);
+			    // 忽略动态避让后偏移点导致触发moveLayer方法
+				self._ignoreMove = true;
+				c._recursivelyRestoreChildPositions(newZoomLevel, self._rbush, self.options.collideStrategy);
+				c._recursivelyRestoreChildMarkerPositions(newZoomLevel, self._rbush, self.options.collideStrategy)
+				self._ignoreMove = false;
 			});
 
 			this._ignoreMove = false;
@@ -1303,14 +1371,17 @@ L.MarkerClusterGroup.include({
 				this._animationEnd();
 			});
 		},
-
 		_animationZoomOut: function (previousZoomLevel, newZoomLevel) {
+			this._rbush.clear()
 			this._animationZoomOutSingle(this._topClusterLevel, previousZoomLevel - 1, newZoomLevel);
-
+			// 忽略动态避让后偏移点导致触发moveLayer方法
+			this._ignoreMove = true;
 			//Need to add markers for those that weren't on the map before but are now
-			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds(), this._rbush, this.options.collideStrategy);
+			this._ignoreMove = false;
 			//Remove markers that were on the map before but won't be now
 			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, Math.floor(this._map.getMinZoom()), previousZoomLevel, this._getExpandedVisibleBounds());
+
 		},
 
 		_animationAddLayer: function (layer, newCluster) {
@@ -1397,6 +1468,18 @@ L.MarkerClusterGroup.include({
 		//Could loop all this._layers and do this for each _icon if it stops working
 
 		L.Util.falseFn(document.body.offsetWidth);
+	},
+
+ /**
+  * @description: 强制动画刷新
+  * @return {*}
+  */
+	forceAnimation(){
+		const mapZoom =map.getZoom()
+		// 开始动画
+		clusterGroup._animationStart()
+		// 结束动画
+		clusterGroup._animationZoomIn(mapZoom-1, mapZoom)
 	}
 });
 

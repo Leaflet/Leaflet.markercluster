@@ -271,13 +271,13 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		});
 	},
 
-	_recursivelyAddChildrenToMap: function (startPos, zoomLevel, bounds) {
+	_recursivelyAddChildrenToMap: function (startPos, zoomLevel, bounds, rbush, collideStrategy) {
+		const self = this
 		this._recursively(bounds, this._group._map.getMinZoom() - 1, zoomLevel,
 			function (c) {
 				if (zoomLevel === c._zoom) {
 					return;
 				}
-
 				//Add our child markers at startPos (so they can be animated out)
 				for (var i = c._markers.length - 1; i >= 0; i--) {
 					var nm = c._markers[i];
@@ -296,34 +296,185 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 					}
 
 					c._group._featureGroup.addLayer(nm);
+					if(collideStrategy === 'adjust'){
+						self._adjustClusterOrMarkerStatus(nm, rbush, zoomLevel)
+					}
 				}
 			},
 			function (c) {
 				c._addToMap(startPos);
+				if(collideStrategy === 'adjust'){
+					self._adjustClusterOrMarkerStatus(c, rbush, zoomLevel)
+				}
 			}
 		);
 	},
 
-	_recursivelyRestoreChildPositions: function (zoomLevel) {
-		//Fix positions of child markers
-		for (var i = this._markers.length - 1; i >= 0; i--) {
-			var nm = this._markers[i];
-			if (nm._backupLatlng) {
-				nm.setLatLng(nm._backupLatlng);
-				delete nm._backupLatlng;
-			}
-		}
+ /**
+  * @description: 沿线取点
+  * @param {*} p1
+  * @param {*} p2
+  * @param {*} cell
+  * @return {*}
+  */
+	_getAdjustPoint(p1,p2,cell){
+	   const size = cell * 2
+	   const vec2 = L.point(p2.x-p1.x, p2.y- p1.y)
+	   const len = Math.sqrt(Math.pow(vec2.x,2)+Math.pow(vec2.y,2))
+	   const result = p1.add(vec2._divideBy(len)._multiplyBy(size))
+	   return result
+	},
 
+ /**
+  * @description: 计算调整点
+  * @param {*} rbush
+  * @param {*} point
+  * @param {*} rbushItem
+  * @param {*} cell
+  * @return {*}
+  */
+	_calcAdjustPoint(rbush, point, rbushItem, cell){
+		const dist = cell * Math.SQRT2
+		let adjustPoint,insertItem = rbushItem,collides
+		let compareDist = cell
+		collides = rbush.search(insertItem)
+		do{
+			let minX,minY,maxX,maxY
+			collides.forEach(collide => {
+				minX = Math.min(typeof minX==='undefined'?collide.minX:minX, collide.minX) 
+				minY =  Math.min(typeof minY==='undefined'?collide.minY:minY, collide.minY)
+				maxX =  Math.max(typeof maxX==='undefined'?collide.maxX:maxX, collide.maxX)
+				maxY =  Math.max(typeof maxY==='undefined'?collide.maxY:maxY, collide.maxY)
+			});
+			// 计算中心点
+			const center = L.point((maxX + minX) /2, (minY + maxY)/2)
+			// 计算调整点
+			adjustPoint = this._getAdjustPoint(center, point, compareDist)
+			// 如果超过限制，直接隐藏
+			if(compareDist > dist){
+				return null
+			}
+			compareDist  = compareDist + 1
+			// 计算当前点是否压盖
+		    insertItem = {
+				minX: adjustPoint.x - cell ,
+				minY: adjustPoint.y - cell,
+				maxX: adjustPoint.x + cell,
+				maxY: adjustPoint.y + cell,
+				point:adjustPoint
+			}			
+		}while(rbush.collides(insertItem))
+		return adjustPoint
+  },
+
+ /**
+  * @description: 调整显示点
+  * @param {*} marker
+  * @param {*} rbush
+  * @param {*} zoom
+  * @return {*}
+  */
+	_adjustClusterOrMarkerStatus(marker,rbush,zoom){
+		if(!marker || !rbush) return;
+		if(rbush){
+			// 当前地图层级
+			zoom = zoom || this._zoom
+			let map,iconObj;
+			// 按marker的两种类型进行分类
+            if(marker instanceof MarkerCluster){
+				map = marker._group._map
+				iconObj = marker._iconObj 
+			}else{
+				map = marker._map
+				iconObj = marker.options.icon
+			}
+			
+			// 计算视图坐标
+			const point = map.latLngToLayerPoint(marker.getLatLng(), zoom)
+
+			if(!iconObj) return
+			if(isNaN(point.x)|| isNaN(point.y)) return;
+
+			const iconOptions = iconObj.options
+			const iconSize = iconOptions.iconSize
+
+			const cell = Math.max(iconSize.x,iconSize.y)/2
+			
+			let rbushItem = {
+				minX: point.x - cell,
+				minY: point.y - cell,
+				maxX: point.x + cell,
+				maxY: point.y + cell,
+				point:point,
+				obj:marker
+			}
+			// 判断是否交叉
+			if(rbush.collides(rbushItem)){
+				const collides = rbush.search(rbushItem)
+				// 计算调整点
+				const adjustPoint = this._calcAdjustPoint(rbush, point, rbushItem, cell)
+				// 如果计算出的调整点为空，表示无法调整，直接隐藏
+				if(!adjustPoint || isNaN(adjustPoint.x) || isNaN(adjustPoint.y)){
+					marker.setOpacity(0)
+					return 
+				}
+				
+				const latlng = map.layerPointToLatLng(adjustPoint, zoom)
+				// 重新定义marker的位置
+				marker.setLatLng(latlng)
+				// 计算
+				rbushItem = {
+					minX: adjustPoint.x - cell,
+					minY: adjustPoint.y - cell,
+					maxX: adjustPoint.x + cell,
+					maxY: adjustPoint.y + cell,
+					point:adjustPoint,
+					obj:marker
+				}
+			}
+			rbush.insert(rbushItem)
+		}
+	},
+
+	_recursivelyRestoreChildPositions: function (zoomLevel ,rbush, collideStrategy) {
+		const childClusters = this._childClusters.slice().sort((a,b)=>a._childCount - b._childCount)
+		
 		if (zoomLevel - 1 === this._zoom) {
 			//Reposition child clusters
-			for (var j = this._childClusters.length - 1; j >= 0; j--) {
-				this._childClusters[j]._restorePosition();
+			for (var j = childClusters.length - 1; j >= 0; j--) {
+				childClusters[j]._restorePosition();
+				if(collideStrategy === 'adjust'){
+					this._adjustClusterOrMarkerStatus(childClusters[j], rbush, zoomLevel)
+				}
 			}
 		} else {
 			for (var k = this._childClusters.length - 1; k >= 0; k--) {
 				this._childClusters[k]._recursivelyRestoreChildPositions(zoomLevel);
 			}
 		}
+	},
+
+	_recursivelyRestoreChildMarkerPositions: function (zoomLevel ,rbush, collideStrategy) {
+		// Fix positions of child markers
+		for (var i = this._markers.length - 1; i >= 0; i--) {
+			var nm = this._markers[i];
+			if (nm._backupLatlng) {
+				nm.setLatLng(nm._backupLatlng);
+				delete nm._backupLatlng;
+			}
+			if(nm._map){
+				// 动态调整marker位置
+				if(collideStrategy === 'adjust'){
+					this._adjustClusterOrMarkerStatus(nm, rbush, zoomLevel)
+				}
+			}
+		}
+
+		const childClusters = this._childClusters.slice().sort((a,b)=>a._childCount - b._childCount)
+		for (var k = this._childClusters.length - 1; k >= 0; k--) {
+			this._childClusters[k]._recursivelyRestoreChildPositions(zoomLevel);
+		}
+
 	},
 
 	_restorePosition: function () {
@@ -376,14 +527,19 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		    i, c;
 
 		if (zoomLevelToStart <= zoom) {
-			if (runAtEveryLevel) {
-				runAtEveryLevel(this);
-			}
+			// 调整顺序
 			if (runAtBottomLevel && zoom === zoomLevelToStop) {
 				runAtBottomLevel(this);
 			}
+
+			if (runAtEveryLevel) {
+				runAtEveryLevel(this);
+			}
+
 		}
 
+		// 排序，聚类簇大的在後面
+		childClusters.sort((a,b)=>a._childCount - b._childCount)
 		if (zoom < zoomLevelToStart || zoom < zoomLevelToStop) {
 			for (i = childClusters.length - 1; i >= 0; i--) {
 				c = childClusters[i];
