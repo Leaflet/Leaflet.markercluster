@@ -47,7 +47,7 @@ removed link to h1 and indented back 2 spaces all links.
   * [Sub-plugins](#sub-plugins)
 
 
-## Using the plugin
+## Using the Plugin
 Include the plugin CSS and JS files on your page after Leaflet files, using your method of choice:
 * [Download the `v1.4.1` release](https://github.com/Leaflet/Leaflet.markercluster/archive/v1.4.1.zip)
 * Use unpkg CDN: `https://unpkg.com/leaflet.markercluster@1.4.1/dist/`
@@ -58,7 +58,7 @@ In each case, use files in the `dist` folder:
 * `MarkerCluster.Default.css` (not needed if you use your own `iconCreateFunction` instead of the default one)
 * `leaflet.markercluster.js` (or `leaflet.markercluster-src.js` for the non-minified version)
 
-### Building, testing and linting scripts
+### Building, Testing and Linting Scripts
 Install jake `npm install -g jake` then run `npm install`
 * To check the code for errors and build Leaflet from source, run `jake`.
 * To run the tests, run `jake test`.
@@ -82,9 +82,9 @@ map.addLayer(markers);
 ## Options
 ### Defaults
 By default the Clusterer enables some nice defaults for you:
-* **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
-* **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
-* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level or at zoom specified by `disableClusteringAtZoom` option*)
+* **showCoverageOnHover**: When you mouse over a cluster, it shows the bounds of its markers.
+* **zoomToBoundsOnClick**: When you click a cluster, we zoom to its bounds.
+* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level, we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level or at zoom specified by `disableClusteringAtZoom` option*)
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
 * **spiderLegPolylineOptions**: Allows you to specify [PolylineOptions](http://leafletjs.com/reference.html#polyline-options) to style spider legs. By default, they are `{ weight: 1.5, color: '#222', opacity: 0.5 }`.
 
@@ -98,7 +98,7 @@ var markers = L.markerClusterGroup({
 ```
 
 ### Customising the Clustered Markers
-As an option to MarkerClusterGroup you can provide your own function for creating the Icon for the clustered markers.
+As an option to MarkerClusterGroup, you can provide your own function for creating the Icon for the clustered markers.
 The default implementation changes color at bounds of 10 and 100, but more advanced uses may require customising this.
 You do not need to include the .Default css if you go this way.
 You are passed a MarkerCluster object, you'll probably want to use `getChildCount()` or `getAllChildMarkers()` to work out the icon to show.
@@ -115,7 +115,7 @@ Check out the [custom example](https://leaflet.github.io/Leaflet.markercluster/e
 
 If you need to update the clusters icon (e.g. they are based on markers real-time data), use the method [refreshClusters()](#refreshing-the-clusters-icon).
 
-### Customising Spiderfy shape positions
+### Customising Spiderfy Shape Positions
 You can also provide a custom function as an option to MarkerClusterGroup to override the spiderfy shape positions. The example below implements linear spiderfy positions which overrides the default circular shape.
 
 ```javascript
@@ -140,26 +140,26 @@ var markers = L.markerClusterGroup({
 ```
 
 ### All Options
-#### Enabled by default (boolean options)
-* **showCoverageOnHover**: When you mouse over a cluster it shows the bounds of its markers.
-* **zoomToBoundsOnClick**: When you click a cluster we zoom to its bounds.
-* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level or at zoom specified by `disableClusteringAtZoom` option*).
+#### Enabled by Default (boolean options)
+* **showCoverageOnHover**: When you mouse over a cluster, it shows the bounds of its markers.
+* **zoomToBoundsOnClick**: When you click a cluster, we zoom to its bounds.
+* **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level, we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level or at zoom specified by `disableClusteringAtZoom` option*).
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
 * **animate**: Smoothly split / merge cluster children when zooming and spiderfying. If `L.DomUtil.TRANSITION` is false, this option has no effect (no animation is possible).
 
-#### Other options
-* **animateAddingMarkers**: If set to true (and `animate` option is also true) then adding individual markers to the MarkerClusterGroup after it has been added to the map will add the marker and animate it into the cluster. Defaults to false as this gives better performance when bulk adding markers. addLayers does not support this, only addLayer with individual Markers.
+#### Other Options
+* **animateAddingMarkers**: If set to true (and `animate` option is also true), then adding individual markers to the MarkerClusterGroup after it has been added to the map will add the marker and animate it into the cluster. Defaults to false as this gives better performance when bulk adding markers. addLayers does not support this, only addLayer with individual Markers.
 * **disableClusteringAtZoom**: If set, at this zoom level and below, markers will not be clustered. This defaults to disabled. [See Example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-realworld-maxzoom.388.html). Note: you may be interested in disabling `spiderfyOnMaxZoom` option when using `disableClusteringAtZoom`.
 * **maxClusterRadius**: The maximum radius that a cluster will cover from the central marker (in pixels). Default 80. Decreasing will make more, smaller clusters. You can also use a function that accepts the current map zoom and returns the maximum cluster radius in pixels.
 * **polygonOptions**: Options to pass when creating the L.Polygon(points, options) to show the bounds of a cluster. Defaults to empty, which lets Leaflet use the [default Path options](http://leafletjs.com/reference.html#path-options).
-* **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster. Note: the markers are not replaced by cluster objects, only their icon is replaced. Hence they still react to normal events, and option `disableClusteringAtZoom` does not restore their previous icon (see [#391](https://github.com/Leaflet/Leaflet.markercluster/issues/391)).
+* **singleMarkerMode**: If set to true, overrides the icon for all added markers to make them appear as a 1 size cluster. Note: the markers are not replaced by cluster objects, only their icon is replaced. Hence, they still react to normal events, and option `disableClusteringAtZoom` does not restore their previous icon (see [#391](https://github.com/Leaflet/Leaflet.markercluster/issues/391)).
 * **spiderLegPolylineOptions**: Allows you to specify [PolylineOptions](http://leafletjs.com/reference.html#polyline-options) to style spider legs. By default, they are `{ weight: 1.5, color: '#222', opacity: 0.5 }`.
 * **spiderfyDistanceMultiplier**: Increase from 1 to increase the distance away from the center that spiderfied markers are placed. Use if you are using big marker icons (Default: 1).
 * **iconCreateFunction**: Function used to create the cluster icon. See [the default implementation](https://github.com/Leaflet/Leaflet.markercluster/blob/15ed12654acdc54a4521789c498e4603fe4bf781/src/MarkerClusterGroup.js#L542) or the [custom example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-custom.html).
 * **spiderfyShapePositions**: Function used to override spiderfy default shape positions. 
 * **clusterPane**: Map pane where the cluster icons will be added. Defaults to L.Marker's default (currently 'markerPane'). [See the pane example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-pane.html).
 
-#### Chunked addLayers options
+#### Chunked addLayers Options
 Options for the [addLayers](#bulk-adding-and-removing-markers) method. See [#357](https://github.com/Leaflet/Leaflet.markercluster/issues/357) for explanation on how the chunking works.
 * **chunkedLoading**: Boolean to split the addLayer**s** processing in to small intervals so that the page does not freeze.
 * **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
@@ -206,10 +206,10 @@ These methods extract non-group layer children from Layer Group types, even deep
 - `chunkProgress` jumps backward when `addLayers` finds a group (since appending its children to the input array makes the total increase).
 - Groups are not actually added into the MarkerClusterGroup, only their non-group child layers. Therfore, `hasLayer` method will return `true` for non-group child layers, but `false` on any (possibly parent) Layer Group types.
 
-If you are removing a lot of markers it will almost definitely be better to call `clearLayers` then call `addLayers` to add the markers you don't want to remove back in. See [#59](https://github.com/Leaflet/Leaflet.markercluster/issues/59#issuecomment-9320628) for details.
+If you are removing a lot of markers, it will almost definitely be better to call `clearLayers` then call `addLayers` to add the markers you don't want to remove back in. See [#59](https://github.com/Leaflet/Leaflet.markercluster/issues/59#issuecomment-9320628) for details.
 
 #### Getting the visible parent of a marker
-If you have a marker in your MarkerClusterGroup and you want to get the visible parent of it (Either itself or a cluster it is contained in that is currently visible on the map).
+Use var visibleOne below if you have a marker in your MarkerClusterGroup and you want to get the visible parent of it (either itself or a cluster it is contained in that is currently visible on the map).
 This will return null if the marker and its parent clusters are not visible currently (they are not near the visible viewpoint)
 ```javascript
 var visibleOne = markerClusterGroup.getVisibleParent(myMarker);
@@ -235,14 +235,14 @@ The plugin also adds a method on L.Marker to easily update the underlying icon o
 If passing a second argument that evaluates to `true`, the method will also trigger a `refreshCluster` on the parent MarkerClusterGroup for that single marker.
 ```javascript
 // Use as many times as required to update markers,
-// then call refreshClusters once finished.
+// Then, call refreshClusters once finished.
 for (i in markersSubArray) {
 	markersSubArray[i].refreshIconOptions(newOptionsMappingArray[i]);
 }
 markers.refreshClusters(markersSubArray);
 
 // If updating only one marker, pass true to
-// refresh this marker's parent clusters right away.
+// Refresh this marker's parent clusters right away.
 myMarker.refreshIconOptions(optionsMap, true); 
 ```
 
@@ -250,10 +250,10 @@ myMarker.refreshIconOptions(optionsMap, true);
 * **hasLayer**(layer): Returns true if the given layer (marker) is in the MarkerClusterGroup.
 * **zoomToShowLayer**(layer, callback): Zooms to show the given marker (spiderfying if required), calls the callback when the marker is visible on the map.
 
-### Clusters methods
+### Clusters Methods
 The following methods can be used with clusters (not the group). They are typically used for event handling.
 
-#### Getting the bounds of a cluster
+#### Getting the Bounds of a Cluster
 When you receive an event from a cluster you can query it for the bounds.
 ```javascript
 markers.on('clusterclick', function (a) {
@@ -269,8 +269,8 @@ markers.on('clusterclick', function (a) {
 });
 ```
 
-#### Zooming to the bounds of a cluster
-When you receive an event from a cluster you can zoom to its bounds in one easy step.
+#### Zooming to the Bounds of a Cluster
+When you receive an event from a cluster, you can zoom to its bounds in one easy step.
 If all of the markers will appear at a higher zoom level, that zoom level is zoomed to instead.
 `zoomToBounds` takes an optional argument to pass [options to the resulting `fitBounds` call](http://leafletjs.com/reference.html#map-fitboundsoptions).
 
@@ -281,18 +281,18 @@ markers.on('clusterclick', function (a) {
 });
 ```
 
-#### Other clusters methods
+#### Other Clusters Methods
 * **getChildCount**: Returns the total number of markers contained within that cluster.
 * **getAllChildMarkers(storage: array | undefined, ignoreDraggedMarker: boolean | undefined)**: Returns an array of all markers contained within this cluster (storage will be used if provided). If ignoreDraggedMarker is true and there is currently a marker dragged, the dragged marker will not be included in the array.
 * **spiderfy**: Spiderfies the child markers of this cluster
 * **unspiderfy**: Unspiderfies a cluster (opposite of spiderfy)
 
-## Handling LOTS of markers
-The Clusterer can handle 10,000 or even 50,000 markers (in chrome). IE9 has some issues with 50,000.
+## Handling LOTS of Markers
+The Clusterer can handle 10,000 or even 50,000 markers (in Chrome). The IE9 (legacy browser) had some issues with 50,000.
 - [realworld 10,000 example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-realworld.10000.html)
 - [realworld 50,000 example](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)
 
-Note: these two examples use the `chunkedLoading` option set to true in order to avoid locking the browser for a long time.
+Note: These two examples use the `chunkedLoading` option set to true in order to avoid locking the browser for a long time.
 
 ## License
 
