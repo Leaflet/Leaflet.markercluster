@@ -161,7 +161,7 @@ var markers = L.markerClusterGroup({
 
 #### Chunked addLayers options
 Options for the [addLayers](#bulk-adding-and-removing-markers) method. See [#357](https://github.com/Leaflet/Leaflet.markercluster/issues/357) for explanation on how the chunking works.
-* **chunkedLoading**: Boolean to split the addLayer**s** processing in to small intervals so that the page does not freeze.
+* **chunkedLoading**: Boolean to split the addLayers processing in to small intervals so that the page does not freeze.
 * **chunkInterval**: Time interval (in ms) during which addLayers works before pausing to let the rest of the page process. In particular, this prevents the page from freezing while adding a lot of markers. Defaults to 200ms.
 * **chunkDelay**: Time delay (in ms) between consecutive periods of processing for addLayers. Default to 50ms.
 * **chunkProgress**: Callback function that is called at the end of each chunkInterval. Typically used to implement a progress indicator, e.g. [code in RealWorld 50k](https://github.com/Leaflet/Leaflet.markercluster/blob/master/example/marker-clustering-realworld.50000.html#L33-L49). Defaults to null. Arguments:
