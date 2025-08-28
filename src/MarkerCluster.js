@@ -1,4 +1,5 @@
-export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
+export function createMarkerCluster(L) {
+	var MarkerCluster = L.Marker.extend({
 	options: L.Icon.prototype.options,
 
 	initialize: function (group, zoom, a, b) {
@@ -403,4 +404,7 @@ export var MarkerCluster = L.MarkerCluster = L.Marker.extend({
 		return this._childClusters.length > 0 && this._childClusters[0]._childCount === this._childCount;
 	}
 });
+
+	return MarkerCluster;
+}
 

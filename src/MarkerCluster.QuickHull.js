@@ -24,9 +24,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=18434
 */
 
-(function () {
-	L.QuickHull = {
-
+/**
+ * Add QuickHull functionality to MarkerCluster
+ * @param {Object} L - Leaflet instance
+ * @param {Function} MarkerCluster - MarkerCluster class
+ * @returns {Object} - QuickHull utility object
+ */
+export function addQuickHullToMarkerCluster(L, MarkerCluster) {
+	var QuickHull = {
 		/*
 		 * @param {Object} cpt a point to be measured from the baseline
 		 * @param {Array} bl the baseline, as represented by a two-element
@@ -70,7 +75,6 @@ Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=1843
 
 			return { maxPoint: maxPt, newPoints: newPoints };
 		},
-
 
 		/*
 		 * Given a baseline, compute the convex hull of latLngs as an array
@@ -147,19 +151,25 @@ Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=1843
 			return ch;
 		}
 	};
-}());
 
-L.MarkerCluster.include({
-	getConvexHull: function () {
-		var childMarkers = this.getAllChildMarkers(),
-			points = [],
-			p, i;
+	// Add QuickHull to the Leaflet instance
+	L.QuickHull = QuickHull;
 
-		for (i = childMarkers.length - 1; i >= 0; i--) {
-			p = childMarkers[i].getLatLng();
-			points.push(p);
+	// Add getConvexHull method to MarkerCluster
+	MarkerCluster.include({
+		getConvexHull: function () {
+			var childMarkers = this.getAllChildMarkers(),
+				points = [],
+				p, i;
+
+			for (i = childMarkers.length - 1; i >= 0; i--) {
+				p = childMarkers[i].getLatLng();
+				points.push(p);
+			}
+
+			return QuickHull.getConvexHull(points);
 		}
+	});
 
-		return L.QuickHull.getConvexHull(points);
-	}
-});
+	return QuickHull;
+}

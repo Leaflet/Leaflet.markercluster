@@ -5,3 +5,7 @@ obj
 # mstest test results
 TestResults
 node_modules
+
+# Build artifacts
+dist/leaflet.markercluster*.js
+dist/leaflet.markercluster*.js.map
