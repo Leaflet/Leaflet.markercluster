@@ -405,7 +405,7 @@ L.MarkerClusterGroup.include({
 			this._map.getRenderer(this);
 			//Needs to happen in the pageload, not after, or animations don't work in webkit
 			//  http://stackoverflow.com/questions/8455200/svg-animate-with-dynamically-added-elements
-			//Disable on touch browsers as the animation messes up on a touch zoom and isn't very noticable
+			//Disable on touch browsers as the animation messes up on a touch zoom and isn't very noticeable
 		}
 	},
 

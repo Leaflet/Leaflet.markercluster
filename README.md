@@ -204,7 +204,7 @@ markers.on('clusterclick', function (a) {
 
 These methods extract non-group layer children from Layer Group types, even deeply nested. _However_, be noted that:
 - `chunkProgress` jumps backward when `addLayers` finds a group (since appending its children to the input array makes the total increase).
-- Groups are not actually added into the MarkerClusterGroup, only their non-group child layers. Therfore, `hasLayer` method will return `true` for non-group child layers, but `false` on any (possibly parent) Layer Group types.
+- Groups are not actually added into the MarkerClusterGroup, only their non-group child layers. Therefore, `hasLayer` method will return `true` for non-group child layers, but `false` on any (possibly parent) Layer Group types.
 
 If you are removing a lot of markers it will almost definitely be better to call `clearLayers` then call `addLayers` to add the markers you don't want to remove back in. See [#59](https://github.com/Leaflet/Leaflet.markercluster/issues/59#issuecomment-9320628) for details.
 

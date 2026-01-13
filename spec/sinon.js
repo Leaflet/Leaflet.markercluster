@@ -3460,7 +3460,7 @@ if (typeof module == "object" && typeof require == "function") {
 /**
  * The Sinon "server" mimics a web server that receives requests from
  * sinon.FakeXMLHttpRequest and provides an API to respond to those requests,
- * both synchronously and asynchronously. To respond synchronuously, canned
+ * both synchronously and asynchronously. To respond synchronously, canned
  * answers have to be provided upfront.
  *
  * @author Christian Johansen (christian@cjohansen.no)
@@ -3674,7 +3674,7 @@ if (typeof module == "object" && typeof require == "function") {
  * Add-on for sinon.fakeServer that automatically handles a fake timer along with
  * the FakeXMLHttpRequest. The direct inspiration for this add-on is jQuery
  * 1.3.x, which does not use xhr object's onreadystatehandler at all - instead,
- * it polls the object for completion with setInterval. Dispite the direct
+ * it polls the object for completion with setInterval. Despite the direct
  * motivation, there is nothing jQuery-specific in this file, so it can be used
  * in any environment where the ajax implementation depends on setInterval or
  * setTimeout.
