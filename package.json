@@ -1,44 +1,57 @@
 {
 	"name": "leaflet.markercluster",
-	"repository": "https://github.com/Leaflet/Leaflet.markercluster",
 	"version": "1.5.4",
 	"description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet",
-	"devDependencies": {
-		"git-rev-sync": "^1.8.0",
-		"happen": "^0.3.1",
-		"jake": "8.0.19",
-		"jshint": "^2.9.4",
-		"karma": "4.0.0",
-		"karma-chrome-launcher": "^2.0.0",
-		"karma-coverage": "^1.1.1",
-		"karma-firefox-launcher": "^1.0.1",
-		"karma-mocha": "^1.3.0",
-		"karma-phantomjs-launcher": "^1.0.4",
-		"karma-rollup-preprocessor": "7.0.0",
-		"karma-safari-launcher": "^1.0.0",
-		"leaflet": "^1.3.1",
-		"mocha": "6.0.2",
-		"phantomjs-prebuilt": "^2.1.14",
-		"rollup": "1.3.2",
-		"rollup-plugin-git-version": "0.2.1",
-		"rollup-plugin-json": "3.1.0",
-		"uglify-js": "3.4.9"
-	},
-	"peerDependencies": {
-		"leaflet": "^1.3.1"
-	},
-	"main": "dist/leaflet.markercluster-src.js",
-	"style": "dist/MarkerCluster.css",
-	"scripts": {
-		"test": "karma start ./spec/karma.conf.js",
-		"prepublish": "jake",
-		"rollup": "rollup -c build/rollup-config.js",
-		"uglify": "uglifyjs dist/leaflet.markercluster-src.js -c -m -o dist/leaflet.markercluster.js --source-map \"filename=dist/leaflet.markercluster.js.map,content=dist/leaflet.markercluster-src.js.map,url=leaflet.markercluster.js.map\""
-	},
+	"homepage": "https://github.com/Leaflet/Leaflet.markercluster",
 	"keywords": [
 		"gis",
 		"map",
-		"cluster"
+		"cluster",
+		"leaflet",
+		"plugin"
 	],
-	"license": "MIT"
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/Leaflet/Leaflet.markercluster.git"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/types/index.d.ts",
+			"default": "./src/index.js"
+		},
+		"./dist/*.css": "./dist/*.css"
+	},
+	"types": "./dist/types/index.d.ts",
+	"style": "dist/MarkerCluster.css",
+	"files": [
+		"src",
+		"dist"
+	],
+	"sideEffects": [
+		"*.css",
+		"./src/*.js"
+	],
+	"peerDependencies": {
+		"leaflet": "^1.9.0 || ^2.0.0-beta.1"
+	},
+	"scripts": {
+		"lint": "eslint",
+		"test": "npm run lint"
+	},
+	"license": "MIT",
+	"devDependencies": {
+		"@eslint/compat": "^2.1.1",
+		"@vitest/browser-playwright": "^5.1.0",
+		"eslint": "^10.14.0",
+		"eslint-config-mourner": "^5.0.2",
+		"eslint-plugin-baseline-js": "^0.7.7",
+		"eslint-plugin-html": "^8.2.1",
+		"leaflet": "^2.0.0-beta.1",
+		"leaflet-v1": "npm:leaflet@^1.9.4",
+		"playwright": "^1.64.1",
+		"rolldown": "^1.2.16",
+		"typescript": "^7.0.2",
+		"vitest": "^5.1.0"
+	}
 }
