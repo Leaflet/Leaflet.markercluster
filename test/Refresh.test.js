@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('refreshClusters', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('refreshClusters', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -24,7 +26,7 @@ describe('refreshClusters', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -60,10 +62,10 @@ describe('refreshClusters', () => {
 	/////////////////////////////
 	it('flags all non-visible parent clusters of a given marker', () => {
 
-		group = L.markerClusterGroup().addTo(map);
+		group = new MarkerClusterGroup().addTo(map);
 
-		const marker1 = L.marker([1.5, 1.5]).addTo(group);
-		L.marker([1.5, 1.5]).addTo(group); // Needed to force a cluster.
+		const marker1 = new L.Marker([1.5, 1.5]).addTo(group);
+		new L.Marker([1.5, 1.5]).addTo(group); // Needed to force a cluster.
 
 		setMapView();
 
@@ -103,7 +105,7 @@ describe('refreshClusters', () => {
 
 	it('re-draws visible clusters', () => {
 
-		group = L.markerClusterGroup({
+		group = new MarkerClusterGroup({
 			iconCreateFunction(cluster) {
 				const markers = cluster.getAllChildMarkers();
 
@@ -120,8 +122,8 @@ describe('refreshClusters', () => {
 			}
 		}).addTo(map);
 
-		const marker1 = L.marker([1.5, 1.5]).addTo(group);
-		L.marker([1.5, 1.5]).addTo(group); // Needed to force a cluster.
+		const marker1 = new L.Marker([1.5, 1.5]).addTo(group);
+		new L.Marker([1.5, 1.5]).addTo(group); // Needed to force a cluster.
 
 		setMapView();
 
@@ -168,12 +170,12 @@ describe('refreshClusters', () => {
 
 	it('re-draws markers in singleMarkerMode', () => {
 
-		group = L.markerClusterGroup({
+		group = new MarkerClusterGroup({
 			singleMarkerMode: true,
 			iconCreateFunction
 		}).addTo(map);
 
-		const marker1 = L.marker([1.5, 1.5]).addTo(group);
+		const marker1 = new L.Marker([1.5, 1.5]).addTo(group);
 
 		setMapView();
 
@@ -192,13 +194,13 @@ describe('refreshClusters', () => {
 
 	it('does not modify markers that do not belong to the current group (in singleMarkerMode)', () => {
 
-		group = L.markerClusterGroup({
+		group = new MarkerClusterGroup({
 			singleMarkerMode: true,
 			iconCreateFunction
 		}).addTo(map);
 
-		const marker1 = L.marker([1.5, 1.5]).addTo(group);
-		const marker2 = L.marker([1.5, 1.5], {
+		const marker1 = new L.Marker([1.5, 1.5]).addTo(group);
+		const marker2 = new L.Marker([1.5, 1.5], {
 			icon: iconCreateFunction({
 				getAllChildMarkers() {
 					return [];
@@ -228,12 +230,12 @@ describe('refreshClusters', () => {
 
 
 	// Shared code for below tests.
-	const marker1 = L.marker([1.5, 1.5]),
-		marker2 = L.marker([1.5, 1.5]), // Needed to force a cluster.
-		marker3 = L.marker([1.1, 1.1]),
-		marker4 = L.marker([1.1, 1.1]), // Needed to force a cluster.
-		marker5 = L.marker([1.9, 1.9]),
-		marker6 = L.marker([1.9, 1.9]); // Needed to force a cluster.
+	const marker1 = new L.Marker([1.5, 1.5]),
+		marker2 = new L.Marker([1.5, 1.5]), // Needed to force a cluster.
+		marker3 = new L.Marker([1.1, 1.1]),
+		marker4 = new L.Marker([1.1, 1.1]), // Needed to force a cluster.
+		marker5 = new L.Marker([1.9, 1.9]),
+		marker6 = new L.Marker([1.9, 1.9]); // Needed to force a cluster.
 	let marker1cluster8,
 		marker1cluster3,
 		marker1cluster5,
@@ -246,7 +248,7 @@ describe('refreshClusters', () => {
 
 	function init3clusterBranches() {
 
-		group = L.markerClusterGroup({
+		group = new MarkerClusterGroup({
 			maxClusterRadius: 2 // Make sure we keep distinct clusters.
 		}).addTo(map);
 
@@ -413,7 +415,7 @@ describe('refreshClusters', () => {
 
 	});
 
-	it('accepts an L.MarkerCluster', () => {
+	it('accepts an MarkerCluster', () => {
 
 		init3clusterBranches();
 

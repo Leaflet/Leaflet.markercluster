@@ -1,20 +1,21 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('Option removeOutsideVisibleBounds', () => {
 	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
-	let marker1, marker2, marker3, marker4, marker5, markers, div, map, group, realBrowser;
+	let marker1, marker2, marker3, marker4, marker5, markers, div, map, group;
 
 	beforeEach(() => {
-		realBrowser = L.Browser;
 		vi.useFakeTimers();
 
-		marker1 = L.marker([1.5, -0.4]); // 2 screens width away.
-		marker2 = L.marker([1.5, 0.6]); // 1 screen width away.
-		marker3 = L.marker([1.5, 1.5]); // In view port.
-		marker4 = L.marker([1.5, 2.4]); // 1 screen width away.
-		marker5 = L.marker([1.5, 3.4]); // 2 screens width away.
+		marker1 = new L.Marker([1.5, -0.4]); // 2 screens width away.
+		marker2 = new L.Marker([1.5, 0.6]); // 1 screen width away.
+		marker3 = new L.Marker([1.5, 1.5]); // In view port.
+		marker4 = new L.Marker([1.5, 2.4]); // 1 screen width away.
+		marker5 = new L.Marker([1.5, 3.4]); // 2 screens width away.
 		markers = [marker1, marker2, marker3, marker4, marker5];
 
 		div = document.createElement('div');
@@ -22,7 +23,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -37,7 +38,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			//group.removeLayers(group.getLayers());
 			group.clearLayers();
 			map.removeLayer(group);
@@ -57,13 +58,9 @@ describe('Option removeOutsideVisibleBounds', () => {
 		group.addLayers(markers);
 	}
 
+	// the group skips padding the visible bounds for coarse pointers
 	function setBrowserToMobile() {
-		const fakeBrowser = {};
-		for (const k in realBrowser) {
-			fakeBrowser[k] = realBrowser[k];
-		}
-		fakeBrowser.mobile = true;
-		L.Browser = fakeBrowser;
+		vi.stubGlobal('matchMedia', () => ({matches: true}));
 	}
 
 	/////////////////////////////
@@ -71,7 +68,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 	/////////////////////////////
 	it('removes objects more than 1 screen away from view port by default', () => {
 
-		group = L.markerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		prepareGroup();
 
@@ -84,7 +81,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 	it('removes objects out of view port by default for mobile device', () => {
 		setBrowserToMobile();
 		try {
-			group = L.markerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			prepareGroup();
 
@@ -94,13 +91,13 @@ describe('Option removeOutsideVisibleBounds', () => {
 			expect(marker4._icon).toBe(null);
 			expect(marker5._icon).toBe(null);
 		} finally {
-			L.Browser = realBrowser;
+			vi.unstubAllGlobals();
 		}
 	});
 
 	it('leaves all objects on map when set to false', () => {
 
-		group = L.markerClusterGroup({
+		group = new MarkerClusterGroup({
 			removeOutsideVisibleBounds: false
 		});
 
@@ -139,9 +136,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 	}
 
 	function checkProjection() {
-		expect(map.options.crs).toBe(L.CRS.EPSG3857);
-		expect(L.CRS.EPSG3857.projection).toBe(L.Projection.SphericalMercator);
-		expect(L.Projection.SphericalMercator.MAX_LATITUDE).toBeTypeOf('number');
+		expect(map.options.crs.projection.MAX_LATITUDE).toBeCloseTo(85.0511287798);
 
 		const mapZoom = map.getZoom();
 
@@ -159,7 +154,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 
 		moveMarkersAndMapToMaxLat(latLngsMaxLatDefault);
 
-		group = L.markerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		prepareGroup();
 
@@ -177,7 +172,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 		// Make sure we are really in Southern hemisphere.
 		expect(map.getBounds().getNorth()).toBeLessThan(-80);
 
-		group = L.markerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		prepareGroup();
 
@@ -205,7 +200,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 		try {
 			moveMarkersAndMapToMaxLat(latLngsMaxLatMobile);
 
-			group = L.markerClusterGroup({
+			group = new MarkerClusterGroup({
 				maxClusterRadius: 10
 			});
 
@@ -217,7 +212,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 			expect(marker4._icon).toBe(null);
 			expect(marker5._icon).toBe(null);
 		} finally {
-			L.Browser = realBrowser;
+			vi.unstubAllGlobals();
 		}
 	});
 
@@ -229,7 +224,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 			// Make sure we are really in Southern hemisphere.
 			expect(map.getBounds().getNorth()).toBeLessThan(-80);
 
-			group = L.markerClusterGroup({
+			group = new MarkerClusterGroup({
 				maxClusterRadius: 10
 			});
 
@@ -241,7 +236,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 			expect(marker4._icon).toBe(null);
 			expect(marker5._icon).toBe(null);
 		} finally {
-			L.Browser = realBrowser;
+			vi.unstubAllGlobals();
 		}
 	});
 });

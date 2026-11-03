@@ -1,4 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {MarkerCluster} from '../src/MarkerCluster.js';
 
 describe('events', () => {
 	/////////////////////////////
@@ -12,7 +15,7 @@ describe('events', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -22,7 +25,7 @@ describe('events', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.removeLayers(group.getLayers());
 			map.removeLayer(group);
 		}
@@ -39,7 +42,7 @@ describe('events', () => {
 	it('is fired for a single child marker', () => {
 		const callback = vi.fn();
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -56,7 +59,7 @@ describe('events', () => {
 	it('is fired for a child polygon', () => {
 		const callback = vi.fn();
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -72,7 +75,7 @@ describe('events', () => {
 	it('is fired for a cluster click', () => {
 		const callback = vi.fn();
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -82,7 +85,7 @@ describe('events', () => {
 		map.addLayer(group);
 
 		const cluster = group.getVisibleParent(marker);
-		expect(cluster instanceof L.MarkerCluster).toBe(true);
+		expect(cluster instanceof MarkerCluster).toBe(true);
 
 		cluster.fire('click', null, true);
 
@@ -94,7 +97,7 @@ describe('events', () => {
 		it('still fires events for nonpoint data', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -112,7 +115,7 @@ describe('events', () => {
 		it('still fires events for point data', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker = new L.Marker([1.5, 1.5]);
 
@@ -130,7 +133,7 @@ describe('events', () => {
 		it('still fires cluster events', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker = new L.Marker([1.5, 1.5]);
 			const marker2 = new L.Marker([1.5, 1.5]);
@@ -143,7 +146,7 @@ describe('events', () => {
 			map.addLayer(group);
 
 			const cluster = group.getVisibleParent(marker);
-			expect(cluster instanceof L.MarkerCluster).toBe(true);
+			expect(cluster instanceof MarkerCluster).toBe(true);
 
 			cluster.fire('click', null, true);
 
@@ -153,7 +156,7 @@ describe('events', () => {
 		it('does not break map events', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			map.on('zoomend', callback);
 			map.addLayer(group);
@@ -170,7 +173,7 @@ describe('events', () => {
 		it('fires layeradd when markers are added while not on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layeradd', callback);
 
 			const marker = new L.Marker([1.5, 1.5]);
@@ -182,7 +185,7 @@ describe('events', () => {
 		it('fires layeradd when vectors are added while not on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layeradd', callback);
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
@@ -194,7 +197,7 @@ describe('events', () => {
 		it('fires layeradd when markers are added while on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layeradd', callback);
 			map.addLayer(group);
 
@@ -207,7 +210,7 @@ describe('events', () => {
 		it('fires layeradd when vectors are added while on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layeradd', callback);
 			map.addLayer(group);
 
@@ -220,7 +223,7 @@ describe('events', () => {
 		it('fires layeradd when markers are added using addLayers while on the map with chunked loading', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup({chunkedLoading: true});
+			group = new MarkerClusterGroup({chunkedLoading: true});
 			group.on('layeradd', callback);
 			map.addLayer(group);
 
@@ -233,7 +236,7 @@ describe('events', () => {
 		it('fires layeradd when vectors are added using addLayers while on the map with chunked loading', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup({chunkedLoading: true});
+			group = new MarkerClusterGroup({chunkedLoading: true});
 			group.on('layeradd', callback);
 			map.addLayer(group);
 
@@ -247,7 +250,7 @@ describe('events', () => {
 		it('fires layerremove when a marker is removed while not on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layerremove', callback);
 
 			const marker = new L.Marker([1.5, 1.5]);
@@ -260,7 +263,7 @@ describe('events', () => {
 		it('fires layerremove when a vector is removed while not on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layerremove', callback);
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
@@ -273,7 +276,7 @@ describe('events', () => {
 		it('fires layerremove when a marker is removed while on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layerremove', callback);
 			map.addLayer(group);
 
@@ -287,7 +290,7 @@ describe('events', () => {
 		it('fires layerremove when a vector is removed while on the map', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			group.on('layerremove', callback);
 			map.addLayer(group);
 
@@ -301,7 +304,7 @@ describe('events', () => {
 		it('fires layerremove when a marker is removed using removeLayers while on the map with chunked loading', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup({chunkedLoading: true});
+			group = new MarkerClusterGroup({chunkedLoading: true});
 			group.on('layerremove', callback);
 			map.addLayer(group);
 
@@ -315,7 +318,7 @@ describe('events', () => {
 		it('fires layerremove when a vector is removed using removeLayers while on the map with chunked loading', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup({chunkedLoading: true});
+			group = new MarkerClusterGroup({chunkedLoading: true});
 			group.on('layerremove', callback);
 			map.addLayer(group);
 
@@ -329,7 +332,7 @@ describe('events', () => {
 		it('fires layerremove when a marker is removed using removeLayers while not on the map with chunked loading', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup({chunkedLoading: true});
+			group = new MarkerClusterGroup({chunkedLoading: true});
 			group.on('layerremove', callback);
 
 			const marker = new L.Marker([1.5, 1.5]);
@@ -342,7 +345,7 @@ describe('events', () => {
 		it('fires layerremove when a vector is removed using removeLayers while not on the map with chunked loading', () => {
 			const callback = vi.fn();
 
-			group = new L.MarkerClusterGroup({chunkedLoading: true});
+			group = new MarkerClusterGroup({chunkedLoading: true});
 			group.on('layerremove', callback);
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
@@ -358,7 +361,7 @@ describe('events', () => {
 	it('is fired for a clustered child marker', function() {
 		var callback = vi.fn();
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		var marker = new L.Marker([1.5, 1.5]);
 		var marker2 = new L.Marker([1.5, 1.5]);

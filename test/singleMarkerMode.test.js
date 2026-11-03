@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('singleMarkerMode option', () => {
 	/////////////////////////////
@@ -12,7 +14,7 @@ describe('singleMarkerMode option', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -20,14 +22,14 @@ describe('singleMarkerMode option', () => {
 			[2, 2]
 		]));
 
-		defaultIcon = new L.Icon.Default();
-		clusterIcon = new L.Icon.Default();
-		marker = L.marker([1.5, 1.5]);
+		defaultIcon = new (L.DefaultIcon ?? L.Icon.Default)();
+		clusterIcon = new (L.DefaultIcon ?? L.Icon.Default)();
+		marker = new L.Marker([1.5, 1.5]);
 		marker.setIcon(defaultIcon);
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.removeLayers(group.getLayers());
 			map.removeLayer(group);
 		}
@@ -43,7 +45,7 @@ describe('singleMarkerMode option', () => {
 	/////////////////////////////
 	it('overrides marker icons when set to true', () => {
 
-		group = L.markerClusterGroup({
+		group = new MarkerClusterGroup({
 			singleMarkerMode: true,
 			iconCreateFunction() {
 				return clusterIcon;
@@ -60,7 +62,7 @@ describe('singleMarkerMode option', () => {
 
 	it('does not modify marker icons by default (or set to false)', () => {
 
-		group = L.markerClusterGroup({
+		group = new MarkerClusterGroup({
 			iconCreateFunction() {
 				return clusterIcon;
 			}

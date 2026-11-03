@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('support for Circle elements', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('support for Circle elements', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -24,7 +26,7 @@ describe('support for Circle elements', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -41,9 +43,9 @@ describe('support for Circle elements', () => {
 	/////////////////////////////
 	it('appears when added to the group before the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
-		const marker = new L.Circle([1.5, 1.5], 200);
+		const marker = new L.Circle([1.5, 1.5], {radius: 200});
 
 		group.addLayer(marker);
 		map.addLayer(group);
@@ -58,9 +60,9 @@ describe('support for Circle elements', () => {
 
 	it('appears when added to the group after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
-		const marker = new L.Circle([1.5, 1.5], 200);
+		const marker = new L.Circle([1.5, 1.5], {radius: 200});
 
 		group.addLayer(marker);
 		map.addLayer(group);
@@ -73,10 +75,10 @@ describe('support for Circle elements', () => {
 
 	it('appears animated when added to the group after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup({animateAddingMarkers: true});
+		group = new MarkerClusterGroup({animateAddingMarkers: true});
 
-		const marker = new L.Circle([1.5, 1.5], 200);
-		const marker2 = new L.Circle([1.5, 1.5], 200);
+		const marker = new L.Circle([1.5, 1.5], {radius: 200});
+		const marker2 = new L.Circle([1.5, 1.5], {radius: 200});
 
 		map.addLayer(group);
 		group.addLayer(marker);
@@ -90,10 +92,10 @@ describe('support for Circle elements', () => {
 
 	it('creates a cluster when 2 overlapping markers are added before the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
-		const marker = new L.Circle([1.5, 1.5], 200);
-		const marker2 = new L.Circle([1.5, 1.5], 200);
+		const marker = new L.Circle([1.5, 1.5], {radius: 200});
+		const marker2 = new L.Circle([1.5, 1.5], {radius: 200});
 
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
@@ -108,10 +110,10 @@ describe('support for Circle elements', () => {
 
 	it('creates a cluster when 2 overlapping markers are added after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
-		const marker = new L.Circle([1.5, 1.5], 200);
-		const marker2 = new L.Circle([1.5, 1.5], 200);
+		const marker = new L.Circle([1.5, 1.5], {radius: 200});
+		const marker2 = new L.Circle([1.5, 1.5], {radius: 200});
 
 		map.addLayer(group);
 		group.addLayer(marker);
@@ -127,9 +129,9 @@ describe('support for Circle elements', () => {
 
 	it('disappears when removed from the group', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
-		const marker = new L.Circle([1.5, 1.5], 200);
+		const marker = new L.Circle([1.5, 1.5], {radius: 200});
 
 		group.addLayer(marker);
 		map.addLayer(group);

@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('moving markers', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('moving markers', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -24,7 +26,7 @@ describe('moving markers', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -42,7 +44,7 @@ describe('moving markers', () => {
 	/////////////////////////////
 	it('moves a marker that was moved while off the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([10, 10]);
 		map.addLayer(group);
@@ -57,7 +59,7 @@ describe('moving markers', () => {
 
 	it('moves multiple markers that were moved while off the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 		map.addLayer(group);
 
 		const markers = [];

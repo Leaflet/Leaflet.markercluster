@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('Remember opacity', () => {
 	/////////////////////////////
@@ -18,8 +20,8 @@ describe('Remember opacity', () => {
 		{latLng: [-1, -1], opts: {opacity: 0.2}}
 	];
 
-	const bounds = L.latLngBounds(L.latLng(-1.1, -1.1),
-		L.latLng(1.1,  1.1));
+	const bounds = new L.LatLngBounds(new L.LatLng(-1.1, -1.1),
+		new L.LatLng(1.1,  1.1));
 
 	beforeEach(() => {
 		vi.useFakeTimers();
@@ -29,11 +31,11 @@ describe('Remember opacity', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		markers = [];
 		for (let i = 0; i < markerDefs.length; i++) {
-			markers.push(L.marker(markerDefs[i].latLng, markerDefs[i].opts));
+			markers.push(new L.Marker(markerDefs[i].latLng, markerDefs[i].opts));
 		}
 	});
 
@@ -53,7 +55,7 @@ describe('Remember opacity', () => {
 	it('clusters semitransparent markers into an opaque one', () => {
 		map.setView(new L.LatLng(0, 0), 1);
 
-		group = new L.MarkerClusterGroup({
+		group = new MarkerClusterGroup({
 			maxClusterRadius: 20
 		});
 		group.addLayers(markers);
@@ -69,7 +71,7 @@ describe('Remember opacity', () => {
 		map.setView(new L.LatLng(0, 0), 1);
 		let visibleClusters;
 
-		group = new L.MarkerClusterGroup({
+		group = new MarkerClusterGroup({
 			maxClusterRadius: 20
 		});
 		group.addLayers(markers);
@@ -104,7 +106,7 @@ describe('Remember opacity', () => {
 	it('has no problems zooming in and out several times', () => {
 		let visibleClusters;
 
-		group = new L.MarkerClusterGroup({
+		group = new MarkerClusterGroup({
 			maxClusterRadius: 20
 		});
 		group.addLayers(markers);
@@ -136,7 +138,7 @@ describe('Remember opacity', () => {
 		map.setView(new L.LatLng(0, 0), 1);
 
 		let visibleClusters;
-		group = new L.MarkerClusterGroup({
+		group = new MarkerClusterGroup({
 			maxClusterRadius: 20
 		});
 		group.addLayers(markers);
@@ -156,7 +158,7 @@ describe('Remember opacity', () => {
 
 			// 			console.log(markerDefs[i].latLng, markerDefs[i].opts.opacity);
 
-			map.setView(L.latLng(markerDefs[i].latLng), 18);
+			map.setView(markerDefs[i].latLng, 18);
 			vi.advanceTimersByTime(1000);
 			visibleClusters = group._featureGroup.getLayers();
 			expect(visibleClusters.length).toBe(1);

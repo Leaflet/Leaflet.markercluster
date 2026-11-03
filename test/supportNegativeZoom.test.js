@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('things behave correctly with negative minZoom', () => {
 	/////////////////////////////
@@ -12,13 +14,13 @@ describe('things behave correctly with negative minZoom', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {minZoom: -3, maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {minZoom: -3, maxZoom: 18, trackResize: false});
 
-		map.setView(L.latLng(0, 0), -3);
+		map.setView(new L.LatLng(0, 0), -3);
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -34,7 +36,7 @@ describe('things behave correctly with negative minZoom', () => {
 	/////////////////////////////
 	it('shows a single marker added to the group before the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -47,7 +49,7 @@ describe('things behave correctly with negative minZoom', () => {
 
 	it('shows a single marker added to the group after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -60,7 +62,7 @@ describe('things behave correctly with negative minZoom', () => {
 
 	it('creates a cluster when 2 overlapping markers are added before the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
@@ -75,7 +77,7 @@ describe('things behave correctly with negative minZoom', () => {
 	});
 	it('creates a cluster when 2 overlapping markers are added after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 

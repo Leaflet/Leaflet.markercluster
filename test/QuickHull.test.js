@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest';
+import {QuickHull} from '../src/QuickHull.js';
 
 describe('quickhull', () => {
 	describe('getDistant', () => {
@@ -7,20 +8,20 @@ describe('quickhull', () => {
 				{lat: 0, lng: 0},
 				{lat: 0, lng: 10}
 			];
-			expect(L.QuickHull.getDistant({lat: 0, lng: 0}, bl)).toEqual(0);
+			expect(QuickHull.getDistant({lat: 0, lng: 0}, bl)).toEqual(0);
 		});
 		it('non-zero distance', () => {
 			const bl = [
 				{lat: 0, lng: 0},
 				{lat: 0, lng: 10}
 			];
-			expect(L.QuickHull.getDistant({lat: 5, lng: 5}, bl)).toEqual(-50);
+			expect(QuickHull.getDistant({lat: 5, lng: 5}, bl)).toEqual(-50);
 		});
 	});
 
 	describe('getConvexHull', () => {
 		it('creates a hull', () => {
-			expect(L.QuickHull.getConvexHull([{lat: 0, lng: 0},
+			expect(QuickHull.getConvexHull([{lat: 0, lng: 0},
 				{lat: 10, lng: 0},
 				{lat: 10, lng: 10},
 				{lat: 0, lng: 10},
@@ -33,7 +34,7 @@ describe('quickhull', () => {
 			]);
 		});
 		it('creates a hull for vertically-aligned objects', () => {
-			expect(L.QuickHull.getConvexHull([{lat: 0, lng: 0},
+			expect(QuickHull.getConvexHull([{lat: 0, lng: 0},
 				{lat: 5, lng: 0},
 				{lat: 10, lng: 0}
 			])).toEqual([
@@ -42,7 +43,7 @@ describe('quickhull', () => {
 			]);
 		});
 		it('creates a hull for horizontally-aligned objects', () => {
-			expect(L.QuickHull.getConvexHull([{lat: 0, lng: 0},
+			expect(QuickHull.getConvexHull([{lat: 0, lng: 0},
 				{lat: 0, lng: 5},
 				{lat: 0, lng: 10}
 			])).toEqual([

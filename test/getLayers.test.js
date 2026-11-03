@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('getLayers', () => {
 	/////////////////////////////
@@ -12,7 +14,7 @@ describe('getLayers', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
@@ -30,7 +32,7 @@ describe('getLayers', () => {
 	// TESTS
 	/////////////////////////////
 	it('hits polygons and markers before adding to map', () => {
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -44,7 +46,7 @@ describe('getLayers', () => {
 	});
 
 	it('hits polygons and markers after adding to map', () => {
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -59,7 +61,7 @@ describe('getLayers', () => {
 	});
 
 	it('skips markers and polygons removed while not on the map', () => {
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 		const marker = new L.Marker([1.5, 1.5]);
 

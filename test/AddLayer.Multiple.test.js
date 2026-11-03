@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('addLayer adding multiple markers', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('addLayer adding multiple markers', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
@@ -35,7 +37,7 @@ describe('addLayer adding multiple markers', () => {
 	/////////////////////////////
 	it('creates a cluster when 2 overlapping markers are added before the group is added to the map', () => {
 
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
@@ -50,7 +52,7 @@ describe('addLayer adding multiple markers', () => {
 	});
 	it('creates a cluster when 2 overlapping markers are added after the group is added to the map', () => {
 
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
@@ -65,7 +67,7 @@ describe('addLayer adding multiple markers', () => {
 	});
 	it('creates a cluster with an animation when 2 overlapping markers are added after the group is added to the map', () => {
 
-		const group = new L.MarkerClusterGroup({animateAddingMarkers: true});
+		const group = new MarkerClusterGroup({animateAddingMarkers: true});
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
@@ -90,7 +92,7 @@ describe('addLayer adding multiple markers', () => {
 
 	it('creates a cluster and marker when 2 overlapping markers and one non-overlapping are added before the group is added to the map', () => {
 
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 		const marker3 = new L.Marker([3.0, 1.5]);
@@ -108,7 +110,7 @@ describe('addLayer adding multiple markers', () => {
 	});
 	it('creates a cluster and marker when 2 overlapping markers and one non-overlapping are added after the group is added to the map', () => {
 
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 		const marker3 = new L.Marker([3.0, 1.5]);
@@ -127,7 +129,7 @@ describe('addLayer adding multiple markers', () => {
 
 	it('unspiderfies before adding a new Marker', () => {
 
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);

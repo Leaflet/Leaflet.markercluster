@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('support child markers changing icon', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('support child markers changing icon', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
@@ -35,7 +37,7 @@ describe('support child markers changing icon', () => {
 	/////////////////////////////
 	it('child markers end up with the right icon after becoming unclustered', () => {
 
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5], {icon: new L.DivIcon({html: 'Inner1Text'})});
 		const marker2 = new L.Marker([1.5, 1.5]);
 

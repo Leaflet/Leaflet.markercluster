@@ -14,11 +14,6 @@ export default [
 		}
 	},
 	{
-		// the plugin still sets up a global L, which test/setup.js provides
-		files: ['test/**/*.js'],
-		languageOptions: {globals: {L: 'writable'}}
-	},
-	{
 		files: ['example/*.html'],
 		plugins: {html}
 	},

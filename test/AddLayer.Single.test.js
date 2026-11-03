@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('addLayer adding a single marker', () => {
 	/////////////////////////////
@@ -12,7 +14,7 @@ describe('addLayer adding a single marker', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -22,7 +24,7 @@ describe('addLayer adding a single marker', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -38,7 +40,7 @@ describe('addLayer adding a single marker', () => {
 	/////////////////////////////
 	it('appears when added to the group before the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -51,7 +53,7 @@ describe('addLayer adding a single marker', () => {
 
 	it('appears when added to the group after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -64,7 +66,7 @@ describe('addLayer adding a single marker', () => {
 
 	it('appears (using animations) when added after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup({animateAddingMarkers: true});
+		group = new MarkerClusterGroup({animateAddingMarkers: true});
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -77,7 +79,7 @@ describe('addLayer adding a single marker', () => {
 
 	it('does not appear when too far away when added before the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([3.5, 1.5]);
 
@@ -89,7 +91,7 @@ describe('addLayer adding a single marker', () => {
 
 	it('does not appear when too far away when added after the group is added to the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([3.5, 1.5]);
 
@@ -101,7 +103,7 @@ describe('addLayer adding a single marker', () => {
 
 	it('passes control to addLayers when marker is a Layer Group', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker1 = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);

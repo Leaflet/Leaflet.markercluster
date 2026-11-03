@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('non-integer min/max zoom', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('non-integer min/max zoom', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {minZoom: 0.5, maxZoom: 18.5, trackResize: false});
+		map = new L.Map(div, {minZoom: 0.5, maxZoom: 18.5, trackResize: false});
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
@@ -32,7 +34,7 @@ describe('non-integer min/max zoom', () => {
 	// TESTS
 	/////////////////////////////
 	it('dont break adding and removing markers', () => {
-		const group = new L.MarkerClusterGroup();
+		const group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 		const marker3 = new L.Marker([1.5, 1.5]);

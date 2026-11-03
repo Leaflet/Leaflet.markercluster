@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('removeLayers', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('removeLayers', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -24,7 +26,7 @@ describe('removeLayers', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -41,7 +43,7 @@ describe('removeLayers', () => {
 	/////////////////////////////
 	it('removes all the layer given to it', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const markers = [
 			new L.Marker([1.5, 1.5]),
@@ -64,7 +66,7 @@ describe('removeLayers', () => {
 
 	it('removes all the layer given to it even though they move', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const markers = [
 			new L.Marker([10, 10]),
@@ -89,7 +91,7 @@ describe('removeLayers', () => {
 
 	it('removes all the layer given to it even if the group is not on the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const markers = [
 			new L.Marker([1.5, 1.5]),
@@ -112,7 +114,7 @@ describe('removeLayers', () => {
 
 	it('doesnt break if we are spiderfied', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const markers = [
 			new L.Marker([1.5, 1.5]),
@@ -144,7 +146,7 @@ describe('removeLayers', () => {
 
 	it('handles nested Layer Groups', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker1 = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -178,7 +180,7 @@ describe('removeLayers', () => {
 		//See #743 for more details
 		const markers = [];
 
-		group = new L.MarkerClusterGroup({
+		group = new MarkerClusterGroup({
 			chunkedLoading: true, chunkProgress() {
 				//Before this provoked an "undefined" exception
 				map.zoomOut();

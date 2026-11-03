@@ -1,8 +1,9 @@
 import {describe, expect, it, vi} from 'vitest';
+import {DistanceGrid} from '../src/DistanceGrid.js';
 
 describe('distance grid', () => {
 	it('addObject', () => {
-		const grid = new L.DistanceGrid(100),
+		const grid = new DistanceGrid(100),
 			obj = {};
 
 		expect(grid.addObject(obj, {x: 0, y: 0})).toEqual(undefined);
@@ -11,7 +12,7 @@ describe('distance grid', () => {
 
 	it('eachObject', () => {
 		const fired = vi.fn();
-		const grid = new L.DistanceGrid(100),
+		const grid = new DistanceGrid(100),
 			obj = {};
 
 		expect(grid.addObject(obj, {x: 0, y: 0})).toEqual(undefined);
@@ -24,7 +25,7 @@ describe('distance grid', () => {
 	});
 
 	it('getNearObject', () => {
-		const grid = new L.DistanceGrid(100),
+		const grid = new DistanceGrid(100),
 			obj = {};
 
 		grid.addObject(obj, {x: 0, y: 0});
@@ -34,7 +35,7 @@ describe('distance grid', () => {
 	});
 
 	it('getNearObject with cellSize 0', () => {
-		const grid = new L.DistanceGrid(0),
+		const grid = new DistanceGrid(0),
 			obj = {};
 
 		grid.addObject(obj, {x: 0, y: 0});

@@ -1,4 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {MarkerCluster} from '../src/MarkerCluster.js';
 
 describe('getVisibleParent', () => {
 	/////////////////////////////
@@ -12,7 +15,7 @@ describe('getVisibleParent', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		map.fitBounds(new L.LatLngBounds([
 			[1, 1],
@@ -33,7 +36,7 @@ describe('getVisibleParent', () => {
 	// TESTS
 	/////////////////////////////
 	it('gets the marker if the marker is visible', () => {
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 
 		group.addLayer(marker);
@@ -45,7 +48,7 @@ describe('getVisibleParent', () => {
 	});
 
 	it('gets the visible cluster if it is clustered', () => {
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
@@ -54,13 +57,13 @@ describe('getVisibleParent', () => {
 
 		const vp = group.getVisibleParent(marker);
 
-		expect(vp).toBeInstanceOf(L.MarkerCluster);
+		expect(vp).toBeInstanceOf(MarkerCluster);
 		expect(vp._icon).not.toBe(null);
 		expect(vp._icon).not.toBe(undefined);
 	});
 
 	it('returns null if the marker and parents are all not visible', () => {
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 		const marker = new L.Marker([5.5, 1.5]);
 		const marker2 = new L.Marker([5.5, 1.5]);
 

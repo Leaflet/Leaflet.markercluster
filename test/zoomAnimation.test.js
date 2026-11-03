@@ -1,13 +1,14 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('zoomAnimation', () => {
 	/////////////////////////////
 	// SETUP FOR EACH TEST
 	/////////////////////////////
-	let div, map, group, realBrowser;
+	let div, map, group;
 
 	beforeEach(() => {
-		realBrowser = L.Browser;
 		vi.useFakeTimers();
 
 		div = document.createElement('div');
@@ -16,7 +17,7 @@ describe('zoomAnimation', () => {
 		document.body.appendChild(div);
 
 		// map zoom animation runs on requestAnimationFrame, which Leaflet grabs before fake timers can replace it
-		map = L.map(div, {maxZoom: 18, trackResize: false, zoomAnimation: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false, zoomAnimation: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -26,7 +27,7 @@ describe('zoomAnimation', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -38,13 +39,9 @@ describe('zoomAnimation', () => {
 		div = map = group = null;
 	});
 
+	// the group skips padding the visible bounds for coarse pointers
 	function setBrowserToMobile() {
-		const fakeBrowser = {};
-		for (const k in realBrowser) {
-			fakeBrowser[k] = realBrowser[k];
-		}
-		fakeBrowser.mobile = true;
-		L.Browser = fakeBrowser;
+		vi.stubGlobal('matchMedia', () => ({matches: true}));
 	}
 
 	/////////////////////////////
@@ -53,7 +50,7 @@ describe('zoomAnimation', () => {
 	it('adds the visible marker to the map when zooming in', () => {
 		map.setView(new L.LatLng(-37.36142550190516, 174.254150390625), 7);
 
-		group = new L.MarkerClusterGroup({
+		group = new MarkerClusterGroup({
 			showCoverageOnHover: true,
 			maxClusterRadius: 20,
 			disableClusteringAtZoom: 15
@@ -75,7 +72,7 @@ describe('zoomAnimation', () => {
 
 	it('adds the visible marker to the map when jumping around', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 		const marker1 = new L.Marker([48.858280181884766, 2.2945759296417236]);
 		const marker2 = new L.Marker([16.02359962463379, -61.70280075073242]);
 		group.addLayer(marker1); //The one we zoom in on first
@@ -99,7 +96,7 @@ describe('zoomAnimation', () => {
 
 	it('adds the visible markers to the map, but not parent clusters when jumping around', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker1 = new L.Marker([59.9520, 30.3307]),
 			marker2 = new L.Marker([59.9516, 30.3308]),
@@ -138,7 +135,7 @@ describe('zoomAnimation', () => {
 				[2, 2]
 			]));
 
-			group = new L.MarkerClusterGroup({
+			group = new MarkerClusterGroup({
 				maxClusterRadius: 80
 			}).addTo(map);
 
@@ -157,7 +154,7 @@ describe('zoomAnimation', () => {
 
 			// Add many markers 79 pixels above the first one, so they cluster with it.
 			const newPoint = bottomPoint.add([0, -79]),
-				newLatLng = L.latLng(
+				newLatLng = new L.LatLng(
 					map.unproject(newPoint).lat,
 					centerLng
 				);
@@ -170,7 +167,7 @@ describe('zoomAnimation', () => {
 
 			expect(parentCluster._icon.parentNode).toBe(map._panes.markerPane);
 
-			parentCluster.fireEvent('click', null, true);
+			parentCluster.fire('click', null, true);
 
 			//Run the the animation
 			vi.advanceTimersByTime(1000);
@@ -181,14 +178,14 @@ describe('zoomAnimation', () => {
 			expect(parentCluster._icon).toBe(null);
 			expect(map._panes.markerPane.childNodes.length).toBe(2); // The bottomMarker + cluster for the 10 above markers.
 		} finally {
-			L.Browser = realBrowser;
+			vi.unstubAllGlobals();
 		}
 	});
 
 	describe('zoomToShowLayer', () => {
 
 		it('zoom to single marker inside map view', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker = new L.Marker([59.9520, 30.3307]);
 
@@ -219,7 +216,7 @@ describe('zoomAnimation', () => {
 		});
 
 		it('pan map to single marker outside map view', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker = new L.Marker([59.9520, 30.3307]);
 
@@ -251,7 +248,7 @@ describe('zoomAnimation', () => {
 		});
 
 		it('change view and zoom to marker in cluster inside map view', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker1 = new L.Marker([59.9520, 30.3307]);
 			const marker2 = new L.Marker([59.9516, 30.3308]);
@@ -283,7 +280,7 @@ describe('zoomAnimation', () => {
 		});
 
 		it('change view and zoom to marker in cluster outside map view', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker1 = new L.Marker([59.9520, 30.3307]);
 			const marker2 = new L.Marker([59.9516, 30.3308]);
@@ -316,7 +313,7 @@ describe('zoomAnimation', () => {
 		});
 
 		it('spiderfy overlapping markers', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker1 = new L.Marker([59.9520, 30.3307]);
 			const marker2 = new L.Marker([59.9520, 30.3307]);
@@ -348,7 +345,7 @@ describe('zoomAnimation', () => {
 		});
 
 		it('zoom or spiderfy markers if they visible on next level of zoom', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker1 = new L.Marker([59.9520, 30.3307]);
 			const marker2 = new L.Marker([59.9516, 30.3308]);
@@ -382,7 +379,7 @@ describe('zoomAnimation', () => {
 		});
 
 		it('zoom and executes callback even for non-icon-based Marker', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const marker1 = new L.CircleMarker([59.9520, 30.3307]);
 			const marker2 = new L.CircleMarker([59.9516, 30.3308]);

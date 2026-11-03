@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('spiderfy', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('spiderfy', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -24,7 +26,7 @@ describe('spiderfy', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.removeLayers(group.getLayers());
 			map.removeLayer(group);
 		}
@@ -41,7 +43,7 @@ describe('spiderfy', () => {
 	/////////////////////////////
 	it('Spiderfies 2 Markers', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -58,7 +60,7 @@ describe('spiderfy', () => {
 
 	it('Spiderfies 2 CircleMarkers', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.CircleMarker([1.5, 1.5]);
 		const marker2 = new L.CircleMarker([1.5, 1.5]);
@@ -77,10 +79,10 @@ describe('spiderfy', () => {
 
 	it('Spiderfies 2 Circles', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
-		const marker = new L.Circle([1.5, 1.5], 10);
-		const marker2 = new L.Circle([1.5, 1.5], 10);
+		const marker = new L.Circle([1.5, 1.5], {radius: 10});
+		const marker2 = new L.Circle([1.5, 1.5], {radius: 10});
 
 		group.addLayer(marker);
 		group.addLayer(marker2);
@@ -94,7 +96,7 @@ describe('spiderfy', () => {
 
 	it('Spiderfies at current zoom if all child markers are at the exact same position', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -112,7 +114,7 @@ describe('spiderfy', () => {
 
 		expect(zoom).toBeLessThan(10);
 
-		cluster.fireEvent('click', null, true);
+		cluster.fire('click', null, true);
 
 		vi.advanceTimersByTime(1000);
 
@@ -125,7 +127,7 @@ describe('spiderfy', () => {
 
 	it('Spiderfies at current zoom if all child markers are still within a single cluster at map maxZoom', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.50001]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -145,7 +147,7 @@ describe('spiderfy', () => {
 
 		expect(zoom).toBeLessThan(10);
 
-		cluster.fireEvent('click', null, true);
+		cluster.fire('click', null, true);
 
 		vi.advanceTimersByTime(1000);
 
@@ -158,7 +160,7 @@ describe('spiderfy', () => {
 
 	it('removes all markers and spider legs when group is removed from map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -175,7 +177,7 @@ describe('spiderfy', () => {
 
 	it('adds then removes class "leaflet-cluster-anim" from mapPane on spiderfy', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -195,7 +197,7 @@ describe('spiderfy', () => {
 
 	it('adds then removes class "leaflet-cluster-anim" from mapPane on unspiderfy', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -220,7 +222,7 @@ describe('spiderfy', () => {
 	it('fires unspiderfied event on unspiderfy', () => {
 		const fired = vi.fn();
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -250,7 +252,7 @@ describe('spiderfy', () => {
 
 	it('does not leave class "leaflet-cluster-anim" on mapPane when group is removed while spiderfied', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -276,7 +278,7 @@ describe('spiderfy', () => {
 		const spiderfyShapePositionsFuntion =  vi.fn(() => [{x: 1.6, y: 1.6}, {x: 1.6, y: 1.6}]
 		);
 
-		group = new L.MarkerClusterGroup({spiderfyShapePositions: spiderfyShapePositionsFuntion});
+		group = new MarkerClusterGroup({spiderfyShapePositions: spiderfyShapePositionsFuntion});
 
 		group.addLayer(marker);
 		group.addLayer(marker2);
@@ -291,10 +293,10 @@ describe('spiderfy', () => {
 
 		it('unspiderfies correctly', () => {
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
-			const marker = new L.Circle([1.5, 1.5], 10);
-			const marker2 = new L.Circle([1.5, 1.5], 10);
+			const marker = new L.Circle([1.5, 1.5], {radius: 10});
+			const marker2 = new L.Circle([1.5, 1.5], {radius: 10});
 
 			group.addLayer(marker);
 			group.addLayer(marker2);
@@ -316,7 +318,7 @@ describe('spiderfy', () => {
 		it('Spiderfies 2 Markers', () => {
 			const fired = vi.fn();
 
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 			const marker = new L.Marker([1.5, 1.5]);
 			const marker2 = new L.Marker([1.5, 1.5]);
 
@@ -343,9 +345,9 @@ describe('spiderfy', () => {
 		it('Spiderfies 2 Circles', () => {
 			const fired = vi.fn();
 
-			group = new L.MarkerClusterGroup();
-			const marker = new L.Circle([1.5, 1.5], 10);
-			const marker2 = new L.Circle([1.5, 1.5], 10);
+			group = new MarkerClusterGroup();
+			const marker = new L.Circle([1.5, 1.5], {radius: 10});
+			const marker2 = new L.Circle([1.5, 1.5], {radius: 10});
 
 			group.addLayer(marker);
 			group.addLayer(marker2);

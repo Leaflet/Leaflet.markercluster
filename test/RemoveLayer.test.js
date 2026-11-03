@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('removeLayer', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('removeLayer', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -24,7 +26,7 @@ describe('removeLayer', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -41,7 +43,7 @@ describe('removeLayer', () => {
 	/////////////////////////////
 	it('removes a layer that was added to it', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -58,7 +60,7 @@ describe('removeLayer', () => {
 
 	it('doesnt remove a layer not added to it', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 
@@ -75,7 +77,7 @@ describe('removeLayer', () => {
 
 	it('removes a layer that was added to it (before being on the map) that is shown in a cluster', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -91,7 +93,7 @@ describe('removeLayer', () => {
 
 	it('removes a layer that was added to it (after being on the map) that is shown in a cluster', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -108,7 +110,7 @@ describe('removeLayer', () => {
 
 	it('removes a layer that was added to it (before being on the map) that is individually', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1, 1.5]);
 		const marker2 = new L.Marker([3, 1.5]);
@@ -128,7 +130,7 @@ describe('removeLayer', () => {
 
 	it('removes a layer (with animation) that was added to it (after being on the map) that is shown in a cluster', () => {
 
-		group = new L.MarkerClusterGroup({animateAddingMarkers: true});
+		group = new MarkerClusterGroup({animateAddingMarkers: true});
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -154,7 +156,7 @@ describe('removeLayer', () => {
 
 	it('removes the layers that are in the given LayerGroup', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -162,7 +164,7 @@ describe('removeLayer', () => {
 		map.addLayer(group);
 		group.addLayers([marker, marker2]);
 
-		const layer = L.layerGroup();
+		const layer = new L.LayerGroup();
 		layer.addLayer(marker2);
 		group.removeLayer(layer);
 
@@ -172,14 +174,14 @@ describe('removeLayer', () => {
 
 	it('removes the layers that are in the given LayerGroup when not on the map', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
 		group.addLayers([marker, marker2]);
 
-		const layer = L.layerGroup();
+		const layer = new L.LayerGroup();
 		layer.addLayer(marker2);
 		group.removeLayer(layer);
 
@@ -189,14 +191,14 @@ describe('removeLayer', () => {
 
 	it('passes control to removeLayers when marker is a Layer Group', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker1 = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
 		group.addLayers([marker1, marker2]);
 
-		const layer = L.layerGroup();
+		const layer = new L.LayerGroup();
 		layer.addLayer(marker2);
 		group.removeLayer(new L.LayerGroup([layer]));
 

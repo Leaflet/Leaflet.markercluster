@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('unspiderfy', () => {
 	/////////////////////////////
@@ -14,7 +16,7 @@ describe('unspiderfy', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -24,7 +26,7 @@ describe('unspiderfy', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.removeLayers(group.getLayers());
 			map.removeLayer(group);
 		}
@@ -41,7 +43,7 @@ describe('unspiderfy', () => {
 	/////////////////////////////
 	it('Unspiderfies 2 Markers', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
@@ -64,7 +66,7 @@ describe('unspiderfy', () => {
 
 	it('Unspiderfies 2 CircleMarkers', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.CircleMarker([1.5, 1.5]);
 		const marker2 = new L.CircleMarker([1.5, 1.5]);
@@ -87,10 +89,10 @@ describe('unspiderfy', () => {
 
 	it('Unspiderfies 2 Circles', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
-		const marker = new L.Circle([1.5, 1.5], 10);
-		const marker2 = new L.Circle([1.5, 1.5], 10);
+		const marker = new L.Circle([1.5, 1.5], {radius: 10});
+		const marker2 = new L.Circle([1.5, 1.5], {radius: 10});
 
 		group.addLayer(marker);
 		group.addLayer(marker2);
@@ -111,7 +113,7 @@ describe('unspiderfy', () => {
 	it('fires unspiderfied event on unspiderfy', () => {
 		const fired = vi.fn();
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);

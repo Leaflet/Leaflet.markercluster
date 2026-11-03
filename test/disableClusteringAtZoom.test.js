@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('disableClusteringAtZoom option', () => {
 	/////////////////////////////
@@ -15,7 +17,7 @@ describe('disableClusteringAtZoom option', () => {
 		document.body.appendChild(div);
 
 		// map zoom animation runs on requestAnimationFrame, which Leaflet grabs before fake timers can replace it
-		map = L.map(div, {maxZoom: 18, trackResize: false, zoomAnimation: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false, zoomAnimation: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -41,7 +43,7 @@ describe('disableClusteringAtZoom option', () => {
 
 		const maxZoom = 15;
 
-		group = new L.MarkerClusterGroup({
+		group = new MarkerClusterGroup({
 			disableClusteringAtZoom: maxZoom
 		});
 

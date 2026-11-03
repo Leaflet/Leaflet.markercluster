@@ -1,4 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import * as L from 'leaflet';
+import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 
 describe('adding non point data works', () => {
 	/////////////////////////////
@@ -12,7 +14,7 @@ describe('adding non point data works', () => {
 		div.style.height = '200px';
 		document.body.appendChild(div);
 
-		map = L.map(div, {maxZoom: 18, trackResize: false});
+		map = new L.Map(div, {maxZoom: 18, trackResize: false});
 
 		// Corresponds to zoom level 8 for the above div dimensions.
 		map.fitBounds(new L.LatLngBounds([
@@ -22,7 +24,7 @@ describe('adding non point data works', () => {
 	});
 
 	afterEach(() => {
-		if (group instanceof L.MarkerClusterGroup) {
+		if (group instanceof MarkerClusterGroup) {
 			group.clearLayers();
 			map.removeLayer(group);
 		}
@@ -39,7 +41,7 @@ describe('adding non point data works', () => {
 	/////////////////////////////
 	it('Allows adding a polygon before via addLayer', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -56,7 +58,7 @@ describe('adding non point data works', () => {
 
 	it('Allows adding a polygon before via addLayers([])', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -69,7 +71,7 @@ describe('adding non point data works', () => {
 
 	it('Removes polygons from map when removed', () => {
 
-		group = new L.MarkerClusterGroup();
+		group = new MarkerClusterGroup();
 
 		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -83,7 +85,7 @@ describe('adding non point data works', () => {
 	describe('hasLayer', () => {
 
 		it('returns false when not added', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -99,7 +101,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('returns true before adding to map', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -109,7 +111,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('returns true after adding to map after adding polygon', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -120,7 +122,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('returns true after adding to map before adding polygon', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -135,7 +137,7 @@ describe('adding non point data works', () => {
 	describe('removeLayer', () => {
 
 		it('removes before adding to map', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -147,7 +149,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('removes before adding to map', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -159,7 +161,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('removes after adding to map after adding polygon', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -172,7 +174,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('removes after adding to map before adding polygon', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -189,7 +191,7 @@ describe('adding non point data works', () => {
 	describe('removeLayers', () => {
 
 		it('removes before adding to map', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -201,7 +203,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('removes before adding to map', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -213,7 +215,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('removes after adding to map after adding polygon', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
@@ -226,7 +228,7 @@ describe('adding non point data works', () => {
 		});
 
 		it('removes after adding to map before adding polygon', () => {
-			group = new L.MarkerClusterGroup();
+			group = new MarkerClusterGroup();
 
 			const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
 
