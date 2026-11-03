@@ -163,4 +163,35 @@ describe('addLayers adding multiple markers', () => {
 
 		vi.useRealTimers();
 	});
+
+	it('finishes chunked loading when the group is removed from the map and added back', () => {
+		vi.useFakeTimers();
+		// every call takes 1 ms, so that each chunk stops after the first 200 markers
+		let time = 0;
+		vi.spyOn(performance, 'now').mockImplementation(() => time++);
+
+		group = new MarkerClusterGroup({chunkedLoading: true, chunkInterval: 0});
+		const markers = [];
+		for (let i = 0; i < 1000; i++) {
+			markers.push(new L.Marker([1 + i / 1000, 1 + (i % 10) / 10]));
+		}
+
+		map.addLayer(group);
+		group.addLayers(markers);
+
+		expect(group.getLayers().length).toBe(200);
+
+		map.removeLayer(group);
+		vi.runAllTimers();
+		vi.restoreAllMocks();
+
+		expect(group.getLayers().length).toBe(1000);
+
+		map.addLayer(group);
+
+		expect(group.getLayers().length).toBe(1000);
+		expect(group.getVisibleParent(markers[999])).not.toBe(null);
+
+		vi.useRealTimers();
+	});
 });

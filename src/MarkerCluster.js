@@ -80,19 +80,15 @@ export class MarkerCluster extends L.Marker {
 		//calculate how far we need to zoom down to see all of the markers
 		while (childClusters.length > 0 && boundsZoom > zoom) {
 			zoom++;
-			let newClusters = [];
-			for (let i = 0; i < childClusters.length; i++) {
-				newClusters = newClusters.concat(childClusters[i]._childClusters);
-			}
-			childClusters = newClusters;
+			childClusters = childClusters.flatMap(c => c._childClusters);
 		}
 
 		if (boundsZoom > zoom) {
-			this._group._map.setView(this.getLatLng(), zoom);
+			map.setView(this.getLatLng(), zoom);
 		} else if (boundsZoom <= mapZoom) { //If fitBounds wouldn't zoom us down, zoom us down instead
-			this._group._map.setView(this.getLatLng(), mapZoom + 1);
+			map.setView(this.getLatLng(), mapZoom + 1);
 		} else {
-			this._group._map.fitBounds(this._bounds, fitBoundsOptions);
+			map.fitBounds(this._bounds, fitBoundsOptions);
 		}
 	}
 

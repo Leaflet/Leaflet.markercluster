@@ -114,4 +114,35 @@ describe('moving markers', () => {
 
 		expect(group.getLayers().length).toBe(10);
 	});
+
+	it('does not add back a marker moved after removeLayers', () => {
+		group = new MarkerClusterGroup();
+		const marker = new L.Marker([1.5, 1.5]);
+
+		map.addLayer(group);
+		group.addLayers([marker]);
+		group.removeLayers([marker]);
+		marker.setLatLng([1.6, 1.6]);
+
+		expect(group.hasLayer(marker)).toBe(false);
+	});
+
+	it('does not add back a marker removed while off the map and moved', () => {
+		group = new MarkerClusterGroup();
+		const marker = new L.Marker([1.5, 1.5]);
+
+		map.addLayer(group);
+		group.addLayer(marker);
+		map.removeLayer(group);
+		group.removeLayer(marker);
+		marker.setLatLng([1.6, 1.6]);
+
+		expect(group.hasLayer(marker)).toBe(false);
+
+		map.addLayer(group);
+		marker.setLatLng([1.7, 1.7]);
+
+		expect(group.hasLayer(marker)).toBe(false);
+		expect(group.getLayers()).toEqual([]);
+	});
 });

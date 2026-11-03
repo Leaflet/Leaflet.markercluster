@@ -55,4 +55,25 @@ describe('clearLayer', () => {
 		expect(group.hasLayer(polygon)).toBe(false);
 		expect(group.hasLayer(marker)).toBe(false);
 	});
+
+	it('clears markers clustered before the group was removed from the map', () => {
+		const group = new MarkerClusterGroup(),
+			marker1 = new L.Marker([1.5, 1.5]),
+			marker2 = new L.Marker([1.5, 1.5]);
+
+		map.addLayer(group);
+		group.addLayers([marker1, marker2]);
+		map.removeLayer(group);
+		group.removeLayer(marker1);
+		group.clearLayers();
+
+		expect(group.getLayers()).toEqual([]);
+		expect(group.hasLayer(marker1)).toBe(false);
+		expect(group.hasLayer(marker2)).toBe(false);
+		expect(group.getBounds().isValid()).toBe(false);
+
+		map.addLayer(group);
+
+		expect(group.getLayers()).toEqual([]);
+	});
 });

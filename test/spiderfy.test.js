@@ -190,14 +190,14 @@ describe('spiderfy', () => {
 		const leg = marker._spiderLeg.getElement();
 		expect(leg.classList.contains('leaflet-cluster-spider-leg')).toBe(true);
 		expect(Number(leg.style.strokeDasharray)).toBeGreaterThan(0);
-		expect(leg.style.strokeDashoffset).toBe('0');
+		expect(parseFloat(leg.style.strokeDashoffset)).toBe(0);
 		expect(marker._spiderLeg.options.opacity).toBe(0.5);
 		expect(leg.getAnimations().map(a => a.transitionProperty)).toContain('stroke-dashoffset');
 
 		vi.advanceTimersByTime(1000);
 		marker.__parent.unspiderfy();
 
-		expect(Number(leg.style.strokeDashoffset)).toBeGreaterThan(0);
+		expect(parseFloat(leg.style.strokeDashoffset)).toBeGreaterThan(0);
 		expect(marker._spiderLeg.options.opacity).toBe(0);
 	});
 

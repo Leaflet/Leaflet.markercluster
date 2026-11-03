@@ -119,4 +119,14 @@ describe('addLayer adding a single marker', () => {
 
 		expect(map._panes.markerPane.childNodes.length).toBe(1);
 	});
+
+	it('adds a marker added twice before the group is on the map once', () => {
+		group = new MarkerClusterGroup();
+		const marker = new L.Marker([1.5, 1.5]);
+
+		group.addLayer(marker);
+		group.addLayer(marker);
+
+		expect(group.getLayers()).toEqual([marker]);
+	});
 });
