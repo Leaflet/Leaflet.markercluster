@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster global script</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+	<link rel="stylesheet" href="../dist/MarkerCluster.css">
+	<link rel="stylesheet" href="../dist/MarkerCluster.Default.css">
+	<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script src="../dist/leaflet.markercluster-global.js"></script>
+	<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+
+<p>
+	<a href="https://github.com/Leaflet/Leaflet.markercluster">Leaflet.markercluster</a> as a plain script next to Leaflet 1.9, with no modules or build step. With Leaflet 2.0, load
+	<code>leaflet-global.js</code> and use <code>new L.MarkerClusterGroup()</code> instead.
+	<a href="index.html">All demos</a>.
+</p>
+
+<div id="map"></div>
+
+<script>
+	/* global L */
+	const map = L.map('map').setView([-37.82, 175.24], 13);
+
+	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, points &copy; 2012 LINZ'
+	}).addTo(map);
+
+	fetch('realworld.388.json')
+		.then(res => res.json())
+		.then((points) => {
+			const markers = L.markerClusterGroup();
+			markers.addLayers(points.map(([lat, lng, title]) => L.marker([lat, lng], {title}).bindPopup(title)));
+			map.addLayer(markers);
+		});
+</script>
+</body>
+</html>

@@ -1,60 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Leaflet debug page</title>
-
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js" integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA==" crossorigin=""></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="screen.css" />
-
-	<link rel="stylesheet" href="../dist/MarkerCluster.css" />
-	<link rel="stylesheet" href="../dist/MarkerCluster.Default.css" />
-	<script src="../dist/leaflet.markercluster-src.js"></script>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster: singleMarkerMode</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.Default.css">
+	<script type="importmap">
+		{"imports": {"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.js"}}
+	</script>
+	<link rel="stylesheet" href="demo.css">
 </head>
 <body>
 
-	<div id="map"></div>
-	<span>Click a cluster to zoom to its bounds</span>
+<p>
+	With <code>singleMarkerMode</code>, single markers get a cluster icon too. Clicking a cluster zooms to its
+	bounds with <code>zoomToBounds</code>.
+	<a href="index.html">All demos</a>.
+</p>
 
-	<script type="text/javascript">
+<div id="map"></div>
 
-		var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-			}),
-			latlng = L.latLng(50.5, 30.51);
+<script type="module">
+	import {LeafletMap, TileLayer, Marker} from 'leaflet';
+	import {MarkerClusterGroup} from '../src/index.js';
 
-		var map = L.map('map', {center: latlng, zoom: 15, layers: [tiles]});
+	const map = new LeafletMap('map').setView([50.5, 30.51], 15);
 
-		var markers = L.markerClusterGroup({ singleMarkerMode: true});
+	new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
 
-		function populate() {
-			for (var i = 0; i < 100; i++) {
-				var m = L.marker(getRandomLatLng(map));
-				markers.addLayer(m);
-			}
-			return false;
-		}
-		function getRandomLatLng(map) {
-			var bounds = map.getBounds(),
-				southWest = bounds.getSouthWest(),
-				northEast = bounds.getNorthEast(),
-				lngSpan = northEast.lng - southWest.lng,
-				latSpan = northEast.lat - southWest.lat;
+	const markers = new MarkerClusterGroup({singleMarkerMode: true});
 
-			return L.latLng(
-					southWest.lat + latSpan * Math.random(),
-					southWest.lng + lngSpan * Math.random());
-		}
+	for (let i = 0; i < 100; i++) markers.addLayer(new Marker(randomLatLng()));
+	map.addLayer(markers);
 
-		markers.on('clusterclick', function (a) {
-			a.layer.zoomToBounds();
-		});
+	markers.on('clusterclick', e => e.layer.zoomToBounds());
 
-		populate();
-		map.addLayer(markers);
-
-	</script>
+	// random positions within the current view
+	function randomLatLng() {
+		const bounds = map.getBounds();
+		const sw = bounds.getSouthWest();
+		const ne = bounds.getNorthEast();
+		return [sw.lat + (ne.lat - sw.lat) * Math.random(), sw.lng + (ne.lng - sw.lng) * Math.random()];
+	}
+</script>
 </body>
 </html>

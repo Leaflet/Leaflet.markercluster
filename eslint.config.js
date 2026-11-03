@@ -7,7 +7,6 @@ import baselineJs from 'eslint-plugin-baseline-js';
 export default [
 	...config,
 	includeIgnoreFile(fileURLToPath(new URL('.gitignore', import.meta.url))),
-	{ignores: ['example/realworld.*.js']},
 	{
 		rules: {
 			'@stylistic/indent': [2, 'tab', {flatTernaryExpressions: true, SwitchCase: 0}]

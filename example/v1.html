@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster with Leaflet 1.9</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.Default.css">
+	<script type="importmap">
+		{"imports": {"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet-src.esm.js"}}
+	</script>
+	<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+
+<p>
+	<a href="https://github.com/Leaflet/Leaflet.markercluster">Leaflet.markercluster</a> on Leaflet 1.9, loaded as an ES module (1.9 has no ESM package entry, so the import map points to
+	its ESM build).
+	<a href="index.html">All demos</a>.
+</p>
+
+<div id="map"></div>
+
+<script type="module">
+	import {Map, TileLayer, Marker} from 'leaflet';
+	import {MarkerClusterGroup} from '../src/index.js';
+
+	const map = new Map('map').setView([-37.82, 175.24], 13);
+
+	new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, points &copy; 2012 LINZ'
+	}).addTo(map);
+
+	const points = await (await fetch('realworld.388.json')).json();
+	const markers = new MarkerClusterGroup();
+
+	markers.addLayers(points.map(([lat, lng, title]) => new Marker([lat, lng], {title}).bindPopup(title)));
+	map.addLayer(markers);
+</script>
+</body>
+</html>

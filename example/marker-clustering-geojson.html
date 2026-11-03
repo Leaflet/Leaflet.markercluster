@@ -1,70 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Leaflet debug page</title>
-
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js" integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA==" crossorigin=""></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="screen.css" />
-
-	<link rel="stylesheet" href="../dist/MarkerCluster.css" />
-	<link rel="stylesheet" href="../dist/MarkerCluster.Default.css" />
-	<script src="../dist/leaflet.markercluster-src.js"></script>
-	<script type="text/javascript" src="geojson-sample.js"></script>
-
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster: GeoJSON and mixed layers</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.Default.css">
+	<script type="importmap">
+		{"imports": {"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.js"}}
+	</script>
+	<link rel="stylesheet" href="demo.css">
 </head>
 <body>
 
-	<div id="map"></div>
-	<span>Mouse over a cluster to see the bounds of its children and click a cluster to zoom to those bounds</span>
-	<script type="text/javascript">
+<p>
+	A GeoJSON layer with points, lines and polygons, plus a few separate markers and a polyline, all in one group.
+	Only markers cluster; the other layers are added as they are.
+	<a href="index.html">All demos</a>.
+</p>
 
-		var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-			}),
-			latlng = L.latLng(0.78, 102.37);
+<div id="map"></div>
 
-		var map = L.map('map', {center: latlng, zoom: 7, layers: [tiles]});
+<script type="module">
+	import {LeafletMap, TileLayer, Marker, Polyline, GeoJSON} from 'leaflet';
+	import {MarkerClusterGroup} from '../src/index.js';
 
-		
-		var geojson = L.geoJson(geojsonSample, {
+	const map = new LeafletMap('map').setView([0.78, 102.37], 7);
 
-			style: function (feature) {
-				return {color: feature.properties.color};
-			},
+	new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
 
-			onEachFeature: function (feature, layer) {
-				var popupText = 'geometry type: ' + feature.geometry.type;
+	const geojsonSample = {
+		type: 'FeatureCollection',
+		features: [
+			{type: 'Feature', geometry: {type: 'Point', coordinates: [102.0, 0.5]}, properties: {color: 'blue'}},
+			{type: 'Feature', geometry: {type: 'LineString', coordinates: [[102, 0], [103, 1], [104, 0], [105, 1]]}, properties: {color: 'red'}},
+			{type: 'Feature', geometry: {type: 'Polygon', coordinates: [[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]]]}, properties: {color: 'green'}},
+			{type: 'Feature', geometry: {type: 'MultiPolygon', coordinates: [
+				[[[100, 1.5], [100.5, 1.5], [100.5, 2], [100, 2], [100, 1.5]]],
+				[[[100.5, 2], [100.5, 2.5], [101, 2.5], [101, 2], [100.5, 2]]]
+			]}, properties: {color: 'purple'}}
+		]
+	};
 
-				if (feature.properties.color) {
-					popupText += '<br/>color: ' + feature.properties.color;
-				}
+	const geojson = new GeoJSON(geojsonSample, {
+		style: feature => ({color: feature.properties.color}),
+		onEachFeature(feature, layer) {
+			layer.bindPopup(`geometry type: ${feature.geometry.type}<br>color: ${feature.properties.color}`);
+		}
+	});
+	geojson.addLayer(new Marker([2.745531, 105.194092]));
 
-				layer.bindPopup(popupText);
-			}
-		});
+	// a face
+	const eye1 = new Marker([-0.725078, 101.821289]);
+	const eye2 = new Marker([-0.736064, 103.227539]);
+	const nose = new Marker([-1.329226, 102.546387]);
+	const mouth = new Polyline([
+		[-1.384143, 101.733398], [-1.603794, 101.964111], [-1.680667, 102.249756],
+		[-1.735574, 102.678223], [-1.592812, 103.007813], [-1.329226, 103.31543]
+	]);
 
-		geojson.addLayer(new L.Marker(new L.LatLng(2.745530718801952, 105.194091796875)));
-
-		var eye1 = new L.Marker(new L.LatLng(-0.7250783020332547, 101.8212890625));
-		var eye2 = new L.Marker(new L.LatLng(-0.7360637370492077, 103.2275390625));
-		var nose = new L.Marker(new L.LatLng(-1.3292264529974207, 102.5463867187));
-		var mouth = new L.Polyline([
-			new L.LatLng(-1.3841426927920029, 101.7333984375),
-			new L.LatLng(-1.6037944300589726, 101.964111328125),
-			new L.LatLng(-1.6806671337507222, 102.249755859375),
-			new L.LatLng(-1.7355743631421197, 102.67822265625),
-			new L.LatLng(-1.5928123762763, 103.0078125),
-			new L.LatLng(-1.3292264529974207, 103.3154296875)
-		]);
-		
-		var markers = L.markerClusterGroup();
-		markers.addLayer(geojson).addLayers([eye1,eye2,nose,mouth]);
-		
-		map.addLayer(markers);
-
-	</script>
+	new MarkerClusterGroup().addLayer(geojson).addLayers([eye1, eye2, nose, mouth]).addTo(map);
+</script>
 </body>
 </html>

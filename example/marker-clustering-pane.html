@@ -1,104 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Leaflet debug page</title>
-
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js" integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA==" crossorigin=""></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="screen.css" />
-	
-	<link rel="stylesheet" href="../dist/MarkerCluster.css" />
-	<script src="../dist/leaflet.markercluster-src.js"></script>
-
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster: clusterPane</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.Default.css">
+	<script type="importmap">
+		{"imports": {"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.js"}}
+	</script>
+	<link rel="stylesheet" href="demo.css">
 	<style>
-		.myclusterA {
+		.myclusterA, .myclusterB {
 			width: 40px;
 			height: 40px;
-			background-color: greenyellow;
 			text-align: center;
+			line-height: 40px;
 			font-size: 24px;
 		}
-		.myclusterB {
-			width: 40px;
-			height: 40px;
-			background-color: red;
-			text-align: center;
-			font-size: 24px;
-		}
-
+		.myclusterA { background-color: greenyellow; }
+		.myclusterB { background-color: red; }
 	</style>
 </head>
 <body>
 
-	<div id="map"></div>
+<p>
+	Two groups, one in the default marker pane and one with <code>clusterPane</code> set to a custom pane
+	above it, so its clusters always stay on top.
+	<a href="index.html">All demos</a>.
+</p>
 
-	<script type="text/javascript">
+<div id="map"></div>
 
-		var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-			}),
-			latlng = L.latLng(50.5, 30.51);
+<script type="module">
+	import {LeafletMap, TileLayer, Marker, DivIcon} from 'leaflet';
+	import {MarkerClusterGroup} from '../src/index.js';
 
-		var map = L.map('map', {center: latlng, zoom: 15, layers: [tiles]});
+	const map = new LeafletMap('map').setView([50.5, 30.51], 15);
 
-		//Define a pane above the default markerPane
-        map.createPane('paneB').style.zIndex = 610;
+	new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
 
-		//Create two markerClusterGroups, one in the default markerPane, one in our custom pane
-		var markersA = createMarkerClusterGroup('myclusterA');
-		var markersB = createMarkerClusterGroup('myclusterB', 'paneB');
+	// a pane above the default marker pane
+	map.createPane('paneB').style.zIndex = 610;
 
-		function createMarkerClusterGroup(className, pane) {
-			var options = {
-				maxClusterRadius: 120,
-				iconCreateFunction: function (cluster) {
-					var markers = cluster.getAllChildMarkers();
-					var n = 0;
-					for (var i = 0; i < markers.length; i++) {
-						n += markers[i].number;
-					}
-					return L.divIcon({ html: n, className: className, iconSize: L.point(40, 40) });
-				},
-				//Disable all of the defaults & specify the pane:
-				spiderfyOnMaxZoom: false,
-				showCoverageOnHover: false,
-				zoomToBoundsOnClick: false
-			};
-			if (pane) {
-				options.clusterPane = pane;
-			}
-		    var mcg = L.markerClusterGroup(options);
-		    return(mcg);
-        }
-
-		function populate(markers) {
-			for (var i = 0; i < 100; i++) {
-				var m = L.marker(getRandomLatLng(map), { title: i });
-				m.number = i;
-				markers.addLayer(m);
-			}
-			return false;
+	function createGroup(className, clusterPane) {
+		const markers = new MarkerClusterGroup({
+			maxClusterRadius: 120,
+			iconCreateFunction(cluster) {
+				const sum = cluster.getAllChildMarkers().reduce((n, marker) => n + marker.number, 0);
+				return new DivIcon({html: sum, className, iconSize: [40, 40]});
+			},
+			spiderfyOnMaxZoom: false,
+			showCoverageOnHover: false,
+			zoomToBoundsOnClick: false,
+			...(clusterPane && {clusterPane})
+		});
+		for (let i = 0; i < 100; i++) {
+			const marker = new Marker(randomLatLng(), {title: i});
+			marker.number = i;
+			markers.addLayer(marker);
 		}
+		return markers.addTo(map);
+	}
 
-		function getRandomLatLng(map) {
-			var bounds = map.getBounds(),
-				southWest = bounds.getSouthWest(),
-				northEast = bounds.getNorthEast(),
-				lngSpan = northEast.lng - southWest.lng,
-				latSpan = northEast.lat - southWest.lat;
+	createGroup('myclusterA');
+	createGroup('myclusterB', 'paneB');
 
-			return L.latLng(
-					southWest.lat + latSpan * Math.random(),
-					southWest.lng + lngSpan * Math.random());
-		}
-
-        populate(markersA);
-        populate(markersB);
-		map.addLayer(markersA);
-		map.addLayer(markersB);
-
-	</script>
+	// random positions within the current view
+	function randomLatLng() {
+		const bounds = map.getBounds();
+		const sw = bounds.getSouthWest();
+		const ne = bounds.getNorthEast();
+		return [sw.lat + (ne.lat - sw.lat) * Math.random(), sw.lng + (ne.lng - sw.lng) * Math.random()];
+	}
+</script>
 </body>
 </html>

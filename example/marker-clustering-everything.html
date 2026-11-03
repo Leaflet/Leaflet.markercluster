@@ -1,80 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Leaflet debug page</title>
-
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js" integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA==" crossorigin=""></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="screen.css" />
-
-	<link rel="stylesheet" href="../dist/MarkerCluster.css" />
-	<link rel="stylesheet" href="../dist/MarkerCluster.Default.css" />
-	<script src="../dist/leaflet.markercluster-src.js"></script>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster: adding, removing and moving markers</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.Default.css">
+	<script type="importmap">
+		{"imports": {"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.js"}}
+	</script>
+	<link rel="stylesheet" href="demo.css">
 </head>
 <body>
 
-	<div id="map"></div>
-	<button id="populate">Populate 1 marker</button>
-	<button id="remove">Remove 1 marker</button>
-	<span>Mouse over a cluster to see the bounds of its children and click a cluster to zoom to those bounds</span>
-	<script type="text/javascript">
+<p>
+	Markers added and removed one by one with <code>animateAddingMarkers</code>:
+	<button id="add">Add a marker</button> <button id="remove">Remove a marker</button>
+	<button id="move">Move a random marker</button>. Markers are draggable, and the clusters follow.
+	<a href="index.html">All demos</a>.
+</p>
 
-		var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-			}),
-			latlng = L.latLng(50.5, 30.51);
+<div id="map"></div>
 
-		var map = L.map('map', {center: latlng, zoom: 15, layers: [tiles]});
+<script type="module">
+	import {LeafletMap, TileLayer, Marker} from 'leaflet';
+	import {MarkerClusterGroup} from '../src/index.js';
 
-		var markers = L.markerClusterGroup({ animateAddingMarkers : true });
-		var markersList = [];
+	const map = new LeafletMap('map').setView([50.5, 30.51], 15);
 
-		function populate() {
-			for (var i = 0; i < 100; i++) {
-				var m = L.marker(getRandomLatLng(map));
-				markersList.push(m);
-				markers.addLayer(m);
-			}
-			return false;
-		}
-		function getRandomLatLng(map) {
-			var bounds = map.getBounds(),
-				southWest = bounds.getSouthWest(),
-				northEast = bounds.getNorthEast(),
-				lngSpan = northEast.lng - southWest.lng,
-				latSpan = northEast.lat - southWest.lat;
+	new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
 
-			return L.latLng(
-					southWest.lat + latSpan * Math.random(),
-					southWest.lng + lngSpan * Math.random());
-		}
+	const markers = new MarkerClusterGroup({animateAddingMarkers: true});
+	const markerList = [];
 
-		populate();
-		map.addLayer(markers);
+	for (let i = 0; i < 100; i++) {
+		const marker = new Marker(randomLatLng(), {draggable: true});
+		markerList.push(marker);
+		markers.addLayer(marker);
+	}
+	map.addLayer(markers);
 
-		for (var i = 0; i < 100; i++) {
-			markers.addLayer(markersList[i]);
-		}
+	document.getElementById('add').onclick = () => {
+		const marker = new Marker(map.getCenter(), {draggable: true});
+		markerList.push(marker);
+		markers.addLayer(marker);
+	};
+	document.getElementById('remove').onclick = () => {
+		if (markerList.length) markers.removeLayer(markerList.pop());
+	};
+	document.getElementById('move').onclick = () => {
+		markerList[Math.floor(Math.random() * markerList.length)]?.setLatLng(map.getCenter());
+	};
 
-		//Ugly add/remove code
-		L.DomUtil.get('populate').onclick = function () {
-			var bounds = map.getBounds(),
-			southWest = bounds.getSouthWest(),
-			northEast = bounds.getNorthEast(),
-			lngSpan = northEast.lng - southWest.lng,
-			latSpan = northEast.lat - southWest.lat;
-			var m = L.marker([
-					southWest.lat + latSpan * 0.5,
-					southWest.lng + lngSpan * 0.5]);
-			markersList.push(m);
-			markers.addLayer(m);
-		};
-		L.DomUtil.get('remove').onclick = function () {
-			markers.removeLayer(markersList.pop());
-		};
-
-	</script>
+	// random positions within the current view
+	function randomLatLng() {
+		const bounds = map.getBounds();
+		const sw = bounds.getSouthWest();
+		const ne = bounds.getNorthEast();
+		return [sw.lat + (ne.lat - sw.lat) * Math.random(), sw.lng + (ne.lng - sw.lng) * Math.random()];
+	}
+</script>
 </body>
 </html>

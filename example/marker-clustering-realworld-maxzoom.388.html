@@ -1,45 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Leaflet debug page</title>
-
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js" integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA==" crossorigin=""></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="screen.css" />
-
-	<link rel="stylesheet" href="../dist/MarkerCluster.css" />
-	<link rel="stylesheet" href="../dist/MarkerCluster.Default.css" />
-	<script src="../dist/leaflet.markercluster-src.js"></script>
-	<script src="realworld.388.js"></script>
-
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster: disableClusteringAtZoom</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.Default.css">
+	<script type="importmap">
+		{"imports": {"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.js"}}
+	</script>
+	<link rel="stylesheet" href="demo.css">
 </head>
 <body>
 
-	<div id="map"></div>
-	<span>Markers will show on the bottom 2 zoom levels even though the markers would normally cluster.</span>
-	<script type="text/javascript">
+<p>
+	The 388 markers again with <code>disableClusteringAtZoom: 17</code>: on the bottom two zoom levels,
+	markers show unclustered even where they would normally cluster.
+	<a href="index.html">All demos</a>.
+</p>
 
-		var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ'
-			}),
-			latlng = L.latLng(-37.82, 175.24);
+<div id="map"></div>
 
-		var map = L.map('map', {center: latlng, zoom: 13, layers: [tiles]});
+<script type="module">
+	import {LeafletMap, TileLayer, Marker} from 'leaflet';
+	import {MarkerClusterGroup} from '../src/index.js';
 
-		var markers = L.markerClusterGroup({ disableClusteringAtZoom: 17 });
-		
-		for (var i = 0; i < addressPoints.length; i++) {
-			var a = addressPoints[i];
-			var title = a[2];
-			var marker = L.marker(L.latLng(a[0], a[1]), { title: title });
-			marker.bindPopup(title);
-			markers.addLayer(marker);
-		}
+	const map = new LeafletMap('map').setView([-37.82, 175.24], 13);
 
-		map.addLayer(markers);
+	new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, points &copy; 2012 LINZ'
+	}).addTo(map);
 
-	</script>
+	const points = await (await fetch('realworld.388.json')).json();
+	const markers = new MarkerClusterGroup({disableClusteringAtZoom: 17});
+
+	markers.addLayers(points.map(([lat, lng, title]) => new Marker([lat, lng], {title}).bindPopup(title)));
+	map.addLayer(markers);
+</script>
 </body>
 </html>

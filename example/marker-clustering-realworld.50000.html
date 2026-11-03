@@ -1,78 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Leaflet debug page</title>
-
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js" integrity="sha512-WXoSHqw/t26DszhdMhOXOkI7qCiv5QWXhH9R7CgvgZMHz1ImlkVQ3uNsiQKu5wwbbxtPzFXd1hK4tzno2VqhpA==" crossorigin=""></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="screen.css" />
-
-	<link rel="stylesheet" href="../dist/MarkerCluster.css" />
-	<link rel="stylesheet" href="../dist/MarkerCluster.Default.css" />
-	<script src="../dist/leaflet.markercluster-src.js"></script>
-	
-	<script src="realworld.50000.1.js"></script>
-	<script src="realworld.50000.2.js"></script>
-
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaflet.markercluster: 50,000 markers</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.css">
+	<link rel="stylesheet" href="../src/MarkerCluster.Default.css">
+	<script type="importmap">
+		{"imports": {"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.1/dist/leaflet.js"}}
+	</script>
+	<link rel="stylesheet" href="demo.css">
+	<style>
+		#progress {
+			display: none;
+			position: absolute;
+			z-index: 1000;
+			left: calc(50% - 100px);
+			top: calc(50% - 10px);
+			width: 200px;
+			height: 20px;
+			background: rgb(255 255 255 / 0.7);
+			border-radius: 4px;
+			padding: 2px;
+		}
+		#progress-bar {
+			width: 0;
+			height: 100%;
+			background: #76a6fc;
+			border-radius: 4px;
+		}
+	</style>
 </head>
 <body>
 
-    <div id="progress"><div id="progress-bar"></div></div>
-	<div id="map"></div>
-	<span>Mouse over a cluster to see the bounds of its children and click a cluster to zoom to those bounds</span>
-	<script type="text/javascript">
-		var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ'
-			}),
-			latlng = L.latLng(-37.79, 175.27);
+<p>
+	50,000 address points clustered by Leaflet.markercluster, added in chunks with a progress bar that shows
+	up if loading takes longer than a second.
+	<a href="index.html">All demos</a>.
+</p>
 
-		var map = L.map('map', { center: latlng, zoom: 13, layers: [tiles] });
+<div id="map"></div>
 
-		var progress = document.getElementById('progress');
-		var progressBar = document.getElementById('progress-bar');
+<script type="module">
+	import {LeafletMap, TileLayer, Marker} from 'leaflet';
+	import {MarkerClusterGroup} from '../src/index.js';
 
-		function updateProgressBar(processed, total, elapsed, layersArray) {
-			if (elapsed > 1000) {
-				// if it takes more than a second to load, display the progress bar:
-				progress.style.display = 'block';
-				progressBar.style.width = Math.round(processed/total*100) + '%';
-			}
+	const map = new LeafletMap('map').setView([-37.79, 175.27], 13);
 
-			if (processed === total) {
-				// all markers processed - hide the progress bar:
-				progress.style.display = 'none';
-			}
+	new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, points &copy; 2012 LINZ'
+	}).addTo(map);
+
+	const progress = document.createElement('div');
+	progress.id = 'progress';
+	progress.innerHTML = '<div id="progress-bar"></div>';
+	map.getContainer().append(progress);
+
+	function updateProgress(processed, total, elapsed) {
+		// only show the progress bar if loading takes more than a second
+		if (elapsed > 1000) {
+			progress.style.display = 'block';
+			progress.firstChild.style.width = `${Math.round(processed / total * 100)}%`;
 		}
+		if (processed === total) progress.style.display = 'none';
+	}
 
-		var markers = L.markerClusterGroup({ chunkedLoading: true, chunkProgress: updateProgressBar });
+	const points = await (await fetch('realworld.50000.json')).json();
+	const markers = new MarkerClusterGroup({chunkedLoading: true, chunkProgress: updateProgress});
 
-		var markerList = [];
-
-		//console.log('start creating markers: ' + window.performance.now());
-
-		for (var i = 0; i < addressPoints.length; i++) {
-			var a = addressPoints[i];
-			var title = a[2];
-			var marker = L.marker(L.latLng(a[0], a[1]), { title: title });
-			marker.bindPopup(title);
-			markerList.push(marker);
-		}
-		for (var i = 0; i < addressPoints2.length; i++) {
-			var a = addressPoints2[i];
-			var title = a[2];
-			var marker = L.marker(L.latLng(a[0], a[1]), { title: title });
-			marker.bindPopup(title);
-			markerList.push(marker);
-		}
-
-		//console.log('start clustering: ' + window.performance.now());
-
-		markers.addLayers(markerList);
-		map.addLayer(markers);
-
-		//console.log('end clustering: ' + window.performance.now());
-	</script>
+	markers.addLayers(points.map(([lat, lng, title]) => new Marker([lat, lng], {title}).bindPopup(title)));
+	map.addLayer(markers);
+</script>
 </body>
 </html>
