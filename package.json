@@ -37,7 +37,7 @@
 	},
 	"scripts": {
 		"lint": "eslint",
-		"test": "npm run lint"
+		"test": "vitest run --project 'leaflet 1.9'"
 	},
 	"license": "MIT",
 	"devDependencies": {

@@ -7,11 +7,16 @@ import baselineJs from 'eslint-plugin-baseline-js';
 export default [
 	...config,
 	includeIgnoreFile(fileURLToPath(new URL('.gitignore', import.meta.url))),
-	{ignores: ['example/realworld.*.js', 'spec/sinon.js', 'spec/expect.js']},
+	{ignores: ['example/realworld.*.js']},
 	{
 		rules: {
 			'@stylistic/indent': [2, 'tab', {flatTernaryExpressions: true, SwitchCase: 0}]
 		}
+	},
+	{
+		// the plugin still sets up a global L, which test/setup.js provides
+		files: ['test/**/*.js'],
+		languageOptions: {globals: {L: 'writable'}}
 	},
 	{
 		files: ['example/*.html'],
