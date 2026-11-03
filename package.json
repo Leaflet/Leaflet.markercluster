@@ -37,7 +37,9 @@
 	},
 	"scripts": {
 		"lint": "eslint",
-		"test": "vitest run"
+		"test": "vitest run",
+		"build": "rolldown --config build/rolldown-config.js",
+		"prepublishOnly": "npm run build"
 	},
 	"license": "MIT",
 	"devDependencies": {
