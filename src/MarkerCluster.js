@@ -15,6 +15,12 @@ export function latLngToNewLayerPoint(map, latlng, zoom, center) {
 	return map.project(latlng, zoom).subtract(pixelOrigin);
 }
 
+// the leg's path element for the line drawing animation, or null with the Canvas renderer
+function svgPath(leg) {
+	const el = leg.getElement();
+	return el instanceof SVGElement ? el : null;
+}
+
 export class MarkerCluster extends L.Marker {
 
 	constructor(group, zoom, a, b) {
@@ -82,9 +88,9 @@ export class MarkerCluster extends L.Marker {
 		}
 
 		if (boundsZoom > zoom) {
-			this._group._map.setView(this._latlng, zoom);
+			this._group._map.setView(this.getLatLng(), zoom);
 		} else if (boundsZoom <= mapZoom) { //If fitBounds wouldn't zoom us down, zoom us down instead
-			this._group._map.setView(this._latlng, mapZoom + 1);
+			this._group._map.setView(this.getLatLng(), mapZoom + 1);
 		} else {
 			this._group._map.fitBounds(this._bounds, fitBoundsOptions);
 		}
@@ -109,7 +115,7 @@ export class MarkerCluster extends L.Marker {
 
 	_updateIcon() {
 		this._iconNeedsUpdate = true;
-		if (this._icon) {
+		if (this.getElement()) {
 			this.setIcon(this);
 		}
 	}
@@ -160,26 +166,7 @@ export class MarkerCluster extends L.Marker {
 	_setClusterCenter(child) {
 		if (!this._cLatLng) {
 			// when clustering, take position of the first point as the cluster center
-			this._cLatLng = child._cLatLng || child._latlng;
-		}
-	}
-
-	/**
-	 * Assigns impossible bounding values so that the next extend entirely determines the new bounds.
-	 * This method avoids having to trash the previous L.LatLngBounds object and to create a new one, which is much slower for this class.
-	 * As long as the bounds are not extended, most other methods would probably fail, as they would with bounds initialized but not extended.
-	 * @private
-	 */
-	_resetBounds() {
-		const bounds = this._bounds;
-
-		if (bounds._southWest) {
-			bounds._southWest.lat = Infinity;
-			bounds._southWest.lng = Infinity;
-		}
-		if (bounds._northEast) {
-			bounds._northEast.lat = -Infinity;
-			bounds._northEast.lng = -Infinity;
+			this._cLatLng = child._cLatLng || child.getLatLng();
 		}
 	}
 
@@ -195,12 +182,11 @@ export class MarkerCluster extends L.Marker {
 			return;
 		}
 
-		// Reset rather than creating a new object, for performance.
-		this._resetBounds();
+		this._bounds = new L.LatLngBounds();
 
 		// Child markers.
 		for (let i = 0; i < markers.length; i++) {
-			const childLatLng = markers[i]._latlng;
+			const childLatLng = markers[i].getLatLng();
 
 			this._bounds.extend(childLatLng);
 
@@ -235,7 +221,7 @@ export class MarkerCluster extends L.Marker {
 	//Set our markers position as given and add it to the map
 	_addToMap(startPos) {
 		if (startPos) {
-			this._backupLatlng = this._latlng;
+			this._backupLatlng = this.getLatLng();
 			this.setLatLng(startPos);
 		}
 		this._group._featureGroup.addLayer(this);
@@ -249,7 +235,7 @@ export class MarkerCluster extends L.Marker {
 					const m = markers[i];
 
 					//Only do it if the icon is still on the map
-					if (m._icon) {
+					if (m instanceof L.Marker && m.getElement()) {
 						m._setPos(center);
 						m.clusterHide();
 					}
@@ -259,7 +245,7 @@ export class MarkerCluster extends L.Marker {
 				const childClusters = c._childClusters;
 				for (let j = childClusters.length - 1; j >= 0; j--) {
 					const cm = childClusters[j];
-					if (cm._icon) {
+					if (cm.getElement()) {
 						cm._setPos(center);
 						cm.clusterHide();
 					}
@@ -304,7 +290,7 @@ export class MarkerCluster extends L.Marker {
 				for (let i = c._markers.length - 1; i >= 0; i--) {
 					const nm = c._markers[i];
 
-					if (!bounds.contains(nm._latlng)) {
+					if (!bounds.contains(nm.getLatLng())) {
 						continue;
 					}
 
@@ -362,7 +348,7 @@ export class MarkerCluster extends L.Marker {
 				//Remove markers at every level
 				for (let i = c._markers.length - 1; i >= 0; i--) {
 					const m = c._markers[i];
-					if (!exceptBounds || !exceptBounds.contains(m._latlng)) {
+					if (!exceptBounds || !exceptBounds.contains(m.getLatLng())) {
 						c._group._featureGroup.removeLayer(m);
 						if (m.clusterShow) {
 							m.clusterShow();
@@ -374,7 +360,7 @@ export class MarkerCluster extends L.Marker {
 				//Remove child clusters at just the bottom level
 				for (let i = c._childClusters.length - 1; i >= 0; i--) {
 					const m = c._childClusters[i];
-					if (!exceptBounds || !exceptBounds.contains(m._latlng)) {
+					if (!exceptBounds || !exceptBounds.contains(m.getLatLng())) {
 						c._group._featureGroup.removeLayer(m);
 						if (m.clusterShow) {
 							m.clusterShow();
@@ -434,7 +420,7 @@ export class MarkerCluster extends L.Marker {
 		const childMarkers = this.getAllChildMarkers(null, true),
 			group = this._group,
 			map = group._map,
-			center = map.latLngToLayerPoint(this._latlng);
+			center = map.latLngToLayerPoint(this.getLatLng());
 		let positions;
 
 		this._group._unspiderfy();
@@ -476,7 +462,7 @@ export class MarkerCluster extends L.Marker {
 
 		for (let i = 0; i < count; i++) { // Clockwise, like spiral.
 			const angle = this._circleStartAngle + i * angleStep;
-			res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle))._round();
+			res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle)).round();
 		}
 
 		return res;
@@ -497,7 +483,7 @@ export class MarkerCluster extends L.Marker {
 			// Skip the first position, so that we are already farther from center and we avoid
 			// being under the default cluster icon (especially important for Circle Markers).
 			if (i < count) {
-				res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle))._round();
+				res[i] = new L.Point(centerPt.x + legLength * Math.cos(angle), centerPt.y + legLength * Math.sin(angle)).round();
 			}
 			angle += separation / legLength + i * 0.0005;
 			legLength += lengthFactor / angle;
@@ -545,22 +531,13 @@ export class MarkerCluster extends L.Marker {
 		const group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			thisLayerLatLng = this._latlng,
+			thisLayerLatLng = this.getLatLng(),
 			thisLayerPos = map.latLngToLayerPoint(thisLayerLatLng),
-			svg = L.Path.SVG,
 			legOptions = {...this._group.options.spiderLegPolylineOptions}, // Copy the options so that we can modify them for animation.
 			finalLegOpacity = legOptions.opacity ?? defaultLegOpacity;
 
-		if (svg) {
-			// If the initial opacity of the spider leg is not 0 then it appears before the animation starts.
-			legOptions.opacity = 0;
-
-			// Add the class for CSS transitions.
-			legOptions.className = `${legOptions.className || ''} leaflet-cluster-spider-leg`;
-		} else {
-			// Make sure we have a defined opacity.
-			legOptions.opacity = finalLegOpacity;
-		}
+		// Make sure we have a defined opacity.
+		legOptions.opacity = finalLegOpacity;
 
 		group._ignoreMove = true;
 
@@ -579,11 +556,13 @@ export class MarkerCluster extends L.Marker {
 
 			// Explanations: https://jakearchibald.com/2013/animated-line-drawing-svg/
 			// In our case the transition property is declared in the CSS file.
-			if (svg) {
-				const legPath = leg._path;
+			const legPath = svgPath(leg);
+			if (legPath) {
 				const legLength = legPath.getTotalLength() + 0.1; // Need a small extra length to avoid remaining dot in Firefox.
 				legPath.style.strokeDasharray = legLength; // Just 1 length is enough, it will be duplicated.
 				legPath.style.strokeDashoffset = legLength;
+				// hidden until the reveal below, or it shows before the animation starts
+				leg.setStyle({opacity: 0});
 			}
 
 			// If it is a marker, add it now and we'll animate it out
@@ -597,7 +576,7 @@ export class MarkerCluster extends L.Marker {
 			// Vectors just get immediately added
 			fg.addLayer(m);
 
-			if (m._setPos) {
+			if (m instanceof L.Marker) {
 				m._setPos(thisLayerPos);
 			}
 		}
@@ -611,7 +590,7 @@ export class MarkerCluster extends L.Marker {
 			const m = childMarkers[i];
 
 			//Move marker to new position
-			m._preSpiderfyLatlng = m._latlng;
+			m._preSpiderfyLatlng = m.getLatLng();
 			m.setLatLng(newPos);
 
 			if (m.clusterShow) {
@@ -619,10 +598,13 @@ export class MarkerCluster extends L.Marker {
 			}
 
 			// Animate leg (animation is actually delegated to CSS transition).
-			if (svg) {
-				const leg = m._spiderLeg;
-				leg._path.style.strokeDashoffset = 0;
-				leg.setStyle({opacity: finalLegOpacity});
+			const legPath = svgPath(m._spiderLeg);
+			if (legPath) {
+				// the class with the CSS transitions is added only now, after the forced layout: getTotalLength computes
+				// the leg's style early, so with the class on, the starting values would transition instead of applying
+				legPath.classList.add('leaflet-cluster-spider-leg');
+				legPath.style.strokeDashoffset = 0;
+				m._spiderLeg.setStyle({opacity: finalLegOpacity});
 			}
 		}
 		this.setOpacity(0.3);
@@ -642,9 +624,9 @@ export class MarkerCluster extends L.Marker {
 		const group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			thisLayerPos = zoomDetails ? latLngToNewLayerPoint(map, this._latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(this._latlng),
-			childMarkers = this.getAllChildMarkers(null, true),
-			svg = L.Path.SVG;
+			latlng = this.getLatLng(),
+			thisLayerPos = zoomDetails ? latLngToNewLayerPoint(map, latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(latlng),
+			childMarkers = this.getAllChildMarkers(null, true);
 
 		group._ignoreMove = true;
 		group._animationStart();
@@ -668,7 +650,7 @@ export class MarkerCluster extends L.Marker {
 
 			//Hack override the location to be our center
 			let nonAnimatable = true;
-			if (m._setPos) {
+			if (m instanceof L.Marker) {
 				m._setPos(thisLayerPos);
 				nonAnimatable = false;
 			}
@@ -681,10 +663,10 @@ export class MarkerCluster extends L.Marker {
 			}
 
 			// Animate the spider leg back in (animation is actually delegated to CSS transition).
-			if (svg) {
-				const leg = m._spiderLeg;
-				leg._path.style.strokeDashoffset = leg._path.getTotalLength() + 0.1;
-				leg.setStyle({opacity: 0});
+			const legPath = svgPath(m._spiderLeg);
+			if (legPath) {
+				legPath.style.strokeDashoffset = legPath.getTotalLength() + 0.1;
+				m._spiderLeg.setStyle({opacity: 0});
 			}
 		}
 
@@ -767,12 +749,12 @@ export class MarkerClusterNonAnimated extends MarkerCluster {
 			const m = childMarkers[i];
 
 			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
-			const leg = new L.Polyline([this._latlng, newPos], legOptions);
+			const leg = new L.Polyline([this.getLatLng(), newPos], legOptions);
 			map.addLayer(leg);
 			m._spiderLeg = leg;
 
 			// Now add the marker.
-			m._preSpiderfyLatlng = m._latlng;
+			m._preSpiderfyLatlng = m.getLatLng();
 			m.setLatLng(newPos);
 			if (m.setZIndexOffset) {
 				m.setZIndexOffset(1000000); //Make these appear on top of EVERYTHING

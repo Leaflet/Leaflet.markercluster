@@ -42,6 +42,43 @@ describe('moving markers', () => {
 	/////////////////////////////
 	// TESTS
 	/////////////////////////////
+	it('reclusters a marker moved on the map', () => {
+
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.5, 1.5]);
+		const marker2 = new L.Marker([1.5, 1.5]);
+		group.addLayers([marker, marker2]);
+		expect(group.getVisibleParent(marker)).not.toBe(marker);
+
+		marker.setLatLng([1.1, 1.9]);
+
+		expect(group.getVisibleParent(marker)).toBe(marker);
+		expect(group.getVisibleParent(marker2)).toBe(marker2);
+		expect(group._gridUnclustered[18].getNearObject(map.project([1.5, 1.5], 18))).toBe(marker2);
+		expect(group.getLayers().length).toBe(2);
+	});
+
+	it('reclusters a dragged marker on dragend', () => {
+
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.1, 1.9]);
+		const marker2 = new L.Marker([1.5, 1.5]);
+		group.addLayers([marker, marker2]);
+
+		marker.fire('dragstart');
+		marker.setLatLng([1.5, 1.5]);
+		expect(group.getVisibleParent(marker)).toBe(marker);
+
+		marker.fire('dragend');
+		expect(group.getVisibleParent(marker)).not.toBe(marker);
+		expect(group.getVisibleParent(marker)).toBe(group.getVisibleParent(marker2));
+		expect(group.getLayers().length).toBe(2);
+	});
+
 	it('moves a marker that was moved while off the map', () => {
 
 		group = new MarkerClusterGroup();

@@ -27,15 +27,19 @@ export class DistanceGrid {
 		this.addObject(obj, point);
 	}
 
-	//Returns true if the object was found
-	removeObject(obj, point) {
+	// returns true if the object was found; looks it up at the point it was added with
+	removeObject(obj) {
+		const stamp = L.Util.stamp(obj),
+			point = this._objectPoint[stamp];
+		if (!point) {
+			return false;
+		}
+		delete this._objectPoint[stamp];
+
 		const x = this._getCoord(point.x),
 			y = this._getCoord(point.y),
-			grid = this._grid,
-			row = grid[y] = grid[y] || {},
-			cell = row[x] = row[x] || [];
-
-		delete this._objectPoint[L.Util.stamp(obj)];
+			row = this._grid[y],
+			cell = row[x];
 
 		for (let i = 0, len = cell.length; i < len; i++) {
 			if (cell[i] === obj) {

@@ -47,6 +47,16 @@ describe('getVisibleParent', () => {
 		expect(vp).toBe(marker);
 	});
 
+	it('gets the circle marker if the circle marker is visible', () => {
+		group = new MarkerClusterGroup();
+		const marker = new L.CircleMarker([1.5, 1.5]);
+
+		group.addLayer(marker);
+		map.addLayer(group);
+
+		expect(group.getVisibleParent(marker)).toBe(marker);
+	});
+
 	it('gets the visible cluster if it is clustered', () => {
 		group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);

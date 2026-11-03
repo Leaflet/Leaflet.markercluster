@@ -175,6 +175,59 @@ describe('spiderfy', () => {
 
 	});
 
+	it('animates SVG spider legs by drawing them out', () => {
+
+		group = new MarkerClusterGroup();
+
+		const marker = new L.Marker([1.5, 1.5]);
+		const marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+
+		const leg = marker._spiderLeg.getElement();
+		expect(leg.classList.contains('leaflet-cluster-spider-leg')).toBe(true);
+		expect(Number(leg.style.strokeDasharray)).toBeGreaterThan(0);
+		expect(leg.style.strokeDashoffset).toBe('0');
+		expect(marker._spiderLeg.options.opacity).toBe(0.5);
+		expect(leg.getAnimations().map(a => a.transitionProperty)).toContain('stroke-dashoffset');
+
+		vi.advanceTimersByTime(1000);
+		marker.__parent.unspiderfy();
+
+		expect(Number(leg.style.strokeDashoffset)).toBeGreaterThan(0);
+		expect(marker._spiderLeg.options.opacity).toBe(0);
+	});
+
+	it('spiderfies and unspiderfies with the Canvas renderer', () => {
+
+		map.remove();
+		map = new L.Map(div, {maxZoom: 18, trackResize: false, preferCanvas: true});
+		map.fitBounds(new L.LatLngBounds([[1, 1], [2, 2]]));
+
+		group = new MarkerClusterGroup();
+
+		const marker = new L.CircleMarker([1.5, 1.5]);
+		const marker2 = new L.CircleMarker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		marker.__parent.spiderfy();
+		vi.advanceTimersByTime(1000);
+
+		expect(map.hasLayer(marker)).toBe(true);
+		expect(marker._spiderLeg.options.opacity).toBe(0.5);
+
+		marker.__parent.unspiderfy();
+		vi.advanceTimersByTime(1000);
+
+		expect(map.hasLayer(marker)).toBe(false);
+		expect(marker._spiderLeg).toBe(undefined);
+	});
+
 	it('adds then removes class "leaflet-cluster-anim" from mapPane on spiderfy', () => {
 
 		group = new MarkerClusterGroup();

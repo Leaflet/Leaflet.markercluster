@@ -184,6 +184,22 @@ describe('cluster DOM events', () => {
 		expect(out).toHaveBeenCalledOnce();
 		expect(group._shownPolygon).toBe(null);
 	});
+
+	it('ignores hover events between elements of the same cluster icon', () => {
+		const over = vi.fn();
+		const out = vi.fn();
+		group.on('clustermouseover', over);
+		group.on('clustermouseout', out);
+
+		const Event = isV1 ? MouseEvent : PointerEvent;
+		const icon = cluster._icon;
+		const inner = icon.firstChild;
+		icon.dispatchEvent(new Event(isV1 ? 'mouseout' : 'pointerout', {bubbles: true, relatedTarget: inner}));
+		inner.dispatchEvent(new Event(isV1 ? 'mouseover' : 'pointerover', {bubbles: true, relatedTarget: icon}));
+
+		expect(over).not.toHaveBeenCalled();
+		expect(out).not.toHaveBeenCalled();
+	});
 });
 
 describe('animated zoom', () => {
