@@ -183,14 +183,7 @@ export class MarkerCluster extends L.Marker {
 
 	/** The convex hull of the cluster's markers, as shown on hover with `showCoverageOnHover`. */
 	getConvexHull() {
-		const childMarkers = this._getChildren(),
-			points = [];
-
-		for (let i = childMarkers.length - 1; i >= 0; i--) {
-			points.push(childMarkers[i].getLatLng());
-		}
-
-		return QuickHull.getConvexHull(points);
+		return QuickHull.getConvexHull(this._getChildren().map(m => m.getLatLng()));
 	}
 
 	_updateIcon() {
@@ -248,12 +241,12 @@ export class MarkerCluster extends L.Marker {
 		let latSum = 0,
 			lngSum = 0;
 
+		this._bounds = new L.LatLngBounds();
+
 		// Case where all markers are removed from the map and we are left with just an empty _topClusterLevel.
 		if (totalCount === 0) {
 			return;
 		}
-
-		this._bounds = new L.LatLngBounds();
 
 		// Child markers.
 		for (let i = 0; i < markers.length; i++) {
@@ -310,7 +303,7 @@ export class MarkerCluster extends L.Marker {
 	 * @param {number} maxZoom
 	 */
 	_recursivelyAnimateChildrenIn(bounds, center, maxZoom) {
-		this._recursively(bounds, this._group._map.getMinZoom(), maxZoom - 1,
+		this._recursively(bounds, this._group._minZoom, maxZoom - 1,
 			(c) => {
 				const markers = c._markers;
 				for (let i = markers.length - 1; i >= 0; i--) {
@@ -367,7 +360,7 @@ export class MarkerCluster extends L.Marker {
 	 * @param {number} zoomLevel
 	 */
 	_recursivelyBecomeVisible(bounds, zoomLevel) {
-		this._recursively(bounds, this._group._map.getMinZoom(), zoomLevel, null, (c) => {
+		this._recursively(bounds, this._group._minZoom, zoomLevel, null, (c) => {
 			c.clusterShow();
 		});
 	}
@@ -378,7 +371,7 @@ export class MarkerCluster extends L.Marker {
 	 * @param {LatLngBounds} bounds
 	 */
 	_recursivelyAddChildrenToMap(startPos, zoomLevel, bounds) {
-		this._recursively(bounds, this._group._map.getMinZoom() - 1, zoomLevel,
+		this._recursively(bounds, this._group._minZoom - 1, zoomLevel,
 			(c) => {
 				if (zoomLevel === c._zoom) {
 					return;
@@ -520,24 +513,23 @@ export class MarkerCluster extends L.Marker {
 
 	/** Spreads out the cluster's markers around it, with legs to its center. */
 	spiderfy() {
-		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
+		const group = this._group;
+		if (group._spiderfied === this || group._inZoomAnimation) {
 			return;
 		}
 
 		const childMarkers = this._getChildren([], true),
-			group = this._group,
-			map = group._map,
-			center = map.latLngToLayerPoint(this.getLatLng()),
+			center = group._map.latLngToLayerPoint(this.getLatLng()),
 			shape = /** @type {MarkerCluster<M> & SpiderfyShape} */ (/** @type {unknown} */ (this));
 		let positions;
 
-		this._group._unspiderfy();
-		this._group._spiderfied = this;
+		group._unspiderfy();
+		group._spiderfied = this;
 
 		//TODO Maybe: childMarkers order by distance to center
 
-		if (this._group.options.spiderfyShapePositions) {
-			positions = this._group.options.spiderfyShapePositions(childMarkers.length, center);
+		if (group.options.spiderfyShapePositions) {
+			positions = group.options.spiderfyShapePositions(childMarkers.length, center);
 		} else if (childMarkers.length >= shape._circleSpiralSwitchover) {
 			positions = shape._generatePointsSpiral(childMarkers.length, center);
 		} else {

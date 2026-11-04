@@ -224,4 +224,17 @@ describe('removeLayer', () => {
 		expect(group.hasLayer(polygon)).toBe(false);
 		expect(marker._icon).toBe(null);
 	});
+
+	it('leaves alone a marker in another group', () => {
+		const group1 = new MarkerClusterGroup().addTo(map),
+			group2 = new MarkerClusterGroup().addTo(map),
+			a = new L.Marker([1.5, 1.5]),
+			b = new L.Marker([1.5, 1.5]);
+		group2.addLayers([a, b]);
+		group1.removeLayer(a);
+		group1.removeLayers([b]);
+
+		expect(group2.getLayers().length).toBe(2);
+		expect(group2._topClusterLevel.getChildCount()).toBe(2);
+	});
 });

@@ -129,4 +129,25 @@ describe('getBounds', () => {
 			expect(group.getBounds().isValid()).toBe(false);
 		});
 	});
+
+	describe('removed layers', () => {
+		it('returns empty bounds after removing all markers', () => {
+			const group = new MarkerClusterGroup().addTo(map);
+			const a = new L.Marker([1.5, 1.5]), b = new L.Marker([3, 3]);
+			group.addLayers([a, b]);
+			group.removeLayers([a, b]);
+
+			expect(group.getBounds().isValid()).toBe(false);
+		});
+
+		it('leaves out markers removed while off the map', () => {
+			const group = new MarkerClusterGroup().addTo(map);
+			const a = new L.Marker([1.5, 1.5]), b = new L.Marker([3, 3]);
+			group.addLayers([a, b]);
+			map.removeLayer(group);
+			group.removeLayer(b);
+
+			expect(group.getBounds().getNorthEast()).toEqual(new L.LatLng(1.5, 1.5));
+		});
+	});
 });

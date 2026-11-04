@@ -53,4 +53,15 @@ describe('non-integer min/max zoom', () => {
 
 		group.removeLayer(marker2);
 	});
+
+	it('shows markers that are never clustered', () => {
+		map.setView([0, 0], 1);
+		const group = new MarkerClusterGroup().addTo(map);
+		const a = new L.Marker([60, -150]), b = new L.Marker([-60, 150]);
+		group.addLayers([a, b]);
+
+		// the top level is below the floored min zoom, 0
+		expect(group._featureGroup.hasLayer(a)).toBe(true);
+		expect(group._featureGroup.hasLayer(b)).toBe(true);
+	});
 });

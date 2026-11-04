@@ -36,15 +36,6 @@ export class DistanceGrid {
 	}
 
 	/**
-	 * @param {T} obj
-	 * @param {XY} point
-	 */
-	updateObject(obj, point) {
-		this.removeObject(obj);
-		this.addObject(obj, point);
-	}
-
-	/**
 	 * Returns true if the object was found; looks it up at the point it was added with.
 	 * @param {T} obj
 	 */
@@ -74,31 +65,6 @@ export class DistanceGrid {
 			}
 		}
 		return false;
-	}
-
-	/**
-	 * Calls fn on each object; fn returns true if it removed the object it was called with.
-	 * @param {(obj: T) => unknown} fn
-	 * @param {unknown} [context]
-	 */
-	eachObject(fn, context) {
-		const grid = this._grid;
-
-		for (const i in grid) {
-			const row = grid[i];
-
-			for (const j in row) {
-				const cell = row[j];
-
-				for (let k = 0, len = cell.length; k < len; k++) {
-					const removed = fn.call(context, cell[k]);
-					if (removed) {
-						k--;
-						len--;
-					}
-				}
-			}
-		}
 	}
 
 	/**

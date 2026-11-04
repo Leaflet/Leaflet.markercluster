@@ -33,6 +33,7 @@ const opts: MarkerClusterGroupOptions = {
 // methods chain, and the group works anywhere a Layer does
 const group = new MarkerClusterGroup(opts).addTo(map);
 group.addLayer(marker).addLayers([new Marker([1, 2]), new LayerGroup([new Marker([3, 4])])]).removeLayers([marker]);
+group.addLayers(marker).removeLayers(marker);
 group.removeLayer(marker).removeLayer(group.getLayerId(marker)).refreshClusters().refreshClusters([marker]);
 group.refreshClusters(marker).refreshClusters({1: marker}).refreshClusters(group).clearLayers();
 group.zoomToShowLayer(marker, () => marker.openPopup());

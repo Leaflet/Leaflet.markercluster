@@ -194,4 +194,15 @@ describe('addLayers adding multiple markers', () => {
 
 		vi.useRealTimers();
 	});
+
+	it('fires layeradd while off the map, and not again when added to it', () => {
+		group = new MarkerClusterGroup();
+		const added = vi.fn();
+		group.on('layeradd', added);
+		group.addLayers([new L.Marker([1.5, 1.5]), new L.Polyline([[1.5, 1.5], [2, 2]])]);
+		expect(added).toHaveBeenCalledTimes(2);
+
+		map.addLayer(group);
+		expect(added).toHaveBeenCalledTimes(2);
+	});
 });

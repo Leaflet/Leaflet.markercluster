@@ -66,4 +66,18 @@ describe('eachLayer', () => {
 		expect(layers).toContain(marker);
 		expect(layers).toContain(polygon);
 	});
+
+	it('includes a marker removed and added back while off the map', () => {
+		const group = new MarkerClusterGroup().addTo(map);
+		const a = new L.Marker([1.5, 1.5]), b = new L.Marker([3, 3]);
+		group.addLayers([a, b]);
+		map.removeLayer(group);
+		group.removeLayer(a);
+		group.addLayer(a);
+
+		expect(group.hasLayer(a)).toBe(true);
+		expect(group.getLayers().length).toBe(2);
+		map.addLayer(group);
+		expect(group.getLayers().length).toBe(2);
+	});
 });
