@@ -3,6 +3,34 @@ import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
 import {parents} from '../src/MarkerCluster.js';
 
+const isV1 = L.version.startsWith('1.');
+
+/**
+ * Starts dragging the marker's icon through Leaflet's Draggable, with pointer events (mouse events on 1.x, whose drag
+ * moves on the next frame).
+ */
+function drag(marker) {
+	const el = marker.getElement(),
+		rect = el.getBoundingClientRect();
+	let x = rect.left + rect.width / 2,
+		y = rect.top + rect.height / 2;
+	const fire = type => el.dispatchEvent(new (isV1 ? MouseEvent : PointerEvent)((isV1 ? 'mouse' : 'pointer') + type,
+		{clientX: x, clientY: y, bubbles: true, button: 0, buttons: 1, pointerId: 1, isPrimary: true, pointerType: 'mouse'}));
+
+	fire('down');
+	return {
+		move(offset) {
+			x += offset.x;
+			y += offset.y;
+			fire('move');
+			vi.advanceTimersToNextFrame();
+		},
+		end() {
+			fire('up');
+		}
+	};
+}
+
 describe('moving markers', () => {
 	/////////////////////////////
 	// SETUP FOR EACH TEST
@@ -66,15 +94,16 @@ describe('moving markers', () => {
 		group = new MarkerClusterGroup();
 		map.addLayer(group);
 
-		const marker = new L.Marker([1.1, 1.9]);
+		const marker = new L.Marker([1.1, 1.9], {draggable: true});
 		const marker2 = new L.Marker([1.5, 1.5]);
 		group.addLayers([marker, marker2]);
 
-		marker.fire('dragstart');
-		marker.setLatLng([1.5, 1.5]);
+		const dragged = drag(marker);
+		dragged.move(map.latLngToContainerPoint([1.5, 1.5]).subtract(map.latLngToContainerPoint([1.1, 1.9])));
+		expect(marker.getLatLng().distanceTo([1.5, 1.5])).toBeLessThan(1000);
 		expect(group.getVisibleParent(marker)).toBe(marker);
 
-		marker.fire('dragend');
+		dragged.end();
 		expect(group.getVisibleParent(marker)).not.toBe(marker);
 		expect(group.getVisibleParent(marker)).toBe(group.getVisibleParent(marker2));
 		expect(group.getLayers().length).toBe(2);
@@ -84,15 +113,16 @@ describe('moving markers', () => {
 		group = new MarkerClusterGroup();
 		map.addLayer(group);
 
-		const marker = new L.Marker([1.5, 1.5]);
+		const marker = new L.Marker([1.1, 1.9], {draggable: true});
 		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
 		expect(marker.listens('dragend')).toBe(false);
 
-		marker.fire('dragstart');
+		const dragged = drag(marker);
+		dragged.move(new L.Point(20, 0));
 		expect(marker.listens('dragend')).toBe(true);
 		expect(parents.get(marker).getAllChildMarkers(null, true)).not.toContain(marker);
 
-		marker.fire('dragend');
+		dragged.end();
 		expect(marker.listens('dragend')).toBe(false);
 		expect(parents.get(marker).getAllChildMarkers(null, true)).toContain(marker);
 	});
@@ -101,15 +131,15 @@ describe('moving markers', () => {
 		group = new MarkerClusterGroup();
 		map.addLayer(group);
 
-		const marker = new L.Marker([1.5, 1.5]);
+		const marker = new L.Marker([1.1, 1.9], {draggable: true});
 		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
 
-		marker.fire('dragstart');
-		marker.setLatLng([1.1, 1.9]);
+		const dragged = drag(marker);
+		dragged.move(new L.Point(20, 0));
 		group.removeLayer(marker);
 		expect(marker.listens('dragend')).toBe(false);
 
-		marker.fire('dragend');
+		dragged.end();
 		expect(group.hasLayer(marker)).toBe(false);
 		expect(group.getLayers().length).toBe(1);
 	});

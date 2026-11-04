@@ -172,11 +172,10 @@ export class MarkerCluster extends L.Marker {
 	 * @param {ClusterChild<M> | MarkerCluster<M>} [b]
 	 */
 	constructor(group, zoom, a, b) {
-		// the position of the first child is the cluster's position in the distance grid
-		const cLatLng = a ? gridLatLng(a) : new L.LatLng(0, 0);
-		super(cLatLng, {pane: group.options.clusterPane});
-		/** @type {LatLng} */
-		this._cLatLng = cLatLng;
+		// at its first child until the bounds are calculated
+		super(a ? a.getLatLng() : new L.LatLng(0, 0), {pane: group.options.clusterPane});
+		/** Its point in the group's distance grids, that of its first marker. @type {Point | undefined} */
+		this._gridPoint = undefined;
 		// the cluster is its own icon, see createIcon
 		this.options.icon = /** @type {Icon} */ (/** @type {unknown} */ (this));
 
@@ -841,16 +840,6 @@ export class MarkerCluster extends L.Marker {
 			});
 		}, duration);
 	}
-}
-
-/**
- * The position of a marker, or of a cluster in the distance grid.
- * @template {Layer} M
- * @param {ClusterChild<M> | MarkerCluster<M>} child
- * @returns {LatLng}
- */
-function gridLatLng(child) {
-	return child instanceof MarkerCluster ? child._cLatLng : child.getLatLng();
 }
 
 // 1.x keeps defaults on the prototype, and without a copy of its own, mergeOptions would change every L.Marker

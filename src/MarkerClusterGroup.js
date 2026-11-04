@@ -210,13 +210,12 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		/** @type {Polygon | null} */
 		this._shownPolygon = null;
 
-		// dragend is only listened to during a drag, to keep the listeners on every marker to a minimum
-		/** @type {{[type: string]: (e: LeafletEvent) => void}} */
-		this._childMarkerEventHandlers = {
-			'dragstart': this._childMarkerDragStart,
-			'move': this._childMarkerMoved
-		};
-		/** Markers being dragged, which are reclustered on dragend instead of on every move. @type {Set<ClusterChild<M>>} */
+		/**
+		 * Markers being dragged, which are reclustered on dragend instead of on every move. Markers get a listener
+		 * for move only, since each costs ~100 bytes per marker: drags are told apart by the pointer or key event
+		 * of their moves, and dragend is listened to only during one.
+		 * @type {Set<ClusterChild<M>>}
+		 */
 		this._dragging = new Set();
 
 		// the class methods are the animated versions
@@ -260,7 +259,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._unspiderfy();
 
 		/** @type {MarkerCluster<M> | undefined} */
-		let parent = this._addLayer(layer, this._maxZoom);
+		let parent = this._addLayer(layer);
 		this.fire('layeradd', {layer});
 
 		// Refresh bounds and weighted positions.
@@ -424,7 +423,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 					continue;
 				}
 
-				const parent = this._addLayer(m, this._maxZoom, removedFromTop);
+				const parent = this._addLayer(m, removedFromTop);
 				if (fireAdd) {
 					this.fire('layeradd', {layer: m});
 				}
@@ -550,9 +549,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			this._generateInitialClusters();
 		} else {
 			// generated again by the next onAdd
-			const clusters = /** @type {Partial<Pick<this, '_gridClusters' | '_gridUnclustered' | '_topClusterLevel'>>} */ (this);
+			const clusters = /** @type {Partial<Pick<this, '_gridClusters' | '_gridUnclustered' | '_points' | '_topClusterLevel'>>} */ (this);
 			delete clusters._gridClusters;
 			delete clusters._gridUnclustered;
+			delete clusters._points;
 			delete clusters._topClusterLevel;
 		}
 
@@ -800,10 +800,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	 * @param {number} z Bottom start zoom level (included).
 	 */
 	_removeFromGridUnclustered(marker, z) {
-		const gridUnclustered = this._gridUnclustered;
+		const gridUnclustered = this._gridUnclustered,
+			point = /** @type {Point} */ (this._points.get(marker));
 
 		for (; z >= this._minZoom; z--) {
-			if (!gridUnclustered[z].removeObject(marker)) {
+			if (!gridUnclustered[z].removeObject(marker, point)) {
 				break;
 			}
 		}
@@ -811,25 +812,23 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/** @param {ClusterChild<M>} layer */
 	_unbindChild(layer) {
-		layer.off(this._childMarkerEventHandlers, this);
+		layer.off('move', this._childMarkerMoved, this);
 		if (this._dragging.delete(layer)) {
 			layer.off('dragend', this._childMarkerDragEnd, this);
 		}
 	}
 
-	/** @param {LeafletEvent} e */
-	_childMarkerDragStart(e) {
-		const marker = /** @type {ClusterChild<M>} */ (e.target);
-		if (!this._dragging.has(marker)) {
-			this._dragging.add(marker);
-			marker.on('dragend', this._childMarkerDragEnd, this);
-		}
-	}
-
-	/** @param {LeafletEvent} e */
+	/** @param {LeafletEvent & {originalEvent?: Event}} e */
 	_childMarkerMoved(e) {
 		const marker = /** @type {ClusterChild<M>} */ (e.target);
-		if (!this._ignoreMove && !this._dragging.has(marker)) {
+		if (this._dragging.has(marker)) {
+			return;
+		}
+		if (e.originalEvent) {
+			this._dragging.add(marker);
+			marker.on('dragend', this._childMarkerDragEnd, this);
+
+		} else if (!this._ignoreMove) {
 			const isPopupOpen = marker.isPopupOpen();
 
 			this._moveChild(marker);
@@ -841,7 +840,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 
 	/**
-	 * The distance grids remember the projected point each marker was added at, so the old latlng isn't needed.
+	 * The group keeps the projected point each marker was clustered at, so the old latlng isn't needed.
 	 * @param {ClusterChild<M>} layer
 	 */
 	_moveChild(layer) {
@@ -869,12 +868,14 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	_removeLayer(marker, removeFromDistanceGrid, removedFromTop, cluster = parents.get(marker)) {
 		const gridClusters = this._gridClusters,
 			gridUnclustered = this._gridUnclustered,
+			points = this._points,
 			fg = this._featureGroup,
 			minZoom = this._minZoom;
 
 		//Remove the marker from distance clusters it might be in
 		if (removeFromDistanceGrid) {
 			this._removeFromGridUnclustered(marker, this._maxZoom);
+			points.delete(marker);
 		}
 
 		//Remove the marker from the immediate parents marker list
@@ -898,8 +899,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 					parent = /** @type {MarkerCluster<M>} */ (cluster._parent);
 
 				//Update distance grid
-				gridClusters[cluster._zoom].removeObject(cluster);
-				gridUnclustered[cluster._zoom].addObject(otherMarker, this._project(otherMarker.getLatLng(), cluster._zoom));
+				gridClusters[cluster._zoom].removeObject(cluster, /** @type {Point} */ (cluster._gridPoint));
+				gridUnclustered[cluster._zoom].addObject(otherMarker, /** @type {Point} */ (points.get(otherMarker)));
 
 				//Move otherMarker up to parent
 				if (removedFromTop && parent === this._topClusterLevel) {
@@ -1091,6 +1092,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	// the zoom levels and CRS are kept, so that clusters stay usable while we aren't on the map
 	_generateInitialClusters() {
 		const map = this._map,
+			crs = map.options.crs,
 			minZoom = Math.floor(map.getMinZoom()),
 			radius = this.options.maxClusterRadius,
 			radiusFn = typeof radius === 'function' ? radius : () => radius,
@@ -1106,16 +1108,22 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._maxZoom = disableClusteringAtZoom !== null ? disableClusteringAtZoom - 1 : Math.ceil(map.getMaxZoom());
 		const maxZoom = this._maxZoom;
 		/** @type {typeof CRS} */
-		this._crs = map.options.crs;
+		this._crs = crs;
 		/** @type {{[zoom: number]: DistanceGrid<MarkerCluster<M>>}} */
 		this._gridClusters = {};
 		/** @type {{[zoom: number]: DistanceGrid<ClusterChild<M>>}} */
 		this._gridUnclustered = {};
+		/**
+		 * The points of the markers in the distance grids, projected once at _maxZoom, where every grid works
+		 * with its radius scaled to match. Clusters keep theirs in _gridPoint.
+		 * @type {Map<ClusterChild<M>, Point>}
+		 */
+		this._points = new Map();
 
-		//Set up DistanceGrids for each zoom
 		for (let zoom = maxZoom; zoom >= minZoom; zoom--) {
-			this._gridClusters[zoom] = new DistanceGrid(radiusFn(zoom));
-			this._gridUnclustered[zoom] = new DistanceGrid(radiusFn(zoom));
+			const radius = radiusFn(zoom) * crs.scale(maxZoom) / crs.scale(zoom);
+			this._gridClusters[zoom] = new DistanceGrid(radius);
+			this._gridUnclustered[zoom] = new DistanceGrid(radius);
 		}
 
 		// Instantiate the appropriate L.MarkerCluster class (animated or not).
@@ -1124,38 +1132,28 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 
 	/**
-	 * The pixel position at the zoom, as `map.project` gives it.
-	 * @param {LatLng} latlng
-	 * @param {number} zoom
-	 */
-	_project(latlng, zoom) {
-		return this._crs.latLngToPoint(latlng, zoom);
-	}
-
-	/**
 	 * @param {ClusterChild<M>} layer
-	 * @param {number} zoom Zoom to start adding at (this._maxZoom to start at the bottom).
 	 * @param {Set<ClusterChild<M> | MarkerCluster<M>>} [removedFromTop] Given by bulk functions, see _removeLayer.
 	 * @returns {MarkerCluster<M>} The cluster the layer went into.
 	 */
-	_addLayer(layer, zoom, removedFromTop) {
+	_addLayer(layer, removedFromTop) {
 		const gridClusters = this._gridClusters,
 			gridUnclustered = this._gridUnclustered,
-			minZoom = this._minZoom;
-		let markerPoint, z;
+			points = this._points,
+			minZoom = this._minZoom,
+			point = this._crs.latLngToPoint(layer.getLatLng(), this._maxZoom);
 
 		if (this.options.singleMarkerMode) {
 			this._overrideMarkerIcon(layer);
 		}
 
-		layer.on(this._childMarkerEventHandlers, this);
+		layer.on('move', this._childMarkerMoved, this);
+		points.set(layer, point);
 
 		//Find the lowest zoom level to slot this one in
-		for (; zoom >= minZoom; zoom--) {
-			markerPoint = this._project(layer.getLatLng(), zoom); // calculate pixel position
-
+		for (let zoom = this._maxZoom; zoom >= minZoom; zoom--) {
 			//Try find a cluster close by
-			const closestCluster = gridClusters[zoom].getNearObject(markerPoint);
+			const closestCluster = gridClusters[zoom].getNearObject(point);
 			if (closestCluster) {
 				closestCluster._addChild(layer);
 				parents.set(layer, closestCluster);
@@ -1163,7 +1161,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			}
 
 			//Try find a marker close by to form a new cluster with
-			const closest = gridUnclustered[zoom].getNearObject(markerPoint);
+			const closest = gridUnclustered[zoom].getNearObject(point);
 			if (closest) {
 				// markers in the grids always have a parent, the top cluster if no other
 				const parent = /** @type {MarkerCluster<M>} */ (parents.get(closest));
@@ -1171,16 +1169,19 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 				//Create new cluster with these 2 in it
 
-				const newCluster = new this._markerCluster(this, zoom, closest, layer);
-				gridClusters[zoom].addObject(newCluster, this._project(newCluster._cLatLng, zoom));
+				const newCluster = new this._markerCluster(this, zoom, closest, layer),
+					clusterPoint = /** @type {Point} */ (points.get(closest));
+				newCluster._gridPoint = clusterPoint;
+				gridClusters[zoom].addObject(newCluster, clusterPoint);
 				parents.set(closest, newCluster);
 				parents.set(layer, newCluster);
 
 				//First create any new intermediate parent clusters that don't exist
 				let lastParent = newCluster;
-				for (z = zoom - 1; z > parent._zoom; z--) {
+				for (let z = zoom - 1; z > parent._zoom; z--) {
 					lastParent = new this._markerCluster(this, z, lastParent);
-					gridClusters[z].addObject(lastParent, this._project(closest.getLatLng(), z));
+					lastParent._gridPoint = clusterPoint;
+					gridClusters[z].addObject(lastParent, clusterPoint);
 				}
 				parent._addChild(lastParent);
 
@@ -1191,7 +1192,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			}
 
 			//Didn't manage to cluster in at this zoom, record us as a marker here and continue upwards
-			gridUnclustered[zoom].addObject(layer, markerPoint);
+			gridUnclustered[zoom].addObject(layer, point);
 		}
 
 		//Didn't get in anything, add us to the top
