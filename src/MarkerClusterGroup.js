@@ -191,7 +191,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._inZoomAnimation = 0;
 		/** @type {boolean} */
 		this._ignoreMove = false;
-		/** Markers added while we aren't on the map. @type {Set<ClusterChild<M>>} */
+		/** Markers not in the clusters: added while we aren't on the map, or being dragged. @type {Set<ClusterChild<M>>} */
 		this._needsClustering = new Set();
 
 		/** @type {Array<() => void>} */
@@ -211,9 +211,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._shownPolygon = null;
 
 		/**
-		 * Markers being dragged, which are reclustered on dragend instead of on every move. Markers get a listener
-		 * for move only, since each costs ~100 bytes per marker: drags are told apart by the pointer or key event
-		 * of their moves, and dragend is listened to only during one.
+		 * Markers being dragged, which wait in _needsClustering and are shown as they are until dragend. Markers get
+		 * a listener for move only, since each costs ~100 bytes per marker: drags are told apart by the pointer or
+		 * key event of their moves, and dragend is listened to only during one.
 		 * @type {Set<ClusterChild<M>>}
 		 */
 		this._dragging = new Set();
@@ -252,6 +252,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		if (this.hasLayer(layer)) {
 			return this;
 		}
+		// a marker is in one group at a time, since it has one parent cluster
+		parents.get(layer)?._group.removeLayer(layer);
 
 		if (!this._map) {
 			this._needsClustering.add(layer);
@@ -371,6 +373,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				if (!isPoint(m)) {
 					npg.addLayer(m);
 				} else if (!this.hasLayer(m)) {
+					parents.get(m)?._group.removeLayer(m);
 					this._needsClustering.add(m);
 				} else {
 					continue;
@@ -383,6 +386,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		const fg = this._featureGroup,
+			needsClustering = this._needsClustering,
 			generation = this._generation,
 			{chunkedLoading, chunkInterval, chunkProgress} = this.options,
 			started = performance.now();
@@ -426,7 +430,12 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 					continue;
 				}
 
-				if (this.hasLayer(m)) {
+				// hasLayer inlined
+				const oldParent = parents.get(m);
+				if (oldParent) {
+					if (oldParent._group === this) continue;
+					oldParent._group.removeLayer(m);
+				} else if (needsClustering.has(m)) {
 					continue;
 				}
 
@@ -684,7 +693,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		if (map.hasLayer(layer) && map.getBounds().contains(layer.getLatLng())) {
 			//Layer is visible ond on screen, immediate return
 			done();
-		} else if (parent._zoom < Math.round(this._map.getZoom())) {
+		} else if (!parent || parent._zoom < Math.round(this._map.getZoom())) {
 			//Layer should be visible at this zoom level. It must not be on screen so just pan over to it
 			this._map.on('moveend', showMarker, this);
 			this._map.panTo(layer.getLatLng());
@@ -708,6 +717,13 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		if (!this._gridClusters) {
 			this._generateInitialClusters();
+		} else if (this._zoomRangeChanged()) {
+			const markers = this._topClusterLevel._getChildren();
+			for (const m of markers) {
+				parents.delete(m);
+				this._needsClustering.add(m);
+			}
+			this._generateInitialClusters();
 		}
 
 		/** @type {number | undefined} */
@@ -722,6 +738,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._map.on('zoomstart', this._stopAnimations, this);
 		this._map.on('zoomend', this._zoomEnd, this);
 		this._map.on('moveend', this._moveEnd, this);
+		this._map.on('zoomlevelschange', this._zoomLevelsChange, this);
 
 		this._spiderfierOnAdd();
 		this._bindEvents();
@@ -737,6 +754,13 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		map.off('zoomstart', this._stopAnimations, this);
 		map.off('zoomend', this._zoomEnd, this);
 		map.off('moveend', this._moveEnd, this);
+		map.off('zoomlevelschange', this._zoomLevelsChange, this);
+
+		// the drag can't end on the map now, so its marker is clustered again when we're added back
+		for (const m of this._dragging) {
+			m.off('dragend', this._childMarkerDragEnd, this);
+		}
+		this._dragging.clear();
 
 		this._unbindEvents();
 
@@ -823,6 +847,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		layer.off('move', this._childMarkerMoved, this);
 		if (this._dragging.delete(layer)) {
 			layer.off('dragend', this._childMarkerDragEnd, this);
+			this._featureGroup.removeLayer(layer);
 		}
 	}
 
@@ -833,8 +858,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			return;
 		}
 		if (e.originalEvent) {
-			this._dragging.add(marker);
-			marker.on('dragend', this._childMarkerDragEnd, this);
+			this._startDrag(marker);
 
 		} else if (!this._ignoreMove) {
 			const isPopupOpen = marker.isPopupOpen();
@@ -856,12 +880,34 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this.addLayer(layer);
 	}
 
+	/**
+	 * Takes the marker out of its clusters until dragend, so that it stays shown where it's dragged: zooming would
+	 * otherwise cluster it, and unspiderfying would put it back at its real latlng.
+	 * @param {ClusterChild<M>} marker
+	 */
+	_startDrag(marker) {
+		const spider = this._spiders.get(marker);
+
+		// the unspiderfy below leaves out dragged markers
+		this._dragging.add(marker);
+		marker.on('dragend', this._childMarkerDragEnd, this);
+
+		if (spider) {
+			this._spiders.delete(marker);
+			this._map.removeLayer(spider.leg);
+			marker.setZIndexOffset?.(0);
+		}
+		this._unspiderfy();
+
+		this._removeLayer(marker, true);
+		this._needsClustering.add(marker);
+		this._topClusterLevel._recalculateBounds();
+		this._refreshClustersIcons();
+	}
+
 	/** @param {LeafletEvent} e */
 	_childMarkerDragEnd(e) {
-		const marker = /** @type {ClusterChild<M>} */ (e.target);
-		marker.off('dragend', this._childMarkerDragEnd, this);
-		this._dragging.delete(marker);
-		this._moveChild(marker);
+		this._moveChild(/** @type {ClusterChild<M>} */ (e.target));
 	}
 
 
@@ -1097,14 +1143,38 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	}
 
+	/** The lowest and highest zoom with clusters for the map's zoom range. */
+	_zoomRange() {
+		const map = this._map,
+			{disableClusteringAtZoom} = this.options;
+		return [
+			Math.floor(map.getMinZoom()),
+			disableClusteringAtZoom !== null ? disableClusteringAtZoom - 1 : Math.ceil(map.getMaxZoom())
+		];
+	}
+
+	_zoomRangeChanged() {
+		const [minZoom, maxZoom] = this._zoomRange();
+		return minZoom !== this._minZoom || maxZoom !== this._maxZoom;
+	}
+
+	// e.g. from setMinZoom, or adding a tile layer with a wider zoom range than the map had
+	_zoomLevelsChange() {
+		if (this._zoomRangeChanged()) {
+			// onAdd reclusters everything when the range changed, as when it changed while we were off the map
+			const map = this._map;
+			this._processQueue();
+			this.onRemove(map);
+			this.onAdd(map);
+		}
+	}
+
 	// the zoom levels and CRS are kept, so that clusters stay usable while we aren't on the map
 	_generateInitialClusters() {
-		const map = this._map,
-			crs = map.options.crs,
-			minZoom = Math.floor(map.getMinZoom()),
+		const crs = this._map.options.crs,
+			[minZoom, maxZoom] = this._zoomRange(),
 			radius = this.options.maxClusterRadius,
-			radiusFn = typeof radius === 'function' ? radius : () => radius,
-			{disableClusteringAtZoom} = this.options;
+			radiusFn = typeof radius === 'function' ? radius : () => radius;
 
 		if (!isFinite(minZoom)) {
 			throw new Error('Map has no minZoom specified');
@@ -1113,8 +1183,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		/** The lowest zoom with clusters. @type {number} */
 		this._minZoom = minZoom;
 		/** The highest zoom with clusters. @type {number} */
-		this._maxZoom = disableClusteringAtZoom !== null ? disableClusteringAtZoom - 1 : Math.ceil(map.getMaxZoom());
-		const maxZoom = this._maxZoom;
+		this._maxZoom = maxZoom;
 		/** @type {typeof CRS} */
 		this._crs = crs;
 		/** @type {{[zoom: number]: DistanceGrid<MarkerCluster<M>>}} */

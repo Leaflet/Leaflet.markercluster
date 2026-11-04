@@ -120,11 +120,11 @@ describe('moving markers', () => {
 		const dragged = drag(marker);
 		dragged.move(new L.Point(20, 0));
 		expect(marker.listens('dragend')).toBe(true);
-		expect(parents.get(marker).getAllChildMarkers(null, true)).not.toContain(marker);
+		expect(parents.get(marker)).toBe(undefined);
 
 		dragged.end();
 		expect(marker.listens('dragend')).toBe(false);
-		expect(parents.get(marker).getAllChildMarkers(null, true)).toContain(marker);
+		expect(parents.get(marker)).not.toBe(undefined);
 	});
 
 	it('does not add back a marker removed during a drag', () => {
@@ -209,5 +209,71 @@ describe('moving markers', () => {
 
 		expect(group.hasLayer(marker)).toBe(false);
 		expect(group.getLayers()).toEqual([]);
+	});
+
+	it('keeps a dragged marker shown when zooming out during the drag', () => {
+		group = new MarkerClusterGroup({animate: false, removeOutsideVisibleBounds: false});
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.1, 1.9], {draggable: true}),
+			others = [new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])];
+		group.addLayers([marker, ...others]);
+
+		const dragged = drag(marker);
+		dragged.move(new L.Point(20, 0));
+		expect(group.hasLayer(marker)).toBe(true);
+		expect(group.getLayers().length).toBe(3);
+
+		map.setZoom(3, {animate: false});
+		expect(group.getVisibleParent(marker)).toBe(marker);
+		expect(marker.getElement().isConnected).toBe(true);
+		expect(group.getVisibleParent(others[0]).getChildCount()).toBe(2);
+
+		dragged.end();
+		expect(group.getVisibleParent(marker).getChildCount()).toBe(3);
+		expect(group.getLayers().length).toBe(3);
+	});
+
+	it('keeps a spiderfied marker where it was dragged', () => {
+		map.setView([1.5, 1.5], 18, {animate: false});
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.5, 1.5], {draggable: true}),
+			others = [new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])];
+		group.addLayers([marker, ...others]);
+		parents.get(marker).spiderfy();
+		vi.runAllTimers();
+
+		const dragged = drag(marker);
+		dragged.move(new L.Point(100, 0));
+		const latlng = marker.getLatLng();
+		expect(latlng.lng).toBeGreaterThan(1.5);
+		expect(group._spiders.has(marker)).toBe(false);
+
+		dragged.end();
+		vi.runAllTimers();
+		expect(marker.getLatLng()).toEqual(latlng);
+		expect(group.getVisibleParent(marker)).toBe(marker);
+		expect(group.getVisibleParent(others[0]).getChildCount()).toBe(2);
+		expect(group._spiders.size).toBe(0);
+	});
+
+	it('clusters a marker dragged when the group was removed from the map', () => {
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.1, 1.9], {draggable: true});
+		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
+
+		const dragged = drag(marker);
+		dragged.move(new L.Point(20, 0));
+		map.removeLayer(group);
+		dragged.end();
+		expect(marker.listens('dragend')).toBe(false);
+
+		map.addLayer(group);
+		expect(group.getLayers().length).toBe(2);
+		expect(group.getVisibleParent(marker)).toBe(marker);
 	});
 });

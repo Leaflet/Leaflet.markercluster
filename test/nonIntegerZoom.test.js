@@ -64,4 +64,18 @@ describe('non-integer min/max zoom', () => {
 		expect(group._featureGroup.hasLayer(a)).toBe(true);
 		expect(group._featureGroup.hasLayer(b)).toBe(true);
 	});
+
+	it('shows a single marker at every zoom', () => {
+		map.options.zoomSnap = 0.5;
+		map.setMinZoom(2.5);
+		const group = new MarkerClusterGroup({animate: false, removeOutsideVisibleBounds: false});
+		const marker = new L.Marker([1.5, 1.5]);
+		map.addLayer(group);
+		group.addLayers([marker, new L.Marker([40, 40]), new L.Marker([40, 40.001])]);
+
+		for (let zoom = 2.5; zoom <= 18.5; zoom += 0.5) {
+			map.setZoom(zoom, {animate: false});
+			expect(group.getVisibleParent(marker), `zoom ${zoom}`).toBe(marker);
+		}
+	});
 });

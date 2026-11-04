@@ -129,4 +129,50 @@ describe('addLayer adding a single marker', () => {
 
 		expect(group.getLayers()).toEqual([marker]);
 	});
+
+	it('takes a marker out of the group it was in', () => {
+		const group = new MarkerClusterGroup({removeOutsideVisibleBounds: false}),
+			other = new MarkerClusterGroup({removeOutsideVisibleBounds: false}),
+			marker = new L.Marker([1.5, 1.5]),
+			stays = new L.Marker([1.5, 1.5]),
+			removed = [];
+
+		map.addLayer(group);
+		map.addLayer(other);
+		group.addLayers([marker, stays]);
+		group.on('layerremove', e => removed.push(e.layer));
+
+		other.addLayer(marker);
+		expect(removed).toEqual([marker]);
+		expect(group.hasLayer(marker)).toBe(false);
+		expect(other.hasLayer(marker)).toBe(true);
+
+		// reclustered in the other group only
+		marker.setLatLng([1.6, 1.6]);
+		expect(group.getLayers()).toEqual([stays]);
+		expect(group.getVisibleParent(stays)).toBe(stays);
+		expect(other.getVisibleParent(marker)).toBe(marker);
+
+		group.removeLayer(marker);
+		expect(other.hasLayer(marker)).toBe(true);
+		other.removeLayer(marker);
+		expect(other.getLayers()).toEqual([]);
+	});
+
+	it('takes a marker out of the group it was in while off the map', () => {
+		const group = new MarkerClusterGroup(),
+			other = new MarkerClusterGroup(),
+			marker = new L.Marker([1.5, 1.5]);
+
+		map.addLayer(group);
+		group.addLayer(marker);
+		map.removeLayer(group);
+
+		other.addLayers([marker]);
+		expect(group.hasLayer(marker)).toBe(false);
+		map.addLayer(group);
+		map.addLayer(other);
+		expect(group.getLayers()).toEqual([]);
+		expect(other.getVisibleParent(marker)).toBe(marker);
+	});
 });
