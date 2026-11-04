@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('support for CircleMarker elements', () => {
 	/////////////////////////////
@@ -162,7 +163,7 @@ describe('support for CircleMarker elements', () => {
 		group.addLayer(markers[2]);
 		vi.advanceTimersByTime(1000);
 
-		expect(markers[2].__parent.getChildCount()).toBe(3);
+		expect(parents.get(markers[2]).getChildCount()).toBe(3);
 		expect(map.hasLayer(markers[2])).toBe(false);
 	});
 
@@ -174,12 +175,12 @@ describe('support for CircleMarker elements', () => {
 		const marker = new L.CircleMarker([1.5, 1.5]);
 		group.addLayers([marker, new L.CircleMarker([1.5, 1.5])]);
 
-		const cluster = marker.__parent;
+		const cluster = parents.get(marker);
 		cluster._iconNeedsUpdate = false;
-		cluster.__parent._iconNeedsUpdate = false;
+		cluster._parent._iconNeedsUpdate = false;
 
 		group.refreshClusters(marker);
 
-		expect(cluster.__parent._iconNeedsUpdate).toBe(true);
+		expect(cluster._parent._iconNeedsUpdate).toBe(true);
 	});
 });

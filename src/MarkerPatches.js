@@ -1,4 +1,5 @@
 import * as L from 'leaflet';
+import {parents} from './MarkerCluster.js';
 
 // Methods added to every marker. The group calls clusterHide / clusterShow on the markers it holds, and apps call
 // refreshIconOptions on them.
@@ -33,8 +34,8 @@ L.Marker.include({
 		// To be used when refreshing a single marker.
 		// Otherwise, better use MCG.refreshClusters() once at the end with
 		// the list of modified markers.
-		if (directlyRefreshClusters && this.__parent) {
-			this.__parent._group.refreshClusters(this);
+		if (directlyRefreshClusters) {
+			parents.get(this)?._group.refreshClusters(this);
 		}
 
 		return this;

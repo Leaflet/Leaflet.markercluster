@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
-import {MarkerCluster} from '../src/MarkerCluster.js';
+import {MarkerCluster, parents} from '../src/MarkerCluster.js';
 
 const isV1 = L.version.startsWith('1.');
 
@@ -226,7 +226,7 @@ describe('animated zoom', () => {
 		group.addLayers(markers);
 		map.addLayer(group);
 
-		const cluster = markers[0].__parent;
+		const cluster = parents.get(markers[0]);
 		const spiderfied = new Promise((resolve) => { group.once('spiderfied', resolve); });
 		cluster.spiderfy();
 		await spiderfied;
@@ -239,7 +239,7 @@ describe('animated zoom', () => {
 
 		for (const marker of markers) {
 			expect(marker.getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
-			expect(marker._spiderLeg).toBe(undefined);
+			expect(group._spiders.has(marker)).toBe(false);
 		}
 		expect(group._spiderfied).toBe(null);
 	});

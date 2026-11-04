@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('spiderfy', () => {
 	/////////////////////////////
@@ -52,7 +53,7 @@ describe('spiderfy', () => {
 		group.addLayer(marker2);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		expect(marker._icon.parentNode).toBe(map._panes.markerPane);
 		expect(marker2._icon.parentNode).toBe(map._panes.markerPane);
@@ -69,7 +70,7 @@ describe('spiderfy', () => {
 		group.addLayer(marker2);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		// Leaflet 1.0.0 now uses an intermediate L.Renderer.
 		// marker > _path > _rootGroup (g) > _container (svg) > pane (div)
@@ -88,7 +89,7 @@ describe('spiderfy', () => {
 		group.addLayer(marker2);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		expect(marker._path.parentNode.parentNode.parentNode).toBe(map.getPane('overlayPane'));
 		expect(marker2._path.parentNode.parentNode.parentNode).toBe(map.getPane('overlayPane'));
@@ -106,10 +107,10 @@ describe('spiderfy', () => {
 
 		// Get the appropriate cluster.
 		const zoom = map.getZoom();
-		let cluster = marker.__parent;
+		let cluster = parents.get(marker);
 
 		while (cluster._zoom !== zoom) {
-			cluster = cluster.__parent;
+			cluster = cluster._parent;
 		}
 
 		expect(zoom).toBeLessThan(10);
@@ -135,14 +136,14 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		expect(marker.__parent._zoom).toBe(18);
+		expect(parents.get(marker)._zoom).toBe(18);
 
 		// Get the appropriate cluster.
 		const zoom = map.getZoom();
-		let cluster = marker.__parent;
+		let cluster = parents.get(marker);
 
 		while (cluster._zoom !== zoom) {
-			cluster = cluster.__parent;
+			cluster = cluster._parent;
 		}
 
 		expect(zoom).toBeLessThan(10);
@@ -168,7 +169,7 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		expect(map._panes.markerPane.childNodes.length).toBe(3); // The 2 markers + semi-transparent cluster.
 		expect(map.getPane('overlayPane').firstChild.firstChild.childNodes.length).toBe(2); // The 2 spider legs.
@@ -185,19 +186,19 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
-		const leg = marker._spiderLeg.getElement();
+		const leg = group._spiders.get(marker).leg.getElement();
 		const legKeyframes = () => leg.getAnimations().at(-2).effect.getKeyframes();
 
-		expect(marker._spiderLeg.options.opacity).toBe(0.5);
+		expect(group._spiders.get(marker).leg.options.opacity).toBe(0.5);
 		expect(parseFloat(legKeyframes()[0].strokeDashoffset)).toBeGreaterThan(0);
 		expect(legKeyframes()[1].strokeDashoffset).toBe('0');
 
 		vi.advanceTimersByTime(1000);
-		marker.__parent.unspiderfy();
+		parents.get(marker).unspiderfy();
 
-		expect(marker._spiderLeg.options.opacity).toBe(0);
+		expect(group._spiders.get(marker).leg.options.opacity).toBe(0);
 		expect(legKeyframes()[0].strokeDashoffset).toBe('0');
 		expect(parseFloat(legKeyframes()[1].strokeDashoffset)).toBeGreaterThan(0);
 	});
@@ -212,7 +213,7 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		const cluster = marker.__parent,
+		const cluster = parents.get(marker),
 			clusterPos = map.latLngToLayerPoint(cluster.getLatLng()).round();
 		cluster.spiderfy();
 
@@ -238,6 +239,25 @@ describe('spiderfy', () => {
 		expect(marker.getElement().style.opacity).toBe('0');
 	});
 
+	it('puts a marker removed while spiderfied back at its latlng, even in a zoom animation', () => {
+		group = new MarkerClusterGroup();
+		const marker = new L.Marker([1.5, 1.5]);
+		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
+		map.addLayer(group);
+
+		parents.get(marker).spiderfy();
+		vi.advanceTimersByTime(1000);
+		expect(marker.getLatLng()).not.toEqual(new L.LatLng(1.5, 1.5));
+
+		group._inZoomAnimation++; // the cluster can't unspiderfy now
+		group.removeLayer(marker);
+		group._inZoomAnimation--;
+
+		expect(marker.getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
+		expect(group._spiders.has(marker)).toBe(false);
+		expect(map.hasLayer(marker)).toBe(false);
+	});
+
 	it('spiderfies and unspiderfies with the Canvas renderer', () => {
 
 		map.remove();
@@ -252,17 +272,17 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 		vi.advanceTimersByTime(1000);
 
 		expect(map.hasLayer(marker)).toBe(true);
-		expect(marker._spiderLeg.options.opacity).toBe(0.5);
+		expect(group._spiders.get(marker).leg.options.opacity).toBe(0.5);
 
-		marker.__parent.unspiderfy();
+		parents.get(marker).unspiderfy();
 		vi.advanceTimersByTime(1000);
 
 		expect(map.hasLayer(marker)).toBe(false);
-		expect(marker._spiderLeg).toBe(undefined);
+		expect(group._spiders.has(marker)).toBe(false);
 	});
 
 	it('adds then removes class "leaflet-cluster-anim" from mapPane on spiderfy', () => {
@@ -275,7 +295,7 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		expect(map._panes.mapPane.className).toContain('leaflet-cluster-anim');
 
@@ -295,11 +315,11 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		vi.advanceTimersByTime(1000);
 
-		marker.__parent.unspiderfy();
+		parents.get(marker).unspiderfy();
 
 		expect(map._panes.mapPane.className).toContain('leaflet-cluster-anim');
 
@@ -320,7 +340,7 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		vi.advanceTimersByTime(1000);
 
@@ -334,7 +354,7 @@ describe('spiderfy', () => {
 			fired();
 		});
 
-		marker.__parent.unspiderfy();
+		parents.get(marker).unspiderfy();
 
 		vi.advanceTimersByTime(1000);
 		expect(fired).toHaveBeenCalledOnce();
@@ -350,7 +370,7 @@ describe('spiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		vi.advanceTimersByTime(1000);
 
@@ -374,7 +394,7 @@ describe('spiderfy', () => {
 		group.addLayer(marker2);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		expect(spiderfyShapePositionsFuntion).toHaveBeenCalledOnce();
 	});
@@ -392,7 +412,7 @@ describe('spiderfy', () => {
 			group.addLayer(marker2);
 			map.addLayer(group);
 
-			marker.__parent.spiderfy();
+			parents.get(marker).spiderfy();
 
 			expect(group._spiderfied).not.toBe(null);
 
@@ -426,7 +446,7 @@ describe('spiderfy', () => {
 				fired();
 			});
 
-			marker.__parent.spiderfy();
+			parents.get(marker).spiderfy();
 
 			vi.advanceTimersByTime(199);
 			expect(fired).not.toHaveBeenCalled();
@@ -455,7 +475,7 @@ describe('spiderfy', () => {
 				fired();
 			});
 
-			marker.__parent.spiderfy();
+			parents.get(marker).spiderfy();
 
 			vi.advanceTimersByTime(300);
 			expect(fired).toHaveBeenCalledOnce();

@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('moving markers', () => {
 	/////////////////////////////
@@ -89,11 +90,11 @@ describe('moving markers', () => {
 
 		marker.fire('dragstart');
 		expect(marker.listens('dragend')).toBe(true);
-		expect(marker.__parent.getAllChildMarkers(null, true)).not.toContain(marker);
+		expect(parents.get(marker).getAllChildMarkers(null, true)).not.toContain(marker);
 
 		marker.fire('dragend');
 		expect(marker.listens('dragend')).toBe(false);
-		expect(marker.__parent.getAllChildMarkers(null, true)).toContain(marker);
+		expect(parents.get(marker).getAllChildMarkers(null, true)).toContain(marker);
 	});
 
 	it('does not add back a marker removed during a drag', () => {

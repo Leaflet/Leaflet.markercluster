@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('removeLayers', () => {
 	/////////////////////////////
@@ -146,7 +147,7 @@ describe('removeLayers', () => {
 
 		group.addLayers(markers);
 
-		markers[0].__parent.spiderfy();
+		parents.get(markers[0]).spiderfy();
 
 		// We must wait for the spiderfy animation to timeout
 		vi.advanceTimersByTime(200);

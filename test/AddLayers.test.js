@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('addLayers adding multiple markers', () => {
 	/////////////////////////////
@@ -157,9 +158,9 @@ describe('addLayers adding multiple markers', () => {
 		expect(marker._icon).toBe(null);
 		expect(marker2._icon).toBe(null);
 		expect(marker3._icon).toBe(undefined);
-		expect(marker3.__parent._icon).not.toBe(undefined);
-		expect(marker3.__parent._icon).not.toBe(null);
-		expect(marker3.__parent._icon.innerText.trim()).toBe('3');
+		expect(parents.get(marker3)._icon).not.toBe(undefined);
+		expect(parents.get(marker3)._icon).not.toBe(null);
+		expect(parents.get(marker3)._icon.innerText.trim()).toBe('3');
 
 		vi.useRealTimers();
 	});

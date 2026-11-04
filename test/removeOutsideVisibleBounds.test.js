@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('Option removeOutsideVisibleBounds', () => {
 	/////////////////////////////
@@ -142,7 +143,7 @@ describe('Option removeOutsideVisibleBounds', () => {
 
 		for (let i = 0; i < markers.length; i++) {
 			try {
-				expect(markers[i].__parent._zoom).toBeLessThan(mapZoom);
+				expect(parents.get(markers[i])._zoom).toBeLessThan(mapZoom);
 			} catch (e) {
 				console.log(`Failed marker: ${  i + 1}`);
 				throw e;

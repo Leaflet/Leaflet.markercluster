@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('unspiderfy', () => {
 	/////////////////////////////
@@ -52,7 +53,7 @@ describe('unspiderfy', () => {
 		group.addLayer(marker2);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		vi.advanceTimersByTime(1000);
 
@@ -75,7 +76,7 @@ describe('unspiderfy', () => {
 		group.addLayer(marker2);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		vi.advanceTimersByTime(1000);
 
@@ -98,7 +99,7 @@ describe('unspiderfy', () => {
 		group.addLayer(marker2);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		vi.advanceTimersByTime(1000);
 
@@ -121,7 +122,7 @@ describe('unspiderfy', () => {
 		group.addLayers([marker, marker2]);
 		map.addLayer(group);
 
-		marker.__parent.spiderfy();
+		parents.get(marker).spiderfy();
 
 		vi.advanceTimersByTime(1000);
 

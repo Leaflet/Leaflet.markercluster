@@ -5,8 +5,7 @@ import {QuickHull} from './QuickHull.js';
 /** @import {MarkerClusterGroup} from './MarkerClusterGroup.js' */
 
 /**
- * A point layer in a group (a marker, or a vector layer with a single point like a circle marker), with the state the
- * group keeps on it.
+ * A point layer in a group: a marker, or a vector layer with a single point like a circle marker.
  * @template {Layer} [M=Layer]
  * @typedef {M & {
  *   getLatLng(): LatLng,
@@ -16,10 +15,7 @@ import {QuickHull} from './QuickHull.js';
  *   closePopup(): unknown,
  *   clusterHide?(): unknown,
  *   clusterShow?(): unknown,
- *   setZIndexOffset?(offset: number): unknown,
- *   __parent?: MarkerCluster<M>,
- *   _spiderLeg?: Polyline,
- *   _preSpiderfyLatlng?: LatLng
+ *   setZIndexOffset?(offset: number): unknown
  * }} ClusterChild
  */
 
@@ -36,6 +32,13 @@ import {QuickHull} from './QuickHull.js';
  */
 
 const isV1 = L.version.startsWith('1.');
+
+/**
+ * The cluster each marker is in, the group's top level one if no other. Clusters keep theirs in `_parent`. Shared
+ * between groups since a marker can be in one group only, and refreshIconOptions only has the marker to go by.
+ * @type {WeakMap<Layer, MarkerCluster<any>>}
+ */
+export const parents = new WeakMap();
 
 // the spiderLegPolylineOptions default
 const defaultLegOpacity = 0.5;
@@ -190,7 +193,7 @@ export class MarkerCluster extends L.Marker {
 
 		this._bounds = new L.LatLngBounds();
 		/** @type {MarkerCluster<M> | undefined} */
-		this.__parent = undefined;
+		this._parent = undefined;
 		/** @type {Icon | undefined} */
 		this._iconObj = undefined;
 
@@ -301,7 +304,7 @@ export class MarkerCluster extends L.Marker {
 		let count = 1;
 		if (child instanceof MarkerCluster) {
 			this._childClusters.push(child);
-			child.__parent = this;
+			child._parent = this;
 			count = child._childCount;
 		} else {
 			this._markers.push(child);
@@ -313,7 +316,7 @@ export class MarkerCluster extends L.Marker {
 			cluster._childCount += count;
 			cluster._iconNeedsUpdate = true;
 			cluster._boundsNeedUpdate = true;
-			cluster = cluster.__parent;
+			cluster = cluster._parent;
 		}
 	}
 
@@ -647,6 +650,7 @@ export class MarkerCluster extends L.Marker {
 		const group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
+			spiders = group._spiders,
 			childMarkers = this._getChildren([], true);
 
 		group._ignoreMove = true;
@@ -657,18 +661,18 @@ export class MarkerCluster extends L.Marker {
 
 			fg.removeLayer(m);
 
-			if (m._preSpiderfyLatlng) {
-				m.setLatLng(m._preSpiderfyLatlng);
-				delete m._preSpiderfyLatlng;
+			const spider = spiders.get(m);
+			if (!spider) {
+				continue;
+			}
+			spiders.delete(m);
+			if (spider.latlng) {
+				m.setLatLng(spider.latlng);
 			}
 			if (m.setZIndexOffset) {
 				m.setZIndexOffset(0);
 			}
-
-			if (m._spiderLeg) {
-				map.removeLayer(m._spiderLeg);
-				delete m._spiderLeg;
-			}
+			map.removeLayer(spider.leg);
 		}
 
 		group.fire('unspiderfied', {
@@ -708,14 +712,13 @@ export class MarkerCluster extends L.Marker {
 			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
 			const leg = new L.Polyline([thisLayerLatLng, newPos], legOptions);
 			map.addLayer(leg);
-			m._spiderLeg = leg;
+			group._spiders.set(m, {leg, latlng: m.getLatLng()});
 			animateLeg(leg, true, duration);
 
 			if (m.setZIndexOffset) {
 				m.setZIndexOffset(1000000); // Make normal markers appear on top of EVERYTHING
 			}
 
-			m._preSpiderfyLatlng = m.getLatLng();
 			m.setLatLng(newPos);
 
 			// Vectors just get immediately added
@@ -749,6 +752,7 @@ export class MarkerCluster extends L.Marker {
 		const group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
+			spiders = group._spiders,
 			// with a zoom, finish before it ends and the group reclusters
 			duration = withZoom ? zoomDuration - 50 : group.options.animationDuration,
 			childMarkers = this._getChildren([], true);
@@ -766,11 +770,11 @@ export class MarkerCluster extends L.Marker {
 
 		for (let i = childMarkers.length - 1; i >= 0; i--) {
 			const m = childMarkers[i],
-				leg = m._spiderLeg,
-				latlng = m._preSpiderfyLatlng;
+				spider = spiders.get(m),
+				latlng = spider?.latlng;
 
 			//Marker was added to us after we were spiderfied
-			if (!latlng) {
+			if (!spider || !latlng) {
 				continue;
 			}
 
@@ -782,7 +786,7 @@ export class MarkerCluster extends L.Marker {
 
 			//Fix up the location to the real one
 			m.setLatLng(latlng);
-			delete m._preSpiderfyLatlng;
+			spider.latlng = null;
 
 			if (m instanceof L.Marker) {
 				const opacity = m.options.opacity;
@@ -792,9 +796,7 @@ export class MarkerCluster extends L.Marker {
 				fg.removeLayer(m);
 			}
 
-			if (leg) {
-				animateLeg(leg, false, duration, withZoom);
-			}
+			animateLeg(spider.leg, false, duration, withZoom);
 		}
 
 		group._ignoreMove = false;
@@ -803,16 +805,17 @@ export class MarkerCluster extends L.Marker {
 			//If we have only <= one child left then that marker will be shown on the map so don't remove it!
 			let stillThereChildCount = 0;
 			for (let i = childMarkers.length - 1; i >= 0; i--) {
-				if (childMarkers[i]._spiderLeg) {
+				if (spiders.has(childMarkers[i])) {
 					stillThereChildCount++;
 				}
 			}
 
 
 			for (let i = childMarkers.length - 1; i >= 0; i--) {
-				const m = childMarkers[i];
+				const m = childMarkers[i],
+					spider = spiders.get(m);
 
-				if (!m._spiderLeg) { //Has already been unspiderfied
+				if (!spider) { //Has already been unspiderfied
 					continue;
 				}
 
@@ -828,8 +831,8 @@ export class MarkerCluster extends L.Marker {
 					fg.removeLayer(m);
 				}
 
-				map.removeLayer(m._spiderLeg);
-				delete m._spiderLeg;
+				map.removeLayer(spider.leg);
+				spiders.delete(m);
 			}
 			group._animationEnd();
 			group.fire('unspiderfied', {
@@ -897,10 +900,9 @@ export class MarkerClusterNonAnimated extends MarkerCluster {
 			// Add the leg before the marker, so that in case the latter is a circleMarker, the leg is behind it.
 			const leg = new L.Polyline([this.getLatLng(), newPos], legOptions);
 			map.addLayer(leg);
-			m._spiderLeg = leg;
+			group._spiders.set(m, {leg, latlng: m.getLatLng()});
 
 			// Now add the marker.
-			m._preSpiderfyLatlng = m.getLatLng();
 			m.setLatLng(newPos);
 			if (m.setZIndexOffset) {
 				m.setZIndexOffset(1000000); //Make these appear on top of EVERYTHING

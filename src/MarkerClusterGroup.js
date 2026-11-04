@@ -1,9 +1,9 @@
 import * as L from 'leaflet';
 import {DistanceGrid} from './DistanceGrid.js';
-import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, cancelAnimations, stopAnimations} from './MarkerCluster.js';
+import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, cancelAnimations, parents, stopAnimations} from './MarkerCluster.js';
 import './MarkerPatches.js';
 
-/** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, PolylineOptions} from 'leaflet' */
+/** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, Polyline, PolylineOptions} from 'leaflet' */
 /** @import {ClusterChild} from './MarkerCluster.js' */
 
 /**
@@ -201,6 +201,12 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		/** The cluster currently spiderfied, if any. @type {MarkerCluster<M> | null} */
 		this._spiderfied = null;
+		/**
+		 * Spiderfied markers with their legs and real latlngs, until they're back in the cluster (the latlng is restored
+		 * as soon as the unspiderfy animation starts, the leg is removed when it ends).
+		 * @type {Map<ClusterChild<M>, {leg: Polyline, latlng: LatLng | null}>}
+		 */
+		this._spiders = new Map();
 		/** @type {Polygon | null} */
 		this._shownPolygon = null;
 
@@ -264,9 +270,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		//Work out what is visible
 		const currentZoom = this._zoom;
 		/** @type {ClusterChild<M> | MarkerCluster<M>} */
-		let visibleLayer = layer;
-		while (visibleLayer.__parent && visibleLayer.__parent._zoom >= currentZoom) {
-			visibleLayer = visibleLayer.__parent;
+		let visibleLayer = layer,
+			parent = parents.get(layer);
+		while (parent && parent._zoom >= currentZoom) {
+			visibleLayer = parent;
+			parent = parent._parent;
 		}
 
 		if (this._currentShownBounds.contains(visibleLayer.getLatLng())) {
@@ -311,7 +319,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		// not in this group, maybe in another one
-		if (layer.__parent?._group !== this) {
+		if (parents.get(layer)?._group !== this) {
 			return this;
 		}
 
@@ -419,10 +427,14 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				}
 
 				//If we just made a cluster of size 2 then we need to remove the other marker from the map (if it is) or we never will
-				if (m.__parent && m.__parent.getChildCount() === 2) {
-					const markers = m.__parent.getAllChildMarkers(),
+				const parent = /** @type {MarkerCluster<M>} */ (parents.get(m));
+				if (parent.getChildCount() === 2) {
+					const markers = parent.getAllChildMarkers(),
 						otherMarker = markers[0] === m ? markers[1] : markers[0];
-					fg.removeLayer(otherMarker);
+					// it's shown only if it was in the group before this call, and fg.removeLayer would stamp it with an id
+					if (/** @type {{_map?: LeafletMap | null}} */ (otherMarker)._map) {
+						fg.removeLayer(otherMarker);
+					}
 				}
 			}
 
@@ -455,7 +467,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			return this.removeLayer(layersArray);
 		}
 
-		// non-point layers have no __parent, the rest is optional
+		// non-point layers too, which only the membership checks below tell apart
 		const layers = /** @type {ClusterChild<M>[]} */ (flattenGroups(layersArray)),
 			fg = this._featureGroup,
 			npg = this._nonPointGroup;
@@ -478,11 +490,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			if (this._needsClustering.delete(m)) {
 				if (fireRemove) this.fire('layerremove', {layer: m});
 
-			} else if (!m.__parent) {
+			} else if (!parents.has(m)) {
 				npg.removeLayer(m);
 				if (fireRemove) this.fire('layerremove', {layer: m});
 
-			} else if (m.__parent._group === this) {
+			} else if (parents.get(m)?._group === this) {
 				this._removeLayer(m, true, removedFromTop);
 				if (fireRemove) this.fire('layerremove', {layer: m});
 
@@ -528,7 +540,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this.eachLayer((layer) => {
 			const marker = /** @type {ClusterChild<M>} */ (layer);
 			this._unbindChild(marker);
-			delete marker.__parent;
+			parents.delete(marker);
 		});
 		this._needsClustering.clear();
 
@@ -618,14 +630,17 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/**
 	 * Whether the layer is in the group, either in a cluster or not.
-	 * @param {M} layerToCheck
+	 * @param {M} layer
 	 */
-	hasLayer(layerToCheck) {
-		if (!layerToCheck) {
+	hasLayer(layer) {
+		if (!layer) {
 			return false;
 		}
-		const layer = /** @type {ClusterChild<M>} */ (layerToCheck);
-		return this._needsClustering.has(layer) || layer.__parent?._group === this || this._nonPointGroup.hasLayer(layer);
+		// LayerGroup#hasLayer stamps the layer with an id, so it's left out for points, which are never in that group
+		if (!isPoint(layer)) {
+			return this._nonPointGroup.hasLayer(layer);
+		}
+		return this._needsClustering.has(layer) || parents.get(layer)?._group === this;
 	}
 
 	/**
@@ -639,7 +654,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			layer = /** @type {ClusterChild<M>} */ (marker);
 
 		const done = typeof callback === 'function' ? callback : () => {},
-			parent = /** @type {MarkerCluster<M>} */ (layer.__parent);
+			parent = /** @type {MarkerCluster<M>} */ (parents.get(layer));
 
 		const showMarker = () => {
 			// Assumes that map.hasLayer checks for direct appearance on map, not recursively calling
@@ -739,12 +754,14 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	 * @returns {M | MarkerCluster<M> | null}
 	 */
 	getVisibleParent(marker) {
-		/** @type {ClusterChild<M> | MarkerCluster<M> | undefined} */
-		let vMarker = /** @type {ClusterChild<M>} */ (marker);
-		while (vMarker && !this._featureGroup.hasLayer(vMarker)) {
-			vMarker = vMarker.__parent;
+		if (this._featureGroup.hasLayer(marker)) {
+			return marker;
 		}
-		return vMarker || null;
+		let cluster = parents.get(/** @type {ClusterChild<M>} */ (marker));
+		while (cluster && !this._featureGroup.hasLayer(cluster)) {
+			cluster = cluster._parent;
+		}
+		return cluster || null;
 	}
 
 	/**
@@ -847,7 +864,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		//Work our way up the clusters removing them as we go if required
 		/** @type {MarkerCluster<M> | undefined} */
-		let cluster = marker.__parent;
+		let cluster = parents.get(marker);
 
 		//Remove the marker from the immediate parents marker list
 		if (removedFromTop && cluster === this._topClusterLevel) {
@@ -866,7 +883,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			} else if (removeFromDistanceGrid && cluster._childCount <= 1) { //Cluster no longer required
 				//We need to push the other marker up to the parent
 				const otherMarker = cluster._markers[0] === marker ? cluster._markers[1] : cluster._markers[0],
-					parent = /** @type {MarkerCluster<M>} */ (cluster.__parent);
+					parent = /** @type {MarkerCluster<M>} */ (cluster._parent);
 
 				//Update distance grid
 				gridClusters[cluster._zoom].removeObject(cluster);
@@ -875,7 +892,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				//Move otherMarker up to parent
 				this._arraySplice(parent._childClusters, cluster);
 				parent._markers.push(otherMarker);
-				otherMarker.__parent = parent;
+				parents.set(otherMarker, parent);
 
 				if (cluster.getElement()) {
 					//Cluster is currently on the map, need to put the marker on the map instead
@@ -888,10 +905,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				cluster._iconNeedsUpdate = true;
 			}
 
-			cluster = cluster.__parent;
+			cluster = cluster._parent;
 		}
 
-		delete marker.__parent;
+		parents.delete(marker);
 	}
 
 	/**
@@ -1123,7 +1140,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			const closestCluster = gridClusters[zoom].getNearObject(markerPoint);
 			if (closestCluster) {
 				closestCluster._addChild(layer);
-				layer.__parent = closestCluster;
+				parents.set(layer, closestCluster);
 				return;
 			}
 
@@ -1131,15 +1148,15 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			const closest = gridUnclustered[zoom].getNearObject(markerPoint);
 			if (closest) {
 				// markers in the grids always have a parent, the top cluster if no other
-				const parent = /** @type {MarkerCluster<M>} */ (closest.__parent);
+				const parent = /** @type {MarkerCluster<M>} */ (parents.get(closest));
 				this._removeLayer(closest, false);
 
 				//Create new cluster with these 2 in it
 
 				const newCluster = new this._markerCluster(this, zoom, closest, layer);
 				gridClusters[zoom].addObject(newCluster, this._project(newCluster._cLatLng, zoom));
-				closest.__parent = newCluster;
-				layer.__parent = newCluster;
+				parents.set(closest, newCluster);
+				parents.set(layer, newCluster);
 
 				//First create any new intermediate parent clusters that don't exist
 				let lastParent = newCluster;
@@ -1161,7 +1178,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		//Didn't get in anything, add us to the top
 		this._topClusterLevel._addChild(layer);
-		layer.__parent = this._topClusterLevel;
+		parents.set(layer, this._topClusterLevel);
 
 	}
 
@@ -1344,10 +1361,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			// much more efficient than trying to be smart and make short lists,
 			// at least in the case of a hierarchy following a power law:
 			// http://jsperf.com/flag-nodes-in-power-hierarchy/2
-			parent = /** @type {{[id: string]: ClusterChild<M>}} */ (layers)[id].__parent;
+			parent = parents.get(/** @type {{[id: string]: ClusterChild<M>}} */ (layers)[id]);
 			while (parent) {
 				parent._iconNeedsUpdate = true;
-				parent = parent.__parent;
+				parent = parent._parent;
 			}
 		}
 	}
@@ -1433,19 +1450,23 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	 * @param {ClusterChild<M>} layer
 	 */
 	_unspiderfyLayer(layer) {
-		if (layer._spiderLeg) {
+		const spider = this._spiders.get(layer);
+		if (spider) {
+			this._spiders.delete(layer);
 			this._featureGroup.removeLayer(layer);
 
 			if (layer.clusterShow) {
 				layer.clusterShow();
 			}
-			//Position will be fixed up immediately in _animationUnspiderfy
+			// still at the spider position if the cluster couldn't unspiderfy (in a zoom animation)
+			if (spider.latlng) {
+				layer.setLatLng(spider.latlng);
+			}
 			if (layer.setZIndexOffset) {
 				layer.setZIndexOffset(0);
 			}
 
-			this._map.removeLayer(layer._spiderLeg);
-			delete layer._spiderLeg;
+			this._map.removeLayer(spider.leg);
 		}
 	}
 

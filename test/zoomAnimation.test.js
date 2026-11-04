@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('zoomAnimation', () => {
 	/////////////////////////////
@@ -63,8 +64,8 @@ describe('zoomAnimation', () => {
 		group.addLayers(markers);
 		map.addLayer(group);
 
-		const cluster = markers[0].__parent;
-		expect(markers[1].__parent).toBe(cluster);
+		const cluster = parents.get(markers[0]);
+		expect(parents.get(markers[1])).toBe(cluster);
 		expect(map.hasLayer(cluster)).toBe(true);
 
 		/** @param {L.Marker} m */
@@ -220,7 +221,7 @@ describe('zoomAnimation', () => {
 				group.addLayer(new L.Marker(newLatLng));
 			}
 
-			const parentCluster = bottomMarker.__parent;
+			const parentCluster = parents.get(bottomMarker);
 
 			expect(parentCluster._icon.parentNode).toBe(map._panes.markerPane);
 

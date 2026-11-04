@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
+import {parents} from '../src/MarkerCluster.js';
 
 describe('refreshClusters', () => {
 	/////////////////////////////
@@ -39,10 +40,10 @@ describe('refreshClusters', () => {
 	});
 
 	function getClusterAtZoom(marker, zoom) {
-		let parent = marker.__parent;
+		let parent = parents.get(marker);
 
 		while (parent && parent._zoom !== zoom) {
-			parent = parent.__parent;
+			parent = parent._parent;
 		}
 
 		return parent;
@@ -101,6 +102,25 @@ describe('refreshClusters', () => {
 		// Also check that visible clusters are "un-flagged" since they should be re-drawn.
 		expect(marker1cluster5._iconNeedsUpdate).toBeFalsy();
 
+	});
+
+	it('refreshes the clusters of a marker from refreshIconOptions', () => {
+		group = new MarkerClusterGroup().addTo(map);
+		const marker = new L.Marker([1.5, 1.5]).addTo(group);
+		new L.Marker([1.5, 1.5]).addTo(group);
+
+		map.setZoom(10, {animate: false});
+		const cluster = getClusterAtZoom(marker, 10);
+		expect(cluster._iconNeedsUpdate).toBeFalsy();
+		map.setZoom(5, {animate: false});
+		vi.advanceTimersByTime(1000);
+
+		marker.refreshIconOptions({className: 'foo'});
+		expect(cluster._iconNeedsUpdate).toBeFalsy();
+
+		marker.refreshIconOptions({className: 'bar'}, true);
+		expect(cluster._iconNeedsUpdate).toBeTruthy();
+		expect(marker.options.icon.options.className).toBe('bar');
 	});
 
 	it('re-draws visible clusters', () => {
