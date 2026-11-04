@@ -1,5 +1,3 @@
-import * as L from 'leaflet';
-
 /** @typedef {{x: number, y: number}} XY */
 
 /**
@@ -12,10 +10,10 @@ export class DistanceGrid {
 	constructor(cellSize) {
 		this._cellSize = cellSize;
 		this._sqCellSize = cellSize * cellSize;
-		/** @type {{[y: number]: {[x: number]: T[]}}} */
-		this._grid = {};
-		/** @type {{[stamp: number]: XY}} */
-		this._objectPoint = {};
+		/** Rows by cell y, cells by cell x, each cell a flat [obj, x, y, obj, x, y, ...] array. @type {Map<number, Map<number, Array<T | number>>>} */
+		this._rows = new Map();
+		/** @type {Map<T, XY>} */
+		this._points = new Map();
 	}
 
 	/**
@@ -24,15 +22,20 @@ export class DistanceGrid {
 	 */
 	addObject(obj, point) {
 		const x = this._getCoord(point.x),
-			y = this._getCoord(point.y),
-			grid = this._grid,
-			row = grid[y] = grid[y] || {},
-			cell = row[x] = row[x] || [],
-			stamp = L.Util.stamp(obj);
+			y = this._getCoord(point.y);
 
-		this._objectPoint[stamp] = point;
-
-		cell.push(obj);
+		let row = this._rows.get(y);
+		if (!row) {
+			row = new Map();
+			this._rows.set(y, row);
+		}
+		let cell = row.get(x);
+		if (!cell) {
+			cell = [];
+			row.set(x, cell);
+		}
+		cell.push(obj, point.x, point.y);
+		this._points.set(obj, point);
 	}
 
 	/**
@@ -40,27 +43,22 @@ export class DistanceGrid {
 	 * @param {T} obj
 	 */
 	removeObject(obj) {
-		const stamp = L.Util.stamp(obj),
-			point = this._objectPoint[stamp];
+		const point = this._points.get(obj);
 		if (!point) {
 			return false;
 		}
-		delete this._objectPoint[stamp];
+		this._points.delete(obj);
 
 		const x = this._getCoord(point.x),
-			y = this._getCoord(point.y),
-			row = this._grid[y],
-			cell = row[x];
+			row = /** @type {Map<number, Array<T | number>>} */ (this._rows.get(this._getCoord(point.y))),
+			cell = /** @type {Array<T | number>} */ (row.get(x));
 
-		for (let i = 0, len = cell.length; i < len; i++) {
+		for (let i = 0; i < cell.length; i += 3) {
 			if (cell[i] === obj) {
-
-				cell.splice(i, 1);
-
-				if (len === 1) {
-					delete row[x];
+				cell.splice(i, 3);
+				if (!cell.length) {
+					row.delete(x);
 				}
-
 				return true;
 			}
 		}
@@ -73,29 +71,28 @@ export class DistanceGrid {
 	 * @returns {T | null}
 	 */
 	getNearObject(point) {
-		const x = this._getCoord(point.x),
-			y = this._getCoord(point.y),
-			objectPoint = this._objectPoint;
+		const px = point.x,
+			py = point.y,
+			x = this._getCoord(px),
+			y = this._getCoord(py);
 		let closestDistSq = this._sqCellSize,
 			closest = null;
 
 		for (let i = y - 1; i <= y + 1; i++) {
-			const row = this._grid[i];
-			if (row) {
+			const row = this._rows.get(i);
+			if (!row) continue;
 
-				for (let j = x - 1; j <= x + 1; j++) {
-					const cell = row[j];
-					if (cell) {
+			for (let j = x - 1; j <= x + 1; j++) {
+				const cell = row.get(j);
+				if (!cell) continue;
 
-						for (let k = 0, len = cell.length; k < len; k++) {
-							const obj = cell[k];
-							const dist = this._sqDist(objectPoint[L.Util.stamp(obj)], point);
-							if (dist < closestDistSq ||
-								dist <= closestDistSq && closest === null) {
-								closestDistSq = dist;
-								closest = obj;
-							}
-						}
+				for (let k = 0; k < cell.length; k += 3) {
+					const dx = /** @type {number} */ (cell[k + 1]) - px,
+						dy = /** @type {number} */ (cell[k + 2]) - py,
+						dist = dx * dx + dy * dy;
+					if (dist < closestDistSq || dist <= closestDistSq && closest === null) {
+						closestDistSq = dist;
+						closest = /** @type {T} */ (cell[k]);
 					}
 				}
 			}
@@ -107,15 +104,5 @@ export class DistanceGrid {
 	_getCoord(x) {
 		const coord = Math.floor(x / this._cellSize);
 		return isFinite(coord) ? coord : x;
-	}
-
-	/**
-	 * @param {XY} p
-	 * @param {XY} p2
-	 */
-	_sqDist(p, p2) {
-		const dx = p2.x - p.x,
-			dy = p2.y - p.y;
-		return dx * dx + dy * dy;
 	}
 }

@@ -204,12 +204,14 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		/** @type {Polygon | null} */
 		this._shownPolygon = null;
 
+		// dragend is only listened to during a drag, to keep the listeners on every marker to a minimum
 		/** @type {{[type: string]: (e: LeafletEvent) => void}} */
 		this._childMarkerEventHandlers = {
 			'dragstart': this._childMarkerDragStart,
-			'move': this._childMarkerMoved,
-			'dragend': this._childMarkerDragEnd,
+			'move': this._childMarkerMoved
 		};
+		/** Markers being dragged, which are reclustered on dragend instead of on every move. @type {Set<ClusterChild<M>>} */
+		this._dragging = new Set();
 
 		// the class methods are the animated versions
 		const animate = this.options.animate;
@@ -301,7 +303,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		// detached in every case, or moving the marker later would add it back
-		layer.off(this._childMarkerEventHandlers, this);
+		this._unbindChild(layer);
 
 		if (this._needsClustering.delete(layer)) {
 			this.fire('layerremove', {layer});
@@ -353,6 +355,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			npg = this._nonPointGroup;
 
 		if (!this._map) {
+			const fireAdd = !skipLayerAddEvent && this.listens('layeradd');
 			for (const m of layers) {
 				if (!isPoint(m)) {
 					npg.addLayer(m);
@@ -361,7 +364,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				} else {
 					continue;
 				}
-				if (!skipLayerAddEvent) {
+				if (fireAdd) {
 					this.fire('layeradd', {layer: m});
 				}
 			}
@@ -381,7 +384,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			}
 
 			const start = performance.now(),
-				chunkStart = offset;
+				chunkStart = offset,
+				// checked once per chunk rather than per layer, which adds up for many layers
+				fireAdd = !skipLayerAddEvent && this.listens('layeradd');
 
 			// Make sure to unspiderfy before starting to add some layers
 			this._unspiderfy();
@@ -398,7 +403,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				//Not point data, can't be clustered
 				if (!isPoint(m)) {
 					npg.addLayer(m);
-					if (!skipLayerAddEvent) {
+					if (fireAdd) {
 						this.fire('layeradd', {layer: m});
 					}
 					continue;
@@ -409,7 +414,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				}
 
 				this._addLayer(m, this._maxZoom);
-				if (!skipLayerAddEvent) {
+				if (fireAdd) {
 					this.fire('layeradd', {layer: m});
 				}
 
@@ -456,7 +461,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			npg = this._nonPointGroup;
 
 		for (const m of layers) {
-			m.off(this._childMarkerEventHandlers, this);
+			this._unbindChild(m);
 		}
 
 		// the rest works off the map too, where nothing is spiderfied or shown
@@ -465,17 +470,21 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			this._unspiderfyLayer(m);
 		}
 
+		const fireRemove = this.listens('layerremove'),
+			// filtered out of the top level's markers at once below, since there can be many of them
+			/** @type {Set<ClusterChild<M>>} */
+			removedFromTop = new Set();
 		for (const m of layers) {
 			if (this._needsClustering.delete(m)) {
-				this.fire('layerremove', {layer: m});
+				if (fireRemove) this.fire('layerremove', {layer: m});
 
 			} else if (!m.__parent) {
 				npg.removeLayer(m);
-				this.fire('layerremove', {layer: m});
+				if (fireRemove) this.fire('layerremove', {layer: m});
 
 			} else if (m.__parent._group === this) {
-				this._removeLayer(m, true, true);
-				this.fire('layerremove', {layer: m});
+				this._removeLayer(m, true, removedFromTop);
+				if (fireRemove) this.fire('layerremove', {layer: m});
 
 				if (fg.hasLayer(m)) {
 					fg.removeLayer(m);
@@ -489,6 +498,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		// not on a map yet, so there are no clusters
 		if (!this._topClusterLevel) {
 			return this;
+		}
+		if (removedFromTop.size) {
+			const top = this._topClusterLevel;
+			top._markers = top._markers.filter(m => !removedFromTop.has(m));
 		}
 
 		// Refresh bounds and weighted positions.
@@ -514,7 +527,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		this.eachLayer((layer) => {
 			const marker = /** @type {ClusterChild<M>} */ (layer);
-			marker.off(this._childMarkerEventHandlers, this);
+			this._unbindChild(marker);
 			delete marker.__parent;
 		});
 		this._needsClustering.clear();
@@ -765,15 +778,27 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 	}
 
+	/** @param {ClusterChild<M>} layer */
+	_unbindChild(layer) {
+		layer.off(this._childMarkerEventHandlers, this);
+		if (this._dragging.delete(layer)) {
+			layer.off('dragend', this._childMarkerDragEnd, this);
+		}
+	}
+
 	/** @param {LeafletEvent} e */
 	_childMarkerDragStart(e) {
-		/** @type {ClusterChild<M>} */ (e.target).__dragStart = true;
+		const marker = /** @type {ClusterChild<M>} */ (e.target);
+		if (!this._dragging.has(marker)) {
+			this._dragging.add(marker);
+			marker.on('dragend', this._childMarkerDragEnd, this);
+		}
 	}
 
 	/** @param {LeafletEvent} e */
 	_childMarkerMoved(e) {
 		const marker = /** @type {ClusterChild<M>} */ (e.target);
-		if (!this._ignoreMove && !marker.__dragStart) {
+		if (!this._ignoreMove && !this._dragging.has(marker)) {
 			const isPopupOpen = marker.isPopupOpen();
 
 			this._moveChild(marker);
@@ -795,12 +820,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/** @param {LeafletEvent} e */
 	_childMarkerDragEnd(e) {
-		const marker = /** @type {ClusterChild<M>} */ (e.target),
-			dragged = marker.__dragStart;
-		delete marker.__dragStart;
-		if (dragged) {
-			this._moveChild(marker);
-		}
+		const marker = /** @type {ClusterChild<M>} */ (e.target);
+		marker.off('dragend', this._childMarkerDragEnd, this);
+		this._dragging.delete(marker);
+		this._moveChild(marker);
 	}
 
 
@@ -808,9 +831,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	 * Removes a marker from everything. Works off the map too.
 	 * @param {ClusterChild<M>} marker
 	 * @param {boolean} removeFromDistanceGrid
-	 * @param {boolean} [dontUpdateMap] Set if the caller updates the map itself (for bulk functions).
+	 * @param {Set<ClusterChild<M>>} [removedFromTop] Given by bulk functions, which update the map themselves and filter
+	 *   the markers collected in it out of the top level's markers at once.
 	 */
-	_removeLayer(marker, removeFromDistanceGrid, dontUpdateMap) {
+	_removeLayer(marker, removeFromDistanceGrid, removedFromTop) {
 		const gridClusters = this._gridClusters,
 			gridUnclustered = this._gridUnclustered,
 			fg = this._featureGroup,
@@ -822,11 +846,15 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		//Work our way up the clusters removing them as we go if required
-		const markers = /** @type {MarkerCluster<M>} */ (marker.__parent)._markers;
+		/** @type {MarkerCluster<M> | undefined} */
 		let cluster = marker.__parent;
 
 		//Remove the marker from the immediate parents marker list
-		this._arraySplice(markers, marker);
+		if (removedFromTop && cluster === this._topClusterLevel) {
+			removedFromTop.add(marker);
+		} else {
+			this._arraySplice(/** @type {MarkerCluster<M>} */ (cluster)._markers, marker);
+		}
 
 		while (cluster) {
 			cluster._childCount--;
@@ -852,7 +880,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				if (cluster.getElement()) {
 					//Cluster is currently on the map, need to put the marker on the map instead
 					fg.removeLayer(cluster);
-					if (!dontUpdateMap) {
+					if (!removedFromTop) {
 						fg.addLayer(otherMarker);
 					}
 				}

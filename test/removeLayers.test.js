@@ -41,6 +41,26 @@ describe('removeLayers', () => {
 	/////////////////////////////
 	// TESTS
 	/////////////////////////////
+	it('removes markers at the top level, keeping the order of the rest', () => {
+		map.setMinZoom(8);
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const top = [[1, 1], [1, 2], [2, 1], [2, 2], [1, 1.5]].map(p => new L.Marker(p));
+		const pair = [new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])];
+		group.addLayers([...top, ...pair]);
+		expect(group._topClusterLevel._markers).toEqual(top);
+
+		// the pair's cluster dissolves, moving pair[1] to the top level, and then that's removed too
+		group.removeLayers([top[1], pair[0], top[3], pair[1]]);
+
+		expect(group._topClusterLevel._markers).toEqual([top[0], top[2], top[4]]);
+		expect(group._topClusterLevel._childClusters).toEqual([]);
+		expect(group._topClusterLevel.getChildCount()).toBe(3);
+		expect(group.getLayers().length).toBe(3);
+		expect(map.hasLayer(top[1]) || map.hasLayer(pair[1])).toBe(false);
+	});
+
 	it('removes all the layer given to it', () => {
 
 		group = new MarkerClusterGroup();

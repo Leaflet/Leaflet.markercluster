@@ -79,6 +79,40 @@ describe('moving markers', () => {
 		expect(group.getLayers().length).toBe(2);
 	});
 
+	it('listens to dragend only during a drag', () => {
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.5, 1.5]);
+		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
+		expect(marker.listens('dragend')).toBe(false);
+
+		marker.fire('dragstart');
+		expect(marker.listens('dragend')).toBe(true);
+		expect(marker.__parent.getAllChildMarkers(null, true)).not.toContain(marker);
+
+		marker.fire('dragend');
+		expect(marker.listens('dragend')).toBe(false);
+		expect(marker.__parent.getAllChildMarkers(null, true)).toContain(marker);
+	});
+
+	it('does not add back a marker removed during a drag', () => {
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.5, 1.5]);
+		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
+
+		marker.fire('dragstart');
+		marker.setLatLng([1.1, 1.9]);
+		group.removeLayer(marker);
+		expect(marker.listens('dragend')).toBe(false);
+
+		marker.fire('dragend');
+		expect(group.hasLayer(marker)).toBe(false);
+		expect(group.getLayers().length).toBe(1);
+	});
+
 	it('moves a marker that was moved while off the map', () => {
 
 		group = new MarkerClusterGroup();

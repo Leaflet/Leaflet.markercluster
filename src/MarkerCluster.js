@@ -18,7 +18,6 @@ import {QuickHull} from './QuickHull.js';
  *   clusterShow?(): unknown,
  *   setZIndexOffset?(offset: number): unknown,
  *   __parent?: MarkerCluster<M>,
- *   __dragStart?: boolean,
  *   _spiderLeg?: Polyline,
  *   _preSpiderfyLatlng?: LatLng
  * }} ClusterChild
@@ -223,8 +222,9 @@ export class MarkerCluster extends L.Marker {
 			this._childClusters[i]._getChildren(storageArray, ignoreDraggedMarker);
 		}
 
+		const dragging = this._group._dragging;
 		for (let j = this._markers.length - 1; j >= 0; j--) {
-			if (ignoreDraggedMarker && this._markers[j].__dragStart) {
+			if (ignoreDraggedMarker && dragging.has(this._markers[j])) {
 				continue;
 			}
 			storageArray.push(this._markers[j]);
@@ -296,31 +296,24 @@ export class MarkerCluster extends L.Marker {
 	}
 
 
-	/**
-	 * @param {ClusterChild<M> | MarkerCluster<M>} new1
-	 * @param {boolean} [isNotificationFromChild]
-	 */
-	_addChild(new1, isNotificationFromChild) {
-
-		this._iconNeedsUpdate = true;
-
-		this._boundsNeedUpdate = true;
-
-		if (new1 instanceof MarkerCluster) {
-			if (!isNotificationFromChild) {
-				this._childClusters.push(new1);
-				new1.__parent = this;
-			}
-			this._childCount += new1._childCount;
+	/** @param {ClusterChild<M> | MarkerCluster<M>} child */
+	_addChild(child) {
+		let count = 1;
+		if (child instanceof MarkerCluster) {
+			this._childClusters.push(child);
+			child.__parent = this;
+			count = child._childCount;
 		} else {
-			if (!isNotificationFromChild) {
-				this._markers.push(new1);
-			}
-			this._childCount++;
+			this._markers.push(child);
 		}
 
-		if (this.__parent) {
-			this.__parent._addChild(new1, true);
+		/** @type {MarkerCluster<M> | undefined} */
+		let cluster = this;
+		while (cluster) {
+			cluster._childCount += count;
+			cluster._iconNeedsUpdate = true;
+			cluster._boundsNeedUpdate = true;
+			cluster = cluster.__parent;
 		}
 	}
 
