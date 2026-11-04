@@ -1,12 +1,54 @@
 import * as L from 'leaflet';
 import {QuickHull} from './QuickHull.js';
 
+/** @import {FitBoundsOptions, Icon, LatLng, LatLngBounds, LatLngExpression, Layer, LeafletMap, Marker, Point, Polyline, ZoomAnimEvent} from 'leaflet' */
+/** @import {MarkerClusterGroup} from './MarkerClusterGroup.js' */
+
+/**
+ * A point layer in a group (a marker, or a vector layer with a single point like a circle marker), with the state the
+ * group keeps on it.
+ * @template {Layer} [M=Layer]
+ * @typedef {M & {
+ *   getLatLng(): LatLng,
+ *   setLatLng(latlng: LatLngExpression): unknown,
+ *   isPopupOpen(): boolean,
+ *   openPopup(): unknown,
+ *   closePopup(): unknown,
+ *   clusterHide?(): unknown,
+ *   clusterShow?(): unknown,
+ *   setZIndexOffset?(offset: number): unknown,
+ *   __parent?: MarkerCluster<M>,
+ *   __dragStart?: boolean,
+ *   _spiderLeg?: Polyline,
+ *   _preSpiderfyLatlng?: LatLng,
+ *   _backupLatlng?: LatLng
+ * }} ClusterChild
+ */
+
+/**
+ * Spiderfy layout constants, kept on the prototype so that apps can change them.
+ * @typedef {object} SpiderfyShape
+ * @property {number} _2PI
+ * @property {number} _circleFootSeparation Related to the circumference of the circle.
+ * @property {number} _circleStartAngle
+ * @property {number} _spiralFootSeparation Related to the size of the spiral.
+ * @property {number} _spiralLengthStart
+ * @property {number} _spiralLengthFactor
+ * @property {number} _circleSpiralSwitchover Marker count from which a spiral is shown instead of a circle.
+ */
+
 const isV1 = L.version.startsWith('1.');
 
 // the spiderLegPolylineOptions default
 const defaultLegOpacity = 0.5;
 
-// where the map's latLngToLayerPoint will put latlng once a zoom animation to zoom and center ends
+/**
+ * Where the map's latLngToLayerPoint will put latlng once a zoom animation to zoom and center ends.
+ * @param {LeafletMap} map
+ * @param {LatLng} latlng
+ * @param {number} zoom
+ * @param {LatLng} center
+ */
 export function latLngToNewLayerPoint(map, latlng, zoom, center) {
 	const pixelOrigin = map.project(center, zoom)
 		.subtract(map.getSize().divideBy(2))
@@ -15,28 +57,53 @@ export function latLngToNewLayerPoint(map, latlng, zoom, center) {
 	return map.project(latlng, zoom).subtract(pixelOrigin);
 }
 
-// the leg's path element for the line drawing animation, or null with the Canvas renderer
+/**
+ * The leg's path element for the line drawing animation, or null with the Canvas renderer.
+ * @param {Polyline | undefined} leg
+ */
 function svgPath(leg) {
-	const el = leg.getElement();
-	return el instanceof SVGElement ? el : null;
+	const el = leg?.getElement();
+	return el instanceof SVGGeometryElement ? el : null;
 }
 
+/**
+ * A cluster of markers in a `MarkerClusterGroup`, shown as a marker whose icon comes from the group's
+ * `iconCreateFunction`. Clusters are created by the group, and are the `layer` of its `cluster*` events.
+ * @template {Layer} [M=Marker] The group's member layers.
+ */
 export class MarkerCluster extends L.Marker {
 
+	/**
+	 * @param {MarkerClusterGroup<M>} group
+	 * @param {number} zoom
+	 * @param {ClusterChild<M> | MarkerCluster<M>} [a]
+	 * @param {ClusterChild<M> | MarkerCluster<M>} [b]
+	 */
 	constructor(group, zoom, a, b) {
-		super(a ? (a._cLatLng || a.getLatLng()) : new L.LatLng(0, 0), {pane: group.options.clusterPane});
-		this.options.icon = this;
+		// the position of the first child is the cluster's position in the distance grid
+		const cLatLng = a ? gridLatLng(a) : new L.LatLng(0, 0);
+		super(cLatLng, {pane: group.options.clusterPane});
+		/** @type {LatLng} */
+		this._cLatLng = cLatLng;
+		// the cluster is its own icon, see createIcon
+		this.options.icon = /** @type {Icon} */ (/** @type {unknown} */ (this));
 
 		this._group = group;
 		this._zoom = zoom;
 
+		/** @type {ClusterChild<M>[]} */
 		this._markers = [];
+		/** @type {MarkerCluster<M>[]} */
 		this._childClusters = [];
 		this._childCount = 0;
 		this._iconNeedsUpdate = true;
 		this._boundsNeedUpdate = true;
 
 		this._bounds = new L.LatLngBounds();
+		/** @type {MarkerCluster<M> | undefined} */
+		this.__parent = undefined;
+		/** @type {Icon | undefined} */
+		this._iconObj = undefined;
 
 		if (a) {
 			this._addChild(a);
@@ -46,12 +113,24 @@ export class MarkerCluster extends L.Marker {
 		}
 	}
 
-	//Recursively retrieve all child markers of this cluster
+	/**
+	 * All markers in this cluster and its child clusters, appended to `storageArray` if given.
+	 * @param {M[] | null} [storageArray]
+	 * @param {boolean} [ignoreDraggedMarker] Leave out markers being dragged.
+	 * @returns {M[]}
+	 */
 	getAllChildMarkers(storageArray, ignoreDraggedMarker) {
-		storageArray = storageArray || [];
+		return this._getChildren(/** @type {ClusterChild<M>[]} */ (storageArray || []), ignoreDraggedMarker);
+	}
 
+	/**
+	 * @param {ClusterChild<M>[]} storageArray
+	 * @param {boolean} [ignoreDraggedMarker]
+	 * @returns {ClusterChild<M>[]}
+	 */
+	_getChildren(storageArray = [], ignoreDraggedMarker = false) {
 		for (let i = this._childClusters.length - 1; i >= 0; i--) {
-			this._childClusters[i].getAllChildMarkers(storageArray, ignoreDraggedMarker);
+			this._childClusters[i]._getChildren(storageArray, ignoreDraggedMarker);
 		}
 
 		for (let j = this._markers.length - 1; j >= 0; j--) {
@@ -64,12 +143,15 @@ export class MarkerCluster extends L.Marker {
 		return storageArray;
 	}
 
-	//Returns the count of how many child markers we have
+	/** The number of markers in this cluster and its child clusters. */
 	getChildCount() {
 		return this._childCount;
 	}
 
-	//Zoom to the minimum of showing all of the child markers, or the extents of this cluster
+	/**
+	 * Zooms in to the lowest zoom that splits the cluster, or that shows all of its bounds.
+	 * @param {FitBoundsOptions} [fitBoundsOptions]
+	 */
 	zoomToBounds(fitBoundsOptions) {
 		let childClusters = this._childClusters.slice(),
 			zoom = this._zoom + 1;
@@ -92,14 +174,16 @@ export class MarkerCluster extends L.Marker {
 		}
 	}
 
+	/** The bounds of all markers in the cluster. */
 	getBounds() {
 		const bounds = new L.LatLngBounds();
 		bounds.extend(this._bounds);
 		return bounds;
 	}
 
+	/** The convex hull of the cluster's markers, as shown on hover with `showCoverageOnHover`. */
 	getConvexHull() {
-		const childMarkers = this.getAllChildMarkers(),
+		const childMarkers = this._getChildren(),
 			points = [];
 
 		for (let i = childMarkers.length - 1; i >= 0; i--) {
@@ -112,29 +196,32 @@ export class MarkerCluster extends L.Marker {
 	_updateIcon() {
 		this._iconNeedsUpdate = true;
 		if (this.getElement()) {
-			this.setIcon(this);
+			this.setIcon(this.options.icon);
 		}
 	}
 
-	//Cludge for Icon, we pretend to be an icon for performance
+	// the Icon interface: the cluster pretends to be its own icon, so that it's only created when shown
 	createIcon() {
-		if (this._iconNeedsUpdate) {
+		if (this._iconNeedsUpdate || !this._iconObj) {
 			this._iconObj = this._group.options.iconCreateFunction(this);
 			this._iconNeedsUpdate = false;
 		}
 		return this._iconObj.createIcon();
 	}
 	createShadow() {
-		return this._iconObj.createShadow();
+		return /** @type {Icon} */ (this._iconObj).createShadow();
 	}
 
 
+	/**
+	 * @param {ClusterChild<M> | MarkerCluster<M>} new1
+	 * @param {boolean} [isNotificationFromChild]
+	 */
 	_addChild(new1, isNotificationFromChild) {
 
 		this._iconNeedsUpdate = true;
 
 		this._boundsNeedUpdate = true;
-		this._setClusterCenter(new1);
 
 		if (new1 instanceof MarkerCluster) {
 			if (!isNotificationFromChild) {
@@ -151,18 +238,6 @@ export class MarkerCluster extends L.Marker {
 
 		if (this.__parent) {
 			this.__parent._addChild(new1, true);
-		}
-	}
-
-	/**
-	 * Makes sure the cluster center is set. If not, uses the child center if it is a cluster, or the marker position.
-	 * @param child L.MarkerCluster|L.Marker that will be used as cluster center if not defined yet.
-	 * @private
-	 */
-	_setClusterCenter(child) {
-		if (!this._cLatLng) {
-			// when clustering, take position of the first point as the cluster center
-			this._cLatLng = child._cLatLng || child.getLatLng();
 		}
 	}
 
@@ -208,13 +283,19 @@ export class MarkerCluster extends L.Marker {
 			lngSum += childLatLng.lng * childCount;
 		}
 
-		this._latlng = this._wLatLng = new L.LatLng(latSum / totalCount, lngSum / totalCount);
+		// the weighted center, set directly since setLatLng would fire move and redraw on every recalculation
+		/** @type {LatLng} */
+		this._wLatLng = new L.LatLng(latSum / totalCount, lngSum / totalCount);
+		this._latlng = this._wLatLng;
 
 		// Reset dirty flag.
 		this._boundsNeedUpdate = false;
 	}
 
-	//Set our markers position as given and add it to the map
+	/**
+	 * Sets our position as given and adds us to the map.
+	 * @param {LatLng | null} [startPos]
+	 */
 	_addToMap(startPos) {
 		if (startPos) {
 			this._backupLatlng = this.getLatLng();
@@ -223,6 +304,11 @@ export class MarkerCluster extends L.Marker {
 		this._group._featureGroup.addLayer(this);
 	}
 
+	/**
+	 * @param {LatLngBounds} bounds
+	 * @param {Point} center
+	 * @param {number} maxZoom
+	 */
 	_recursivelyAnimateChildrenIn(bounds, center, maxZoom) {
 		this._recursively(bounds, this._group._map.getMinZoom(), maxZoom - 1,
 			(c) => {
@@ -250,6 +336,13 @@ export class MarkerCluster extends L.Marker {
 		);
 	}
 
+	/**
+	 * @param {LatLngBounds} bounds
+	 * @param {LatLngBounds} previousBounds
+	 * @param {number} mapMinZoom
+	 * @param {number} previousZoomLevel
+	 * @param {number} newZoomLevel
+	 */
 	_recursivelyAnimateChildrenInAndAddSelfToMap(bounds, previousBounds, mapMinZoom, previousZoomLevel, newZoomLevel) {
 		this._recursively(bounds, newZoomLevel, mapMinZoom,
 			(c) => {
@@ -269,12 +362,21 @@ export class MarkerCluster extends L.Marker {
 		);
 	}
 
+	/**
+	 * @param {LatLngBounds} bounds
+	 * @param {number} zoomLevel
+	 */
 	_recursivelyBecomeVisible(bounds, zoomLevel) {
 		this._recursively(bounds, this._group._map.getMinZoom(), zoomLevel, null, (c) => {
 			c.clusterShow();
 		});
 	}
 
+	/**
+	 * @param {LatLng | null} startPos
+	 * @param {number} zoomLevel
+	 * @param {LatLngBounds} bounds
+	 */
 	_recursivelyAddChildrenToMap(startPos, zoomLevel, bounds) {
 		this._recursively(bounds, this._group._map.getMinZoom() - 1, zoomLevel,
 			(c) => {
@@ -308,6 +410,7 @@ export class MarkerCluster extends L.Marker {
 		);
 	}
 
+	/** @param {number} zoomLevel */
 	_recursivelyRestoreChildPositions(zoomLevel) {
 		//Fix positions of child markers
 		for (let i = this._markers.length - 1; i >= 0; i--) {
@@ -337,7 +440,12 @@ export class MarkerCluster extends L.Marker {
 		}
 	}
 
-	//exceptBounds: If set, don't remove any markers/clusters in it
+	/**
+	 * @param {LatLngBounds} previousBounds
+	 * @param {number} mapMinZoom
+	 * @param {number} zoomLevel
+	 * @param {LatLngBounds} [exceptBounds] If set, don't remove any markers/clusters in it.
+	 */
 	_recursivelyRemoveChildrenFromMap(previousBounds, mapMinZoom, zoomLevel, exceptBounds) {
 		this._recursively(previousBounds, mapMinZoom - 1, zoomLevel - 1,
 			(c) => {
@@ -367,12 +475,14 @@ export class MarkerCluster extends L.Marker {
 		);
 	}
 
-	//Run the given functions recursively to this and child clusters
-	// boundsToApplyTo: a L.LatLngBounds representing the bounds of what clusters to recurse in to
-	// zoomLevelToStart: zoom level to start running functions (inclusive)
-	// zoomLevelToStop: zoom level to stop running functions (inclusive)
-	// runAtEveryLevel: function that takes an L.MarkerCluster as an argument that should be applied on every level
-	// runAtBottomLevel: function that takes an L.MarkerCluster as an argument that should be applied at only the bottom level
+	/**
+	 * Runs the given functions recursively on this and child clusters.
+	 * @param {LatLngBounds} boundsToApplyTo The bounds of the clusters to recurse into.
+	 * @param {number} zoomLevelToStart Zoom level to start running functions at (inclusive).
+	 * @param {number} zoomLevelToStop Zoom level to stop running functions at (inclusive).
+	 * @param {((c: MarkerCluster<M>) => void) | null} [runAtEveryLevel] Applied at every level.
+	 * @param {(c: MarkerCluster<M>) => void} [runAtBottomLevel] Applied at only the bottom level.
+	 */
 	_recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel) {
 		const childClusters = this._childClusters,
 			zoom = this._zoom;
@@ -408,15 +518,17 @@ export class MarkerCluster extends L.Marker {
 	// Spiderfier, 100% based on https://github.com/jawj/OverlappingMarkerSpiderfier-Leaflet
 	// Huge thanks to jawj for implementing it first to make my job easy :-)
 
+	/** Spreads out the cluster's markers around it, with legs to its center. */
 	spiderfy() {
 		if (this._group._spiderfied === this || this._group._inZoomAnimation) {
 			return;
 		}
 
-		const childMarkers = this.getAllChildMarkers(null, true),
+		const childMarkers = this._getChildren([], true),
 			group = this._group,
 			map = group._map,
-			center = map.latLngToLayerPoint(this.getLatLng());
+			center = map.latLngToLayerPoint(this.getLatLng()),
+			shape = /** @type {MarkerCluster<M> & SpiderfyShape} */ (/** @type {unknown} */ (this));
 		let positions;
 
 		this._group._unspiderfy();
@@ -426,18 +538,21 @@ export class MarkerCluster extends L.Marker {
 
 		if (this._group.options.spiderfyShapePositions) {
 			positions = this._group.options.spiderfyShapePositions(childMarkers.length, center);
-		} else if (childMarkers.length >= this._circleSpiralSwitchover) {
-			positions = this._generatePointsSpiral(childMarkers.length, center);
+		} else if (childMarkers.length >= shape._circleSpiralSwitchover) {
+			positions = shape._generatePointsSpiral(childMarkers.length, center);
 		} else {
 			center.y += 10; // Otherwise circles look wrong => hack for standard blue icon, renders differently for other icons.
-			positions = this._generatePointsCircle(childMarkers.length, center);
+			positions = shape._generatePointsCircle(childMarkers.length, center);
 		}
 
 		this._animationSpiderfy(childMarkers, positions);
 	}
 
+	/**
+	 * Brings the markers of a spiderfied cluster back in.
+	 * @param {ZoomAnimEvent} [zoomDetails] The zoomanim event, if called in a zoom animation.
+	 */
 	unspiderfy(zoomDetails) {
-		/// <param Name="zoomDetails">Argument from zoomanim if being called in a zoom animation or null otherwise</param>
 		if (this._group._inZoomAnimation) {
 			return;
 		}
@@ -446,9 +561,15 @@ export class MarkerCluster extends L.Marker {
 		this._group._spiderfied = null;
 	}
 
+	/**
+	 * @this {MarkerCluster<M> & SpiderfyShape}
+	 * @param {number} count
+	 * @param {Point} centerPt
+	 */
 	_generatePointsCircle(count, centerPt) {
 		const circumference = this._group.options.spiderfyDistanceMultiplier * this._circleFootSeparation * (2 + count),
 			angleStep = this._2PI / count,
+			/** @type {Point[]} */
 			res = [];
 		let legLength = circumference / this._2PI;  //radius from circumference
 
@@ -464,10 +585,16 @@ export class MarkerCluster extends L.Marker {
 		return res;
 	}
 
+	/**
+	 * @this {MarkerCluster<M> & SpiderfyShape}
+	 * @param {number} count
+	 * @param {Point} centerPt
+	 */
 	_generatePointsSpiral(count, centerPt) {
 		const spiderfyDistanceMultiplier = this._group.options.spiderfyDistanceMultiplier,
 			separation = spiderfyDistanceMultiplier * this._spiralFootSeparation,
 			lengthFactor = spiderfyDistanceMultiplier * this._spiralLengthFactor * this._2PI,
+			/** @type {Point[]} */
 			res = [];
 		let legLength = spiderfyDistanceMultiplier * this._spiralLengthStart,
 			angle = 0;
@@ -491,7 +618,7 @@ export class MarkerCluster extends L.Marker {
 		const group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			childMarkers = this.getAllChildMarkers(null, true);
+			childMarkers = this._getChildren([], true);
 
 		group._ignoreMove = true;
 
@@ -523,6 +650,10 @@ export class MarkerCluster extends L.Marker {
 		group._spiderfied = null;
 	}
 
+	/**
+	 * @param {ClusterChild<M>[]} childMarkers
+	 * @param {Point[]} positions
+	 */
 	_animationSpiderfy(childMarkers, positions) {
 		const group = this._group,
 			map = group._map,
@@ -555,8 +686,8 @@ export class MarkerCluster extends L.Marker {
 			const legPath = svgPath(leg);
 			if (legPath) {
 				const legLength = legPath.getTotalLength() + 0.1; // Need a small extra length to avoid remaining dot in Firefox.
-				legPath.style.strokeDasharray = legLength; // Just 1 length is enough, it will be duplicated.
-				legPath.style.strokeDashoffset = legLength;
+				legPath.style.strokeDasharray = `${legLength}`; // Just 1 length is enough, it will be duplicated.
+				legPath.style.strokeDashoffset = `${legLength}`;
 				// hidden until the reveal below, or it shows before the animation starts
 				leg.setStyle({opacity: 0});
 			}
@@ -594,13 +725,14 @@ export class MarkerCluster extends L.Marker {
 			}
 
 			// Animate leg (animation is actually delegated to CSS transition).
-			const legPath = svgPath(m._spiderLeg);
-			if (legPath) {
+			const leg = m._spiderLeg,
+				legPath = svgPath(leg);
+			if (leg && legPath) {
 				// the class with the CSS transitions is added only now, after the forced layout: getTotalLength computes
 				// the leg's style early, so with the class on, the starting values would transition instead of applying
 				legPath.classList.add('leaflet-cluster-spider-leg');
-				legPath.style.strokeDashoffset = 0;
-				m._spiderLeg.setStyle({opacity: finalLegOpacity});
+				legPath.style.strokeDashoffset = '0';
+				leg.setStyle({opacity: finalLegOpacity});
 			}
 		}
 		this.setOpacity(0.3);
@@ -616,13 +748,14 @@ export class MarkerCluster extends L.Marker {
 		}, 200);
 	}
 
+	/** @param {ZoomAnimEvent} [zoomDetails] */
 	_animationUnspiderfy(zoomDetails) {
 		const group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
 			latlng = this.getLatLng(),
 			thisLayerPos = zoomDetails ? latLngToNewLayerPoint(map, latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(latlng),
-			childMarkers = this.getAllChildMarkers(null, true);
+			childMarkers = this._getChildren([], true);
 
 		group._ignoreMove = true;
 		group._animationStart();
@@ -630,7 +763,8 @@ export class MarkerCluster extends L.Marker {
 		//Make us visible and bring the child markers back in
 		this.setOpacity(1);
 		for (let i = childMarkers.length - 1; i >= 0; i--) {
-			const m = childMarkers[i];
+			const m = childMarkers[i],
+				leg = m._spiderLeg;
 
 			//Marker was added to us after we were spiderfied
 			if (!m._preSpiderfyLatlng) {
@@ -659,10 +793,10 @@ export class MarkerCluster extends L.Marker {
 			}
 
 			// Animate the spider leg back in (animation is actually delegated to CSS transition).
-			const legPath = svgPath(m._spiderLeg);
-			if (legPath) {
-				legPath.style.strokeDashoffset = legPath.getTotalLength() + 0.1;
-				m._spiderLeg.setStyle({opacity: 0});
+			const legPath = svgPath(leg);
+			if (leg && legPath) {
+				legPath.style.strokeDashoffset = `${legPath.getTotalLength() + 0.1}`;
+				leg.setStyle({opacity: 0});
 			}
 		}
 
@@ -708,6 +842,16 @@ export class MarkerCluster extends L.Marker {
 	}
 }
 
+/**
+ * The position of a marker, or of a cluster in the distance grid.
+ * @template {Layer} M
+ * @param {ClusterChild<M> | MarkerCluster<M>} child
+ * @returns {LatLng}
+ */
+function gridLatLng(child) {
+	return child instanceof MarkerCluster ? child._cLatLng : child.getLatLng();
+}
+
 // 1.x keeps defaults on the prototype, and without a copy of its own, mergeOptions would change every L.Marker
 if (isV1) {
 	MarkerCluster.prototype.options = Object.create(L.Marker.prototype.options);
@@ -728,8 +872,16 @@ Object.assign(MarkerCluster.prototype, {
 	// 0 -> always spiral; Infinity -> always circle
 });
 
-//Non Animated versions of everything
+/**
+ * Non-animated versions of everything, for groups with `animate: false`.
+ * @template {Layer} [M=Marker]
+ * @extends {MarkerCluster<M>}
+ */
 export class MarkerClusterNonAnimated extends MarkerCluster {
+	/**
+	 * @param {ClusterChild<M>[]} childMarkers
+	 * @param {Point[]} positions
+	 */
 	_animationSpiderfy(childMarkers, positions) {
 		const group = this._group,
 			map = group._map,

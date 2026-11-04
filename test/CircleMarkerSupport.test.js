@@ -148,4 +148,38 @@ describe('support for CircleMarker elements', () => {
 
 		vi.advanceTimersByTime(1000);
 	});
+
+	it('animates into an existing cluster with animateAddingMarkers', () => {
+
+		group = new MarkerClusterGroup({animateAddingMarkers: true});
+		map.addLayer(group);
+
+		const markers = [new L.CircleMarker([1.5, 1.5]), new L.CircleMarker([1.5, 1.5]), new L.CircleMarker([1.5, 1.5])];
+		group.addLayer(markers[0]);
+		group.addLayer(markers[1]);
+		vi.advanceTimersByTime(1000);
+
+		group.addLayer(markers[2]);
+		vi.advanceTimersByTime(1000);
+
+		expect(markers[2].__parent.getChildCount()).toBe(3);
+		expect(map.hasLayer(markers[2])).toBe(false);
+	});
+
+	it('refreshes the clusters of a single circle marker', () => {
+
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.CircleMarker([1.5, 1.5]);
+		group.addLayers([marker, new L.CircleMarker([1.5, 1.5])]);
+
+		const cluster = marker.__parent;
+		cluster._iconNeedsUpdate = false;
+		cluster.__parent._iconNeedsUpdate = false;
+
+		group.refreshClusters(marker);
+
+		expect(cluster.__parent._iconNeedsUpdate).toBe(true);
+	});
 });

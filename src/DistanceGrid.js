@@ -1,14 +1,27 @@
 import * as L from 'leaflet';
 
+/** @typedef {{x: number, y: number}} XY */
+
+/**
+ * Objects bucketed by their projected points into square cells, for finding the closest one within a cell size.
+ * @template {object} T
+ */
 export class DistanceGrid {
 
+	/** @param {number} cellSize */
 	constructor(cellSize) {
 		this._cellSize = cellSize;
 		this._sqCellSize = cellSize * cellSize;
+		/** @type {{[y: number]: {[x: number]: T[]}}} */
 		this._grid = {};
-		this._objectPoint = { };
+		/** @type {{[stamp: number]: XY}} */
+		this._objectPoint = {};
 	}
 
+	/**
+	 * @param {T} obj
+	 * @param {XY} point
+	 */
 	addObject(obj, point) {
 		const x = this._getCoord(point.x),
 			y = this._getCoord(point.y),
@@ -22,12 +35,19 @@ export class DistanceGrid {
 		cell.push(obj);
 	}
 
+	/**
+	 * @param {T} obj
+	 * @param {XY} point
+	 */
 	updateObject(obj, point) {
 		this.removeObject(obj);
 		this.addObject(obj, point);
 	}
 
-	// returns true if the object was found; looks it up at the point it was added with
+	/**
+	 * Returns true if the object was found; looks it up at the point it was added with.
+	 * @param {T} obj
+	 */
 	removeObject(obj) {
 		const stamp = L.Util.stamp(obj),
 			point = this._objectPoint[stamp];
@@ -56,6 +76,11 @@ export class DistanceGrid {
 		return false;
 	}
 
+	/**
+	 * Calls fn on each object; fn returns true if it removed the object it was called with.
+	 * @param {(obj: T) => unknown} fn
+	 * @param {unknown} [context]
+	 */
 	eachObject(fn, context) {
 		const grid = this._grid;
 
@@ -76,6 +101,11 @@ export class DistanceGrid {
 		}
 	}
 
+	/**
+	 * The object closest to the point within the cell size, or null.
+	 * @param {XY} point
+	 * @returns {T | null}
+	 */
 	getNearObject(point) {
 		const x = this._getCoord(point.x),
 			y = this._getCoord(point.y),
@@ -107,11 +137,16 @@ export class DistanceGrid {
 		return closest;
 	}
 
+	/** @param {number} x */
 	_getCoord(x) {
 		const coord = Math.floor(x / this._cellSize);
 		return isFinite(coord) ? coord : x;
 	}
 
+	/**
+	 * @param {XY} p
+	 * @param {XY} p2
+	 */
 	_sqDist(p, p2) {
 		const dx = p2.x - p.x,
 			dy = p2.y - p.y;

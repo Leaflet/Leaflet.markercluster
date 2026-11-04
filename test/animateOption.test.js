@@ -44,21 +44,20 @@ describe('animate option', () => {
 		// Need to add to map so that we have the top cluster level created.
 		group = new MarkerClusterGroup().addTo(map);
 
-		let withAnimation = MarkerClusterGroup.prototype._withAnimation;
-
-		// MCG animated methods.
-		expect(group._animationStart).toBe(withAnimation._animationStart);
-		expect(group._animationZoomIn).toBe(withAnimation._animationZoomIn);
-		expect(group._animationZoomOut).toBe(withAnimation._animationZoomOut);
-		expect(group._animationAddLayer).toBe(withAnimation._animationAddLayer);
+		// MCG animated methods are the class methods.
+		const groupProto = MarkerClusterGroup.prototype;
+		expect(group._animationStart).toBe(groupProto._animationStart);
+		expect(group._animationZoomIn).toBe(groupProto._animationZoomIn);
+		expect(group._animationZoomOut).toBe(groupProto._animationZoomOut);
+		expect(group._animationAddLayer).toBe(groupProto._animationAddLayer);
 
 		// MarkerCluster spiderfy animated methods
-		const cluster = group._topClusterLevel;
+		const cluster = group._topClusterLevel,
+			clusterProto = MarkerCluster.prototype;
 
-		withAnimation = MarkerCluster.prototype;
-
-		expect(cluster._animationSpiderfy).toBe(withAnimation._animationSpiderfy);
-		expect(cluster._animationUnspiderfy).toBe(withAnimation._animationUnspiderfy);
+		expect(cluster).not.toBeInstanceOf(MarkerClusterNonAnimated);
+		expect(cluster._animationSpiderfy).toBe(clusterProto._animationSpiderfy);
+		expect(cluster._animationUnspiderfy).toBe(clusterProto._animationUnspiderfy);
 
 	});
 
@@ -67,21 +66,20 @@ describe('animate option', () => {
 		// Need to add to map so that we have the top cluster level created.
 		group = new MarkerClusterGroup({animate: false}).addTo(map);
 
-		let noAnimation = MarkerClusterGroup.prototype._noAnimation;
-
-		// MCG non-animated methods.
-		expect(group._animationStart).toBe(noAnimation._animationStart);
-		expect(group._animationZoomIn).toBe(noAnimation._animationZoomIn);
-		expect(group._animationZoomOut).toBe(noAnimation._animationZoomOut);
-		expect(group._animationAddLayer).toBe(noAnimation._animationAddLayer);
+		// MCG non-animated methods replace the class methods on the instance.
+		const groupProto = MarkerClusterGroup.prototype;
+		for (const name of ['_animationStart', '_animationZoomIn', '_animationZoomOut', '_animationAddLayer']) {
+			expect(Object.hasOwn(group, name)).toBe(true);
+			expect(group[name]).not.toBe(groupProto[name]);
+		}
 
 		// MarkerCluster spiderfy non-animated methods
-		const cluster = group._topClusterLevel;
+		const cluster = group._topClusterLevel,
+			clusterProto = MarkerClusterNonAnimated.prototype;
 
-		noAnimation = MarkerClusterNonAnimated.prototype;
-
-		expect(cluster._animationSpiderfy).toBe(noAnimation._animationSpiderfy);
-		expect(cluster._animationUnspiderfy).toBe(noAnimation._animationUnspiderfy);
+		expect(cluster).toBeInstanceOf(MarkerClusterNonAnimated);
+		expect(cluster._animationSpiderfy).toBe(clusterProto._animationSpiderfy);
+		expect(cluster._animationUnspiderfy).toBe(clusterProto._animationUnspiderfy);
 
 	});
 });

@@ -51,5 +51,8 @@ describe('quickhull', () => {
 				{lat: 0, lng: 10}
 			]);
 		});
+		it('returns no hull for no points', () => {
+			expect(QuickHull.getConvexHull([])).toEqual([]);
+		});
 	});
 });

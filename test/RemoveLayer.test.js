@@ -205,4 +205,23 @@ describe('removeLayer', () => {
 		expect(group.hasLayer(marker1)).toBe(true);
 		expect(group.hasLayer(marker2)).toBe(false);
 	});
+
+	it('removes a layer by its id', () => {
+
+		group = new MarkerClusterGroup();
+
+		const marker = new L.Marker([1.5, 1.5]),
+			polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0]]);
+
+		map.addLayer(group);
+		group.addLayers([marker, polygon]);
+
+		group.removeLayer(L.Util.stamp(marker));
+		group.removeLayer(L.Util.stamp(polygon));
+		group.removeLayer(-1);
+
+		expect(group.hasLayer(marker)).toBe(false);
+		expect(group.hasLayer(polygon)).toBe(false);
+		expect(marker._icon).toBe(null);
+	});
 });

@@ -76,4 +76,18 @@ describe('getLayers', () => {
 
 		expect(layers.length).toBe(0);
 	});
+
+	it('finds a layer by id with getLayer, and returns undefined for an unknown id', () => {
+		const group = new MarkerClusterGroup();
+		const polygon = new L.Polygon([[1.5, 1.5], [2.0, 1.5], [2.0, 2.0], [1.5, 2.0]]);
+		const marker = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([polygon, marker]);
+		expect(group.getLayer(L.Util.stamp(marker))).toBe(marker);
+
+		map.addLayer(group);
+		expect(group.getLayer(L.Util.stamp(marker))).toBe(marker);
+		expect(group.getLayer(L.Util.stamp(polygon))).toBe(polygon);
+		expect(group.getLayer(-1)).toBe(undefined);
+	});
 });

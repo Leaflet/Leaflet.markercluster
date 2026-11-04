@@ -3,20 +3,109 @@ import {DistanceGrid} from './DistanceGrid.js';
 import {MarkerCluster, MarkerClusterNonAnimated} from './MarkerCluster.js';
 import './MarkerPatches.js';
 
+/** @import {DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, PolylineOptions, ZoomAnimEvent} from 'leaflet' */
+/** @import {ClusterChild} from './MarkerCluster.js' */
+
+/**
+ * @template {Layer} [M=Marker]
+ * @typedef {object} MarkerClusterGroupProps
+ * @property {number | ((zoom: number) => number)} maxClusterRadius The maximum distance in pixels from a cluster's
+ *   center to its markers, or a function that returns it for a zoom. Smaller makes more, smaller clusters.
+ * @property {(cluster: MarkerCluster<M>) => Icon | DivIcon} iconCreateFunction Creates the icon of a cluster. The
+ *   default shows the marker count, styled by `MarkerCluster.Default.css`.
+ * @property {string} clusterPane The map pane for clusters; the marker pane if not set.
+ * @property {boolean} spiderfyOnEveryZoom Spiderfy a cluster when clicked at any zoom.
+ * @property {boolean} spiderfyOnMaxZoom Spiderfy a cluster when clicked at the bottom zoom, where it can't split.
+ * @property {boolean} showCoverageOnHover Show the bounds of a cluster's markers on hover.
+ * @property {boolean} zoomToBoundsOnClick Zoom to a cluster's bounds when it's clicked.
+ * @property {boolean} singleMarkerMode Give single markers the cluster icon too, as clusters of 1.
+ * @property {number | null} disableClusteringAtZoom Don't cluster markers at this zoom and above.
+ * @property {boolean} removeOutsideVisibleBounds Remove clusters and markers far from the view from the map, for
+ *   performance.
+ * @property {boolean} animate Animate clusters splitting and merging on zoom, and spiderfying.
+ * @property {boolean} animateAddingMarkers Animate markers added with `addLayer` into their clusters, once the group
+ *   is on the map. Slow for many markers; `addLayers` never animates.
+ * @property {((count: number, centerPoint: Point) => Point[]) | null} spiderfyShapePositions Places spiderfied
+ *   markers: gets their count and the cluster's position in layer pixels, returns their positions.
+ * @property {number} spiderfyDistanceMultiplier Scales the distance of spiderfied markers from the center, e.g. for
+ *   big icons.
+ * @property {PolylineOptions} spiderLegPolylineOptions Style of spider legs.
+ * @property {boolean} chunkedLoading Split `addLayers` into chunks with breaks in between, so that the page doesn't
+ *   freeze.
+ * @property {number} chunkInterval Milliseconds of processing per chunk.
+ * @property {number} chunkDelay Milliseconds between chunks.
+ * @property {((processed: number, total: number, elapsed: number) => void) | null} chunkProgress Called after each
+ *   chunk with the number of markers processed and total, and the milliseconds since the start, e.g. for a
+ *   progress bar.
+ * @property {PolylineOptions} polygonOptions Style of the coverage polygon shown on hover.
+ */
+
+/**
+ * @template {Layer} [M=Marker]
+ * @typedef {InteractiveLayerOptions & Partial<MarkerClusterGroupProps<M>>} MarkerClusterGroupOptions
+ */
+
+/**
+ * A pointer event on a cluster, fired on the group with a `cluster` prefix, like `clusterclick`.
+ * @template {Layer} [M=Marker]
+ * @typedef {LeafletPointerEvent & {layer: MarkerCluster<M>}} ClusterPointerEvent
+ */
+
+/**
+ * @template {Layer} [M=Marker]
+ * @typedef {LeafletEvent & {cluster: MarkerCluster<M>, markers: M[]}} SpiderfyEvent
+ */
+
+/**
+ * @template {Layer} [M=Marker]
+ * @typedef {object} MarkerClusterGroupEvents
+ * @property {ClusterPointerEvent<M>} clusterclick Fired when a cluster is clicked, or activated with the keyboard.
+ * @property {ClusterPointerEvent<M>} clusterdblclick
+ * @property {ClusterPointerEvent<M>} clustercontextmenu
+ * @property {ClusterPointerEvent<M>} clustermouseover Fired when the pointer enters a cluster.
+ * @property {ClusterPointerEvent<M>} clustermouseout Fired when the pointer leaves a cluster.
+ * @property {SpiderfyEvent<M>} spiderfied Fired when a cluster has spread out its markers.
+ * @property {SpiderfyEvent<M>} unspiderfied Fired when a cluster has brought its markers back in.
+ * @property {LeafletEvent} animationend Fired when clusters have finished splitting or merging after a zoom.
+ */
+
+/**
+ * @template {Layer} [M=Marker]
+ * @typedef {FeatureGroupEventMap & MarkerClusterGroupEvents<M>} MarkerClusterGroupEventMap
+ */
+
 const isV1 = L.version.startsWith('1.');
 
 // 2.0 markers turn Enter and Space into clicks, while 1.x only fires keypress
 const clickEvents = isV1 ? 'clusterclick clusterkeypress' : 'clusterclick';
 
 // 2.0 hover events keep their 1.x names on clusters, clustermouseover and clustermouseout
+/** @type {{[type: string]: string}} */
 const clusterEventNames = isV1 ? {} : {pointerover: 'mouseover', pointerout: 'mouseout'};
 
+/** @param {string} type */
 function clusterEventType(type) {
 	return `cluster${clusterEventNames[type] ?? type}`;
 }
 
-// layers with the contents of any layer groups among them (recursively) put in their place
+/**
+ * Whether the layer has a single point and gets clustered, unlike polylines and such.
+ * @template {Layer} M
+ * @param {M} layer
+ * @returns {layer is ClusterChild<M>}
+ */
+function isPoint(layer) {
+	return !!(/** @type {{getLatLng?: unknown}} */ (layer).getLatLng);
+}
+
+/**
+ * Layers with the contents of any layer groups among them (recursively) put in their place.
+ * @template {Layer} M
+ * @param {Array<M | LayerGroup<M>>} layers
+ * @returns {M[]}
+ */
 function flattenGroups(layers) {
+	/** @type {M[]} */
 	const result = [];
 	for (const layer of layers) {
 		if (layer instanceof L.LayerGroup) {
@@ -31,63 +120,129 @@ function flattenGroups(layers) {
 // Constant bounds used in case option "removeOutsideVisibleBounds" is set to false.
 const mapBoundsInfinite = new L.LatLngBounds(new L.LatLng(-Infinity, -Infinity), new L.LatLng(Infinity, Infinity));
 
-// MarkerClusterGroup extends FeatureGroup by clustering the markers contained within
+// non-animated versions of the animation methods, set on groups with animate: false
+/** @type {Pick<MarkerClusterGroup<any>, '_animationStart' | '_animationZoomIn' | '_animationZoomOut' | '_animationAddLayer'>} */
+const noAnimation = {
+	_animationStart() {
+		//Do nothing...
+	},
+	/**
+	 * @this {MarkerClusterGroup<any>}
+	 * @param {number} previousZoomLevel
+	 * @param {number} newZoomLevel
+	 */
+	_animationZoomIn(previousZoomLevel, newZoomLevel) {
+		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, Math.floor(this._map.getMinZoom()), previousZoomLevel);
+		this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+
+		//We didn't actually animate, but we use this event to mean "clustering animations have finished"
+		this.fire('animationend');
+	},
+	/**
+	 * @this {MarkerClusterGroup<any>}
+	 * @param {number} previousZoomLevel
+	 * @param {number} newZoomLevel
+	 */
+	_animationZoomOut(previousZoomLevel, newZoomLevel) {
+		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, Math.floor(this._map.getMinZoom()), previousZoomLevel);
+		this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+
+		//We didn't actually animate, but we use this event to mean "clustering animations have finished"
+		this.fire('animationend');
+	},
+	/**
+	 * @this {MarkerClusterGroup<any>}
+	 * @param {ClusterChild} layer
+	 * @param {ClusterChild | MarkerCluster} newCluster
+	 */
+	_animationAddLayer(layer, newCluster) {
+		this._animationAddLayerNonAnimated(layer, newCluster);
+	}
+};
+
+/**
+ * A `FeatureGroup` that clusters the markers in it. Layers that aren't points, like polylines, are kept as they are.
+ * @template {Layer} [M=Marker] The layers in the group.
+ * @extends {L.FeatureGroup<M, MarkerClusterGroupOptions<M> & MarkerClusterGroupProps<M>, MarkerClusterGroupEventMap<M>>}
+ */
 export class MarkerClusterGroup extends L.FeatureGroup {
 	static initHooks = true;
 
+	/** @param {MarkerClusterGroupOptions<M>} [options] */
 	constructor(options) {
 		// 1.x calls initialize() (set below) from its constructor with these arguments, then the init hooks
-		super(isV1 ? options : undefined);
+		super(/** @type {any} */ (isV1 ? options : undefined));
 		if (!isV1) {
 			this._initGroup(options);
 			this.callInitHooks();
 		}
 	}
 
+	/** @param {MarkerClusterGroupOptions<M>} [options] */
 	_initGroup(options) {
 		L.Util.setOptions(this, options);
 		if (!this.options.iconCreateFunction) {
 			this.options.iconCreateFunction = this._defaultIconCreateFunction;
 		}
 
+		// the clusters and markers shown on the map
+		/** @type {L.FeatureGroup} */
 		this._featureGroup = new L.FeatureGroup();
 		this._featureGroup.addEventParent(this);
 
+		/** @type {L.FeatureGroup<M>} */
 		this._nonPointGroup = new L.FeatureGroup();
 		this._nonPointGroup.addEventParent(this);
 
+		/** @type {number} */
 		this._inZoomAnimation = 0;
+		/** @type {boolean} */
+		this._ignoreMove = false;
+		/** @type {ClusterChild<M>[]} */
 		this._needsClustering = [];
-		this._needsRemoving = []; //Markers removed while we aren't on the map need to be kept track of
-		//The bounds of the currently shown area (from _getExpandedVisibleBounds) Updated on zoom/move
-		this._currentShownBounds = null;
+		/** Markers removed while we aren't on the map. @type {ClusterChild<M>[]} */
+		this._needsRemoving = [];
 
+		/** @type {Array<() => void>} */
 		this._queue = [];
+		/** @type {number | null} */
+		this._queueTimeout = null;
 
-		//The MarkerCluster currently spiderfied (if any)
+		/** The cluster currently spiderfied, if any. @type {MarkerCluster<M> | null} */
 		this._spiderfied = null;
+		/** @type {Polygon | null} */
+		this._shownPolygon = null;
 
+		/** @type {{[type: string]: (e: LeafletEvent) => void}} */
 		this._childMarkerEventHandlers = {
 			'dragstart': this._childMarkerDragStart,
 			'move': this._childMarkerMoved,
 			'dragend': this._childMarkerDragEnd,
 		};
 
-		// Hook the appropriate animation methods.
+		// the class methods are the animated versions
 		const animate = this.options.animate;
-		Object.assign(this, animate ? this._withAnimation : this._noAnimation);
-		// Remember which MarkerCluster class to instantiate (animated or not).
+		if (!animate) {
+			Object.assign(this, noAnimation);
+		}
+		/** The cluster class to create, animated or not. @type {typeof MarkerCluster<M>} */
 		this._markerCluster = animate ? MarkerCluster : MarkerClusterNonAnimated;
 	}
 
-	addLayer(layer) {
+	/**
+	 * Adds a marker, or a layer group's layers, to be clustered. Layers that aren't points are added as they are.
+	 * @param {M | LayerGroup<M>} layerOrGroup
+	 * @returns {this}
+	 */
+	addLayer(layerOrGroup) {
 
-		if (layer instanceof L.LayerGroup) {
-			return this.addLayers([layer]);
+		if (layerOrGroup instanceof L.LayerGroup) {
+			return this.addLayers([layerOrGroup]);
 		}
+		const layer = /** @type {M} */ (layerOrGroup);
 
 		//Don't cluster non point data
-		if (!layer.getLatLng) {
+		if (!isPoint(layer)) {
 			this._nonPointGroup.addLayer(layer);
 			this.fire('layeradd', {layer});
 			return this;
@@ -115,11 +270,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		//Work out what is visible
 		const currentZoom = this._zoom;
+		/** @type {ClusterChild<M> | MarkerCluster<M>} */
 		let visibleLayer = layer;
-		if (layer.__parent) {
-			while (visibleLayer.__parent._zoom >= currentZoom) {
-				visibleLayer = visibleLayer.__parent;
-			}
+		while (visibleLayer.__parent && visibleLayer.__parent._zoom >= currentZoom) {
+			visibleLayer = visibleLayer.__parent;
 		}
 
 		if (this._currentShownBounds.contains(visibleLayer.getLatLng())) {
@@ -132,14 +286,24 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return this;
 	}
 
-	removeLayer(layer) {
+	/**
+	 * Removes a marker, or a layer group's layers.
+	 * @param {M | LayerGroup<M> | number} layerOrGroup A layer, a layer group, or a layer's id.
+	 * @returns {this}
+	 */
+	removeLayer(layerOrGroup) {
 
-		if (layer instanceof L.LayerGroup) {
-			return this.removeLayers([layer]);
+		if (typeof layerOrGroup === 'number') {
+			const layer = this.getLayer(layerOrGroup);
+			return layer ? this.removeLayer(layer) : this;
 		}
+		if (layerOrGroup instanceof L.LayerGroup) {
+			return this.removeLayers([layerOrGroup]);
+		}
+		const layer = /** @type {M} */ (layerOrGroup);
 
 		//Non point layers
-		if (!layer.getLatLng) {
+		if (!isPoint(layer)) {
 			this._nonPointGroup.removeLayer(layer);
 			this.fire('layerremove', {layer});
 			return this;
@@ -182,7 +346,13 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return this;
 	}
 
-	//Takes an array of markers and adds them in bulk
+	/**
+	 * Adds markers and layer groups in bulk, much faster than one by one. With `chunkedLoading`, the rest of them
+	 * are added in chunks after this returns.
+	 * @param {Array<M | LayerGroup<M>>} layersArray
+	 * @param {boolean} [skipLayerAddEvent] Don't fire `layeradd` for each layer.
+	 * @returns {this}
+	 */
 	addLayers(layersArray, skipLayerAddEvent) {
 		if (!Array.isArray(layersArray)) {
 			return this.addLayer(layersArray);
@@ -194,7 +364,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		if (!this._map) {
 			for (const m of layers) {
-				if (!m.getLatLng) {
+				if (!isPoint(m)) {
 					npg.addLayer(m);
 				} else if (!this.hasLayer(m)) {
 					this._needsClustering.push(m);
@@ -231,7 +401,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				const m = layers[offset];
 
 				//Not point data, can't be clustered
-				if (!m.getLatLng) {
+				if (!isPoint(m)) {
 					npg.addLayer(m);
 					if (!skipLayerAddEvent) {
 						this.fire('layeradd', {layer: m});
@@ -275,13 +445,18 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return this;
 	}
 
-	//Takes an array of markers and removes them in bulk
+	/**
+	 * Removes markers and layer groups in bulk, much faster than one by one.
+	 * @param {Array<M | LayerGroup<M>>} layersArray
+	 * @returns {this}
+	 */
 	removeLayers(layersArray) {
 		if (!Array.isArray(layersArray)) {
 			return this.removeLayer(layersArray);
 		}
 
-		const layers = flattenGroups(layersArray),
+		// non-point layers have no __parent, the rest is optional
+		const layers = /** @type {ClusterChild<M>[]} */ (flattenGroups(layersArray)),
 			fg = this._featureGroup,
 			npg = this._nonPointGroup;
 
@@ -334,7 +509,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return this;
 	}
 
-	//Removes all layers from the MarkerClusterGroup
+	/** Removes all layers from the group. */
 	clearLayers() {
 		this._noanimationUnspiderfy();
 
@@ -344,7 +519,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		// emptied first so that eachLayer goes through the markers removed while off the map too
 		this._needsRemoving = [];
-		this.eachLayer((marker) => {
+		this.eachLayer((layer) => {
+			const marker = /** @type {ClusterChild<M>} */ (layer);
 			marker.off(this._childMarkerEventHandlers, this);
 			delete marker.__parent;
 		});
@@ -354,15 +530,17 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			//Reset _topClusterLevel and the DistanceGrids
 			this._generateInitialClusters();
 		} else {
-			delete this._gridClusters;
-			delete this._gridUnclustered;
-			delete this._topClusterLevel;
+			// generated again by the next onAdd
+			const clusters = /** @type {Partial<Pick<this, '_gridClusters' | '_gridUnclustered' | '_topClusterLevel'>>} */ (this);
+			delete clusters._gridClusters;
+			delete clusters._gridUnclustered;
+			delete clusters._topClusterLevel;
 		}
 
 		return this;
 	}
 
-	//Override FeatureGroup.getBounds as it doesn't work
+	/** The bounds of all layers in the group. */
 	getBounds() {
 		const bounds = new L.LatLngBounds();
 
@@ -379,13 +557,17 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return bounds;
 	}
 
-	//Overrides LayerGroup.eachLayer
+	/**
+	 * Calls `method` on each layer in the group, including the markers in clusters.
+	 * @param {(layer: M) => void} method
+	 * @param {unknown} [context]
+	 */
 	eachLayer(method, context) {
 		const markers = this._needsClustering.slice(),
 			needsRemoving = new Set(this._needsRemoving);
 
 		if (this._topClusterLevel) {
-			this._topClusterLevel.getAllChildMarkers(markers);
+			this._topClusterLevel._getChildren(markers);
 		}
 
 		for (let i = markers.length - 1; i >= 0; i--) {
@@ -395,10 +577,15 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		this._nonPointGroup.eachLayer(method, context);
+		return this;
 	}
 
-	//Overrides LayerGroup.getLayers
+	/**
+	 * All layers in the group, including the markers in clusters.
+	 * @returns {M[]}
+	 */
 	getLayers() {
+		/** @type {M[]} */
 		const layers = [];
 		this.eachLayer((l) => {
 			layers.push(l);
@@ -406,11 +593,16 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return layers;
 	}
 
-	//Overrides LayerGroup.getLayer, WARNING: Really bad performance
+	/**
+	 * The layer with the given id (see `L.Util.stamp`). Goes through all layers, so it's slow for many.
+	 * @param {number} id
+	 * @returns {M | undefined}
+	 */
 	getLayer(id) {
-		let result = null;
+		/** @type {M | undefined} */
+		let result;
 
-		id = parseInt(id, 10);
+		id = Number(id);
 
 		this.eachLayer((l) => {
 			if (L.Util.stamp(l) === id) {
@@ -421,11 +613,15 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return result;
 	}
 
-	//Returns true if the given layer is in this MarkerClusterGroup
-	hasLayer(layer) {
-		if (!layer) {
+	/**
+	 * Whether the layer is in the group, either in a cluster or not.
+	 * @param {M} layerToCheck
+	 */
+	hasLayer(layerToCheck) {
+		if (!layerToCheck) {
 			return false;
 		}
+		const layer = /** @type {ClusterChild<M>} */ (layerToCheck);
 
 		if (this._needsClustering.includes(layer)) {
 			return true;
@@ -436,46 +632,50 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return !!(layer.__parent && layer.__parent._group === this) || this._nonPointGroup.hasLayer(layer);
 	}
 
-	//Zoom down to show the given layer (spiderfying if necessary) then calls the callback
-	zoomToShowLayer(layer, callback) {
+	/**
+	 * Zooms in to show the marker, spiderfying its cluster if needed, then calls the callback.
+	 * @param {M} marker
+	 * @param {() => void} [callback]
+	 */
+	zoomToShowLayer(marker, callback) {
 
-		const map = this._map;
+		const map = this._map,
+			layer = /** @type {ClusterChild<M>} */ (marker);
 
-		if (typeof callback !== 'function') {
-			callback = function () {};
-		}
+		const done = typeof callback === 'function' ? callback : () => {},
+			parent = /** @type {MarkerCluster<M>} */ (layer.__parent);
 
 		const showMarker = () => {
 			// Assumes that map.hasLayer checks for direct appearance on map, not recursively calling
 			// hasLayer on Layer Groups that are on map (typically not calling this MarkerClusterGroup.hasLayer, which would always return true)
-			if ((map.hasLayer(layer) || map.hasLayer(layer.__parent)) && !this._inZoomAnimation) {
+			if ((map.hasLayer(layer) || map.hasLayer(parent)) && !this._inZoomAnimation) {
 				this._map.off('moveend', showMarker, this);
 				this.off('animationend', showMarker, this);
 
 				if (map.hasLayer(layer)) {
-					callback();
-				} else if (map.hasLayer(layer.__parent)) {
-					this.once('spiderfied', callback, this);
-					layer.__parent.spiderfy();
+					done();
+				} else if (map.hasLayer(parent)) {
+					this.once('spiderfied', done, this);
+					parent.spiderfy();
 				}
 			}
 		};
 
 		if (map.hasLayer(layer) && map.getBounds().contains(layer.getLatLng())) {
 			//Layer is visible ond on screen, immediate return
-			callback();
-		} else if (layer.__parent._zoom < Math.round(this._map.getZoom())) {
+			done();
+		} else if (parent._zoom < Math.round(this._map.getZoom())) {
 			//Layer should be visible at this zoom level. It must not be on screen so just pan over to it
 			this._map.on('moveend', showMarker, this);
 			this._map.panTo(layer.getLatLng());
 		} else {
 			this._map.on('moveend', showMarker, this);
 			this.on('animationend', showMarker, this);
-			layer.__parent.zoomToBounds();
+			parent.zoomToBounds();
 		}
 	}
 
-	//Overrides FeatureGroup.onAdd
+	/** @param {LeafletMap} map */
 	onAdd(map) {
 		this._map = map;
 
@@ -490,7 +690,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			this._generateInitialClusters();
 		}
 
-		this._maxLat = map.options.crs.projection.MAX_LATITUDE;
+		/** @type {number | undefined} */
+		this._maxLat = /** @type {{MAX_LATITUDE?: number}} */ (map.options.crs.projection).MAX_LATITUDE;
 
 		for (const layer of this._needsRemoving) {
 			this._removeLayer(layer, true);
@@ -498,7 +699,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._needsRemoving = [];
 
 		//Remember the current zoom level and bounds
+		/** @type {number} */
 		this._zoom = Math.round(this._map.getZoom());
+		/** The bounds of the currently shown area, from _getExpandedVisibleBounds. @type {LatLngBounds} */
 		this._currentShownBounds = this._getExpandedVisibleBounds();
 
 		this._map.on('zoomend', this._zoomEnd, this);
@@ -513,7 +716,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this.addLayers(layers, true);
 	}
 
-	//Overrides FeatureGroup.onRemove
+	/** @param {LeafletMap} map */
 	onRemove(map) {
 		map.off('zoomend', this._zoomEnd, this);
 		map.off('moveend', this._moveEnd, this);
@@ -534,18 +737,29 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		this._featureGroup.clearLayers();
 
-		this._map = null;
+		/** @type {any} */ (this)._map = null;
 	}
 
+	/**
+	 * The marker if it's shown on the map, or the cluster it's shown in, or null if neither is (e.g. out of view).
+	 * @param {M} marker
+	 * @returns {M | MarkerCluster<M> | null}
+	 */
 	getVisibleParent(marker) {
-		let vMarker = marker;
+		/** @type {ClusterChild<M> | MarkerCluster<M> | undefined} */
+		let vMarker = /** @type {ClusterChild<M>} */ (marker);
 		while (vMarker && !this._featureGroup.hasLayer(vMarker)) {
 			vMarker = vMarker.__parent;
 		}
 		return vMarker || null;
 	}
 
-	//Remove the given object from the given array
+	/**
+	 * Removes the object from the array, returning true if it was there.
+	 * @template T
+	 * @param {T[]} anArray
+	 * @param {T} obj
+	 */
 	_arraySplice(anArray, obj) {
 		for (let i = anArray.length - 1; i >= 0; i--) {
 			if (anArray[i] === obj) {
@@ -558,9 +772,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/**
 	 * Removes a marker from all _gridUnclustered zoom levels, starting at the supplied zoom.
-	 * @param marker to be removed from _gridUnclustered.
-	 * @param z integer bottom start zoom level (included)
-	 * @private
+	 * @param {ClusterChild<M>} marker
+	 * @param {number} z Bottom start zoom level (included).
 	 */
 	_removeFromGridUnclustered(marker, z) {
 		const gridUnclustered = this._gridUnclustered,
@@ -573,39 +786,51 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 	}
 
+	/** @param {LeafletEvent} e */
 	_childMarkerDragStart(e) {
-		e.target.__dragStart = true;
+		/** @type {ClusterChild<M>} */ (e.target).__dragStart = true;
 	}
 
+	/** @param {LeafletEvent} e */
 	_childMarkerMoved(e) {
-		if (!this._ignoreMove && !e.target.__dragStart) {
-			const isPopupOpen = e.target.isPopupOpen();
+		const marker = /** @type {ClusterChild<M>} */ (e.target);
+		if (!this._ignoreMove && !marker.__dragStart) {
+			const isPopupOpen = marker.isPopupOpen();
 
-			this._moveChild(e.target);
+			this._moveChild(marker);
 
 			if (isPopupOpen) {
-				e.target.openPopup();
+				marker.openPopup();
 			}
 		}
 	}
 
-	// the distance grids remember the projected point each marker was added at, so the old latlng isn't needed
+	/**
+	 * The distance grids remember the projected point each marker was added at, so the old latlng isn't needed.
+	 * @param {ClusterChild<M>} layer
+	 */
 	_moveChild(layer) {
 		this.removeLayer(layer);
 		this.addLayer(layer);
 	}
 
+	/** @param {LeafletEvent} e */
 	_childMarkerDragEnd(e) {
-		const dragged = e.target.__dragStart;
-		delete e.target.__dragStart;
+		const marker = /** @type {ClusterChild<M>} */ (e.target),
+			dragged = marker.__dragStart;
+		delete marker.__dragStart;
 		if (dragged) {
-			this._moveChild(e.target);
+			this._moveChild(marker);
 		}
 	}
 
 
-	//Internal function for removing a marker from everything.
-	//dontUpdateMap: set to true if you will handle updating the map manually (for bulk functions)
+	/**
+	 * Removes a marker from everything.
+	 * @param {ClusterChild<M>} marker
+	 * @param {boolean} removeFromDistanceGrid
+	 * @param {boolean} [dontUpdateMap] Set if the caller updates the map itself (for bulk functions).
+	 */
 	_removeLayer(marker, removeFromDistanceGrid, dontUpdateMap) {
 		const gridClusters = this._gridClusters,
 			gridUnclustered = this._gridUnclustered,
@@ -619,9 +844,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		//Work our way up the clusters removing them as we go if required
-		const markers = marker.__parent._markers;
-		let cluster = marker.__parent,
-			otherMarker;
+		const markers = /** @type {MarkerCluster<M>} */ (marker.__parent)._markers;
+		let cluster = marker.__parent;
 
 		//Remove the marker from the immediate parents marker list
 		this._arraySplice(markers, marker);
@@ -635,16 +859,17 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				break;
 			} else if (removeFromDistanceGrid && cluster._childCount <= 1) { //Cluster no longer required
 				//We need to push the other marker up to the parent
-				otherMarker = cluster._markers[0] === marker ? cluster._markers[1] : cluster._markers[0];
+				const otherMarker = cluster._markers[0] === marker ? cluster._markers[1] : cluster._markers[0],
+					parent = /** @type {MarkerCluster<M>} */ (cluster.__parent);
 
 				//Update distance grid
 				gridClusters[cluster._zoom].removeObject(cluster);
 				gridUnclustered[cluster._zoom].addObject(otherMarker, map.project(otherMarker.getLatLng(), cluster._zoom));
 
 				//Move otherMarker up to parent
-				this._arraySplice(cluster.__parent._childClusters, cluster);
-				cluster.__parent._markers.push(otherMarker);
-				otherMarker.__parent = cluster.__parent;
+				this._arraySplice(parent._childClusters, cluster);
+				parent._markers.push(otherMarker);
+				otherMarker.__parent = parent;
 
 				if (cluster.getElement()) {
 					//Cluster is currently on the map, need to put the marker on the map instead
@@ -663,11 +888,17 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		delete marker.__parent;
 	}
 
-	// events from clusters are fired as clusterclick, clustermouseover, etc.
+	/**
+	 * Events from clusters are fired as clusterclick, clustermouseover, etc.
+	 * @param {string} type
+	 * @param {{[key: string]: any}} [data]
+	 * @param {boolean} [propagate]
+	 */
 	fire(type, data, propagate) {
 		if (data && data.layer instanceof MarkerCluster) {
 			//Prevent multiple clustermouseover/off events if the icon is made up of stacked divs
-			if (data.originalEvent && data.layer.getElement()?.contains(data.originalEvent.relatedTarget)) {
+			const related = data.originalEvent?.relatedTarget;
+			if (related instanceof Node && data.layer.getElement()?.contains(related)) {
 				return this;
 			}
 			type = clusterEventType(type);
@@ -676,11 +907,19 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return super.fire(type, data, propagate);
 	}
 
+	/**
+	 * @param {string} type
+	 * @param {...any} args
+	 * @returns {boolean}
+	 */
 	listens(type, ...args) {
 		return super.listens(type, ...args) || super.listens(clusterEventType(type), ...args);
 	}
 
-	//Default functionality
+	/**
+	 * The default iconCreateFunction.
+	 * @param {MarkerCluster<M>} cluster
+	 */
 	_defaultIconCreateFunction(cluster) {
 		const childCount = cluster.getChildCount();
 
@@ -716,9 +955,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 	}
 
+	/** @param {LeafletEvent & {[key: string]: any}} e clusterclick, or clusterkeypress on 1.x */
 	_zoomOrSpiderfy(e) {
-		const cluster = e.layer,
-			original = e.originalEvent;
+		const cluster = /** @type {MarkerCluster<M>} */ (e.layer),
+			original = /** @type {Partial<PointerEvent & KeyboardEvent> | undefined} */ (e.originalEvent);
 		let bottomCluster = cluster;
 
 		if (e.type === 'clusterkeypress' && original && original.key !== 'Enter' || original?.defaultPrevented) {
@@ -749,16 +989,18 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 	}
 
+	/** @param {ClusterPointerEvent<M>} e */
 	_showCoverage(e) {
-		const map = this._map;
+		const map = this._map,
+			cluster = e.layer;
 		if (this._inZoomAnimation) {
 			return;
 		}
 		if (this._shownPolygon) {
 			map.removeLayer(this._shownPolygon);
 		}
-		if (e.layer.getChildCount() > 2 && e.layer !== this._spiderfied) {
-			this._shownPolygon = new L.Polygon(e.layer.getConvexHull(), this.options.polygonOptions);
+		if (cluster.getChildCount() > 2 && cluster !== this._spiderfied) {
+			this._shownPolygon = new L.Polygon(cluster.getConvexHull(), this.options.polygonOptions);
 			map.addLayer(this._shownPolygon);
 		}
 	}
@@ -804,22 +1046,16 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	_generateInitialClusters() {
 		const minZoom = Math.floor(this._map.getMinZoom()),
-			radius = this.options.maxClusterRadius;
-		let maxZoom = Math.ceil(this._map.getMaxZoom()),
-			radiusFn = radius;
+			radius = this.options.maxClusterRadius,
+			radiusFn = typeof radius === 'function' ? radius : () => radius,
+			{disableClusteringAtZoom} = this.options;
 
-		//If we just set maxClusterRadius to a single number, we need to create
-		//a simple function to return that number. Otherwise, we just have to
-		//use the function we've passed in.
-		if (typeof radius !== 'function') {
-			radiusFn = () => radius;
-		}
-
-		if (this.options.disableClusteringAtZoom !== null) {
-			maxZoom = this.options.disableClusteringAtZoom - 1;
-		}
-		this._maxZoom = maxZoom;
+		/** @type {number} */
+		this._maxZoom = disableClusteringAtZoom !== null ? disableClusteringAtZoom - 1 : Math.ceil(this._map.getMaxZoom());
+		const maxZoom = this._maxZoom;
+		/** @type {{[zoom: number]: DistanceGrid<MarkerCluster<M>>}} */
 		this._gridClusters = {};
+		/** @type {{[zoom: number]: DistanceGrid<ClusterChild<M>>}} */
 		this._gridUnclustered = {};
 
 		//Set up DistanceGrids for each zoom
@@ -832,10 +1068,14 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		// Instantiate the appropriate L.MarkerCluster class (animated or not).
+		/** @type {MarkerCluster<M>} */
 		this._topClusterLevel = new this._markerCluster(this, minZoom - 1);
 	}
 
-	//Zoom: Zoom to start adding at (Pass this._maxZoom to start at the bottom)
+	/**
+	 * @param {ClusterChild<M>} layer
+	 * @param {number} zoom Zoom to start adding at (this._maxZoom to start at the bottom).
+	 */
 	_addLayer(layer, zoom) {
 		const gridClusters = this._gridClusters,
 			gridUnclustered = this._gridUnclustered,
@@ -853,20 +1093,19 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			markerPoint = this._map.project(layer.getLatLng(), zoom); // calculate pixel position
 
 			//Try find a cluster close by
-			let closest = gridClusters[zoom].getNearObject(markerPoint);
-			if (closest) {
-				closest._addChild(layer);
-				layer.__parent = closest;
+			const closestCluster = gridClusters[zoom].getNearObject(markerPoint);
+			if (closestCluster) {
+				closestCluster._addChild(layer);
+				layer.__parent = closestCluster;
 				return;
 			}
 
 			//Try find a marker close by to form a new cluster with
-			closest = gridUnclustered[zoom].getNearObject(markerPoint);
+			const closest = gridUnclustered[zoom].getNearObject(markerPoint);
 			if (closest) {
-				const parent = closest.__parent;
-				if (parent) {
-					this._removeLayer(closest, false);
-				}
+				// markers in the grids always have a parent, the top cluster if no other
+				const parent = /** @type {MarkerCluster<M>} */ (closest.__parent);
+				this._removeLayer(closest, false);
 
 				//Create new cluster with these 2 in it
 
@@ -902,7 +1141,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	/**
 	 * Refreshes the icon of all "dirty" visible clusters.
 	 * Non-visible "dirty" clusters will be updated when they are added to the map.
-	 * @private
 	 */
 	_refreshClustersIcons() {
 		this._featureGroup.eachLayer((c) => {
@@ -912,7 +1150,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		});
 	}
 
-	//Enqueue code to fire after the marker expand/contract has happened
+	/**
+	 * Enqueue code to fire after the marker expand/contract has happened.
+	 * @param {() => void} fn
+	 */
 	_enqueue(fn) {
 		this._queue.push(fn);
 		if (!this._queueTimeout) {
@@ -924,7 +1165,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			this._queue[i].call(this);
 		}
 		this._queue.length = 0;
-		clearTimeout(this._queueTimeout);
+		if (this._queueTimeout !== null) {
+			clearTimeout(this._queueTimeout);
+		}
 		this._queueTimeout = null;
 	}
 
@@ -968,9 +1211,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	 * Otherwise, the removeOutsideVisibleBounds option will remove markers beyond that limit, whereas the same markers without
 	 * this option (or outside MCG) will have their position floored (ceiled) by the projection and rendered at that limit,
 	 * making the user think that MCG "eats" them and never displays them again.
-	 * @param bounds L.LatLngBounds
-	 * @returns {L.LatLngBounds}
-	 * @private
+	 * @param {LatLngBounds} bounds
+	 * @returns {LatLngBounds}
 	 */
 	_checkBoundsMaxLat(bounds) {
 		const maxLat = this._maxLat;
@@ -984,14 +1226,18 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return new L.LatLngBounds([south, bounds.getWest()], [north, bounds.getEast()]);
 	}
 
-	//Shared animation code
+	/**
+	 * Shared animation code.
+	 * @param {ClusterChild<M>} layer
+	 * @param {ClusterChild<M> | MarkerCluster<M>} newCluster The layer, or the cluster it's shown in.
+	 */
 	_animationAddLayerNonAnimated(layer, newCluster) {
-		if (newCluster === layer) {
+		if (!(newCluster instanceof MarkerCluster)) {
 			this._featureGroup.addLayer(layer);
 		} else if (newCluster._childCount === 2) {
 			newCluster._addToMap();
 
-			const markers = newCluster.getAllChildMarkers();
+			const markers = newCluster._getChildren();
 			this._featureGroup.removeLayer(markers[0]);
 			this._featureGroup.removeLayer(markers[1]);
 		} else {
@@ -1001,50 +1247,56 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/**
 	 * Implements the singleMarkerMode option.
-	 * @param layer Marker to re-style using the Clusters iconCreateFunction.
-	 * @returns {L.Icon} The newly created icon.
-	 * @private
+	 * @param {ClusterChild<M>} layer Marker to re-style using the Clusters iconCreateFunction.
+	 * @returns {Icon} The newly created icon.
 	 */
 	_overrideMarkerIcon(layer) {
-		layer.options.icon = this.options.iconCreateFunction({
-			getChildCount() {
-				return 1;
-			},
-			getAllChildMarkers() {
-				return [layer];
-			}
-		});
-		return layer.options.icon;
+		const marker = /** @type {Marker} */ (/** @type {Layer} */ (layer)),
+			// as much of a cluster as the default iconCreateFunction needs
+			cluster = /** @type {MarkerCluster<M>} */ (/** @type {unknown} */ ({
+				getChildCount() {
+					return 1;
+				},
+				getAllChildMarkers() {
+					return [layer];
+				}
+			}));
+		marker.options.icon = this.options.iconCreateFunction(cluster);
+		return marker.options.icon;
 	}
 
 	// Refresh
 
 	/**
-	 * Updates the icon of all clusters which are parents of the given marker(s).
-	 * In singleMarkerMode, also updates the given marker(s) icon.
-	 * @param layers L.MarkerClusterGroup|L.LayerGroup|Array(L.Marker)|Map(L.Marker)|
-	 * L.MarkerCluster|L.Marker (optional) list of markers (or single marker) whose parent
-	 * clusters need to be updated. If not provided, retrieves all child markers of this.
-	 * @returns {L.MarkerClusterGroup}
+	 * Updates the icons of the clusters of the given markers, e.g. after changing data that `iconCreateFunction`
+	 * uses. In `singleMarkerMode`, also updates the icons of the markers.
+	 * @param {MarkerClusterGroup<M> | LayerGroup<M> | MarkerCluster<M> | M | M[] | {[id: string]: M}} [layers] The
+	 *   markers, or a group or cluster of them; all markers in this group if not given.
+	 * @returns {this}
 	 */
 	refreshClusters(layers) {
+		/** @type {M[] | {[id: string]: M}} */
+		let markers;
 		if (!layers) {
-			layers = this._topClusterLevel.getAllChildMarkers();
+			markers = this._topClusterLevel.getAllChildMarkers();
 		} else if (layers instanceof MarkerClusterGroup) {
-			layers = layers._topClusterLevel.getAllChildMarkers();
+			markers = layers._topClusterLevel.getAllChildMarkers();
 		} else if (layers instanceof L.LayerGroup) {
-			layers = layers.getLayers();
+			markers = layers.getLayers();
 		} else if (layers instanceof MarkerCluster) {
-			layers = layers.getAllChildMarkers();
-		} else if (layers instanceof L.Marker) {
-			layers = [layers];
-		} // else: must be an Array(L.Marker)|Map(L.Marker)
-		this._flagParentsIconsNeedUpdate(layers);
+			markers = layers.getAllChildMarkers();
+		} else if (layers instanceof L.Layer) {
+			markers = [layers];
+		} else { // an array, or an object of markers by id
+			markers = layers;
+		}
+		const children = /** @type {ClusterChild<M>[] | {[id: string]: ClusterChild<M>}} */ (markers);
+		this._flagParentsIconsNeedUpdate(children);
 		this._refreshClustersIcons();
 
 		// In case of singleMarkerMode, also re-draw the markers.
 		if (this.options.singleMarkerMode) {
-			this._refreshSingleMarkerModeMarkers(layers);
+			this._refreshSingleMarkerModeMarkers(children);
 		}
 
 		return this;
@@ -1052,8 +1304,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/**
 	 * Simply flags all parent clusters of the given markers as having a "dirty" icon.
-	 * @param layers Array(L.Marker)|Map(L.Marker) list of markers.
-	 * @private
+	 * @param {ClusterChild<M>[] | {[id: string]: ClusterChild<M>}} layers
 	 */
 	_flagParentsIconsNeedUpdate(layers) {
 		let id, parent;
@@ -1065,7 +1316,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			// much more efficient than trying to be smart and make short lists,
 			// at least in the case of a hierarchy following a power law:
 			// http://jsperf.com/flag-nodes-in-power-hierarchy/2
-			parent = layers[id].__parent;
+			parent = /** @type {{[id: string]: ClusterChild<M>}} */ (layers)[id].__parent;
 			while (parent) {
 				parent._iconNeedsUpdate = true;
 				parent = parent.__parent;
@@ -1076,25 +1327,25 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	/**
 	 * Re-draws the icon of the supplied markers.
 	 * To be used in singleMarkerMode only.
-	 * @param layers Array(L.Marker)|Map(L.Marker) list of markers.
-	 * @private
+	 * @param {ClusterChild<M>[] | {[id: string]: ClusterChild<M>}} layers
 	 */
 	_refreshSingleMarkerModeMarkers(layers) {
 		let id, layer;
 
 		for (id in layers) {
-			layer = layers[id];
+			layer = /** @type {{[id: string]: ClusterChild<M>}} */ (layers)[id];
 
 			// Make sure we do not override markers that do not belong to THIS group.
 			if (this.hasLayer(layer)) {
 				// Need to re-create the icon first, then re-draw the marker.
-				layer.setIcon(this._overrideMarkerIcon(layer));
+				/** @type {Marker} */ (/** @type {Layer} */ (layer)).setIcon(this._overrideMarkerIcon(layer));
 			}
 		}
 	}
 
 	// Spiderfier
 
+	/** Unspiderfies the spiderfied cluster, if any. */
 	unspiderfy() {
 		this._unspiderfy();
 	}
@@ -1130,11 +1381,13 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._map.on('zoomanim', this._unspiderfyZoomAnim, this);
 	}
 
+	/** @param {ZoomAnimEvent} zoomDetails */
 	_unspiderfyZoomAnim(zoomDetails) {
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
 		this._unspiderfy(zoomDetails);
 	}
 
+	/** @param {ZoomAnimEvent} [zoomDetails] */
 	_unspiderfy(zoomDetails) {
 		if (this._spiderfied) {
 			this._spiderfied.unspiderfy(zoomDetails);
@@ -1147,7 +1400,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 	}
 
-	//If the given layer is currently being spiderfied then we unspiderfy it so it isn't on the map anymore etc
+	/**
+	 * If the given layer is currently being spiderfied then we unspiderfy it so it isn't on the map anymore etc.
+	 * @param {ClusterChild<M>} layer
+	 */
 	_unspiderfyLayer(layer) {
 		if (layer._spiderLeg) {
 			this._featureGroup.removeLayer(layer);
@@ -1165,7 +1421,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 	}
 
-	// Private methods for animated versions.
+	/**
+	 * @param {MarkerCluster<M>} cluster
+	 * @param {number} previousZoomLevel
+	 * @param {number} newZoomLevel
+	 */
 	_animationZoomOutSingle(cluster, previousZoomLevel, newZoomLevel) {
 		const bounds = this._getExpandedVisibleBounds(),
 			minZoom = Math.floor(this._map.getMinZoom());
@@ -1200,6 +1460,130 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		});
 	}
 
+	// animated versions of the methods replaced by noAnimation
+
+	_animationStart() {
+		this._map.getPane('mapPane').classList.add('leaflet-cluster-anim');
+		this._inZoomAnimation++;
+	}
+
+	/**
+	 * @param {number} previousZoomLevel
+	 * @param {number} newZoomLevel
+	 */
+	_animationZoomIn(previousZoomLevel, newZoomLevel) {
+		const bounds = this._getExpandedVisibleBounds(),
+			fg = this._featureGroup,
+			minZoom = Math.floor(this._map.getMinZoom());
+		let i;
+
+		this._ignoreMove = true;
+
+		//Add all children of current clusters to map and remove those clusters from map
+		this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, (c) => {
+			const markers = c._markers,
+				startPos = bounds.contains(c.getLatLng()) ? c.getLatLng() : null;
+			let m;
+
+			if (c._isSingleParent() && previousZoomLevel + 1 === newZoomLevel) { //Immediately add the new child and remove us
+				fg.removeLayer(c);
+				c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
+			} else {
+				//Fade out old cluster
+				c.clusterHide();
+				c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
+			}
+
+			//Remove all markers that aren't visible any more
+			//TODO: Do we actually need to do this on the higher levels too?
+			for (i = markers.length - 1; i >= 0; i--) {
+				m = markers[i];
+				if (!bounds.contains(m.getLatLng())) {
+					fg.removeLayer(m);
+				}
+			}
+
+		});
+
+		this._forceLayout();
+
+		//Update opacities
+		this._topClusterLevel._recursivelyBecomeVisible(bounds, newZoomLevel);
+		//TODO Maybe? Update markers in _recursivelyBecomeVisible
+		fg.eachLayer((n) => {
+			if (!(n instanceof MarkerCluster) && n instanceof L.Marker) {
+				n.clusterShow();
+			}
+		});
+
+		//update the positions of the just added clusters/markers
+		this._topClusterLevel._recursively(bounds, previousZoomLevel, newZoomLevel, (c) => {
+			c._recursivelyRestoreChildPositions(newZoomLevel);
+		});
+
+		this._ignoreMove = false;
+
+		//Remove the old clusters and close the zoom animation
+		this._enqueue(() => {
+			//update the positions of the just added clusters/markers
+			this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, (c) => {
+				fg.removeLayer(c);
+				c.clusterShow();
+			});
+
+			this._animationEnd();
+		});
+	}
+
+	/**
+	 * @param {number} previousZoomLevel
+	 * @param {number} newZoomLevel
+	 */
+	_animationZoomOut(previousZoomLevel, newZoomLevel) {
+		this._animationZoomOutSingle(this._topClusterLevel, previousZoomLevel - 1, newZoomLevel);
+
+		//Need to add markers for those that weren't on the map before but are now
+		this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+		//Remove markers that were on the map before but won't be now
+		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, Math.floor(this._map.getMinZoom()), previousZoomLevel, this._getExpandedVisibleBounds());
+	}
+
+	/**
+	 * @param {ClusterChild<M>} layer
+	 * @param {ClusterChild<M> | MarkerCluster<M>} newCluster The layer, or the cluster it's shown in.
+	 */
+	_animationAddLayer(layer, newCluster) {
+		const fg = this._featureGroup;
+
+		fg.addLayer(layer);
+		if (newCluster instanceof MarkerCluster) {
+			if (newCluster._childCount > 2) { //Was already a cluster
+
+				newCluster._updateIcon();
+				this._forceLayout();
+				this._animationStart();
+
+				if (layer instanceof L.Marker) {
+					layer._setPos(this._map.latLngToLayerPoint(newCluster.getLatLng()));
+				}
+				layer.clusterHide?.();
+
+				this._enqueue(() => {
+					fg.removeLayer(layer);
+					layer.clusterShow?.();
+
+					this._animationEnd();
+				});
+
+			} else { //Just became a cluster
+				this._forceLayout();
+
+				this._animationStart();
+				this._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._zoom);
+			}
+		}
+	}
+
 	_animationEnd() {
 		if (this._map) {
 			this._map.getPane('mapPane').classList.remove('leaflet-cluster-anim');
@@ -1215,166 +1599,31 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 }
 
-Object.assign(MarkerClusterGroup.prototype, {
-	_noAnimation: {
-		//Non Animated versions of everything
-		_animationStart() {
-			//Do nothing...
-		},
-		_animationZoomIn(previousZoomLevel, newZoomLevel) {
-			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, Math.floor(this._map.getMinZoom()), previousZoomLevel);
-			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
-
-			//We didn't actually animate, but we use this event to mean "clustering animations have finished"
-			this.fire('animationend');
-		},
-		_animationZoomOut(previousZoomLevel, newZoomLevel) {
-			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, Math.floor(this._map.getMinZoom()), previousZoomLevel);
-			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
-
-			//We didn't actually animate, but we use this event to mean "clustering animations have finished"
-			this.fire('animationend');
-		},
-		_animationAddLayer(layer, newCluster) {
-			this._animationAddLayerNonAnimated(layer, newCluster);
-		}
-	},
-
-	_withAnimation: {
-		//Animated versions here
-		_animationStart() {
-			this._map.getPane('mapPane').classList.add('leaflet-cluster-anim');
-			this._inZoomAnimation++;
-		},
-
-		_animationZoomIn(previousZoomLevel, newZoomLevel) {
-			const bounds = this._getExpandedVisibleBounds(),
-				fg = this._featureGroup,
-				minZoom = Math.floor(this._map.getMinZoom());
-			let i;
-
-			this._ignoreMove = true;
-
-			//Add all children of current clusters to map and remove those clusters from map
-			this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, (c) => {
-				const markers = c._markers;
-				let startPos = c.getLatLng(),
-					m;
-
-				if (!bounds.contains(startPos)) {
-					startPos = null;
-				}
-
-				if (c._isSingleParent() && previousZoomLevel + 1 === newZoomLevel) { //Immediately add the new child and remove us
-					fg.removeLayer(c);
-					c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
-				} else {
-					//Fade out old cluster
-					c.clusterHide();
-					c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
-				}
-
-				//Remove all markers that aren't visible any more
-				//TODO: Do we actually need to do this on the higher levels too?
-				for (i = markers.length - 1; i >= 0; i--) {
-					m = markers[i];
-					if (!bounds.contains(m.getLatLng())) {
-						fg.removeLayer(m);
-					}
-				}
-
-			});
-
-			this._forceLayout();
-
-			//Update opacities
-			this._topClusterLevel._recursivelyBecomeVisible(bounds, newZoomLevel);
-			//TODO Maybe? Update markers in _recursivelyBecomeVisible
-			fg.eachLayer((n) => {
-				if (!(n instanceof MarkerCluster) && n instanceof L.Marker) {
-					n.clusterShow();
-				}
-			});
-
-			//update the positions of the just added clusters/markers
-			this._topClusterLevel._recursively(bounds, previousZoomLevel, newZoomLevel, (c) => {
-				c._recursivelyRestoreChildPositions(newZoomLevel);
-			});
-
-			this._ignoreMove = false;
-
-			//Remove the old clusters and close the zoom animation
-			this._enqueue(() => {
-				//update the positions of the just added clusters/markers
-				this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, (c) => {
-					fg.removeLayer(c);
-					c.clusterShow();
-				});
-
-				this._animationEnd();
-			});
-		},
-
-		_animationZoomOut(previousZoomLevel, newZoomLevel) {
-			this._animationZoomOutSingle(this._topClusterLevel, previousZoomLevel - 1, newZoomLevel);
-
-			//Need to add markers for those that weren't on the map before but are now
-			this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
-			//Remove markers that were on the map before but won't be now
-			this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, Math.floor(this._map.getMinZoom()), previousZoomLevel, this._getExpandedVisibleBounds());
-		},
-
-		_animationAddLayer(layer, newCluster) {
-			const fg = this._featureGroup;
-
-			fg.addLayer(layer);
-			if (newCluster !== layer) {
-				if (newCluster._childCount > 2) { //Was already a cluster
-
-					newCluster._updateIcon();
-					this._forceLayout();
-					this._animationStart();
-
-					layer._setPos(this._map.latLngToLayerPoint(newCluster.getLatLng()));
-					layer.clusterHide();
-
-					this._enqueue(() => {
-						fg.removeLayer(layer);
-						layer.clusterShow();
-
-						this._animationEnd();
-					});
-
-				} else { //Just became a cluster
-					this._forceLayout();
-
-					this._animationStart();
-					this._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._zoom);
-				}
-			}
-		}
-	}
-});
 
 if (isV1) {
-	const proto = MarkerClusterGroup.prototype;
+	const proto = /** @type {any} */ (MarkerClusterGroup.prototype);
 
 	// 1.x keeps defaults on the prototype, and without a copy of its own, mergeOptions would change every FeatureGroup
 	proto.options = Object.create(L.FeatureGroup.prototype.options);
 
 	// subclasses made with 1.x extend() call this, directly or through their own initialize, instead of the constructor
+	/**
+	 * @this {MarkerClusterGroup}
+	 * @param {MarkerClusterGroupOptions} [options]
+	 */
 	proto.initialize = function (options) {
 		this._initGroup(options);
 	};
 
 	// 1.x extend() copies only own statics, and ES classes inherit them, so subclasses would lose these
 	for (const key of ['extend', 'include', 'mergeOptions', 'addInitHook']) {
-		MarkerClusterGroup[key] = L.FeatureGroup[key];
+		/** @type {any} */ (MarkerClusterGroup)[key] = /** @type {any} */ (L.FeatureGroup)[key];
 	}
 
 	// own init hooks, so that addInitHook doesn't add them to every L.FeatureGroup
 	const parentCallInitHooks = proto.callInitHooks;
 	proto._initHooks = [];
+	/** @this {any} */
 	proto.callInitHooks = function () {
 		if (this._initHooksCalled) { return; }
 		parentCallInitHooks.call(this);

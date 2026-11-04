@@ -24,13 +24,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Retrieved from: http://en.literateprograms.org/Quickhull_(Javascript)?oldid=18434
 */
 
+/** @import {LatLng} from 'leaflet' */
+
+/** @typedef {[LatLng, LatLng]} BaseLine */
+
 export const QuickHull = {
 
-	/*
-	 * @param {Object} cpt a point to be measured from the baseline
-	 * @param {Array} bl the baseline, as represented by a two-element
-	 *   array of latlng objects.
-	 * @returns {Number} an approximate distance measure
+	/**
+	 * An approximate distance measure of a point from the baseline.
+	 * @param {LatLng} cpt
+	 * @param {BaseLine} bl
 	 */
 	getDistant(cpt, bl) {
 		const vY = bl[1].lat - bl[0].lat,
@@ -38,16 +41,16 @@ export const QuickHull = {
 		return (vX * (cpt.lat - bl[0].lat) + vY * (cpt.lng - bl[0].lng));
 	},
 
-	/*
-	 * @param {Array} baseLine a two-element array of latlng objects
-	 *   representing the baseline to project from
-	 * @param {Array} latLngs an array of latlng objects
-	 * @returns {Object} the maximum point and all new points to stay
-	 *   in consideration for the hull.
+	/**
+	 * The point farthest from the baseline, and all points on its outer side, which stay in consideration for the hull.
+	 * @param {BaseLine} baseLine
+	 * @param {LatLng[]} latLngs
 	 */
 	findMostDistantPointFromBaseLine(baseLine, latLngs) {
+		/** @type {LatLng[]} */
 		const newPoints = [];
 		let maxD = 0,
+			/** @type {LatLng | null} */
 			maxPt = null,
 			i, pt, d;
 
@@ -70,63 +73,58 @@ export const QuickHull = {
 		return {maxPoint: maxPt, newPoints};
 	},
 
-	/*
-	 * Given a baseline, compute the convex hull of latLngs as an array
-	 * of latLngs.
-	 *
-	 * @param {Array} latLngs
-	 * @returns {Array}
+	/**
+	 * Given a baseline, compute the convex hull of latLngs as an array of latLngs.
+	 * @param {BaseLine} baseLine
+	 * @param {LatLng[]} latLngs
+	 * @returns {LatLng[]}
 	 */
 	buildConvexHull(baseLine, latLngs) {
 		const t = this.findMostDistantPointFromBaseLine(baseLine, latLngs);
-		let convexHullBaseLines = [];
 
 		if (t.maxPoint) { // if there is still a point "outside" the base line
-			convexHullBaseLines =
-				convexHullBaseLines.concat(
-					this.buildConvexHull([baseLine[0], t.maxPoint], t.newPoints)
-				);
-			convexHullBaseLines =
-				convexHullBaseLines.concat(
-					this.buildConvexHull([t.maxPoint, baseLine[1]], t.newPoints)
-				);
-			return convexHullBaseLines;
+			return [
+				...this.buildConvexHull([baseLine[0], t.maxPoint], t.newPoints),
+				...this.buildConvexHull([t.maxPoint, baseLine[1]], t.newPoints)
+			];
 		}   // if there is no more point "outside" the base line, the current base line is part of the convex hull
 		return [baseLine[0]];
 
 	},
 
-	/*
-	 * Given an array of latlngs, compute a convex hull as an array
-	 * of latlngs
-	 *
-	 * @param {Array} latLngs
-	 * @returns {Array}
+	/**
+	 * Given an array of latlngs, compute a convex hull as an array of latlngs.
+	 * @param {LatLng[]} latLngs
+	 * @returns {LatLng[]}
 	 */
 	getConvexHull(latLngs) {
+		if (latLngs.length === 0) {
+			return [];
+		}
+
 		// find first baseline
-		let maxLat = false, minLat = false,
-			maxLng = false, minLng = false,
-			maxLatPt = null, minLatPt = null,
-			maxLngPt = null, minLngPt = null,
-			maxPt = null, minPt = null,
+		let maxLat = -Infinity, minLat = Infinity,
+			maxLng = -Infinity, minLng = Infinity,
+			maxLatPt = latLngs[0], minLatPt = latLngs[0],
+			maxLngPt = latLngs[0], minLngPt = latLngs[0],
+			maxPt, minPt,
 			i;
 
 		for (i = latLngs.length - 1; i >= 0; i--) {
 			const pt = latLngs[i];
-			if (maxLat === false || pt.lat > maxLat) {
+			if (pt.lat > maxLat) {
 				maxLatPt = pt;
 				maxLat = pt.lat;
 			}
-			if (minLat === false || pt.lat < minLat) {
+			if (pt.lat < minLat) {
 				minLatPt = pt;
 				minLat = pt.lat;
 			}
-			if (maxLng === false || pt.lng > maxLng) {
+			if (pt.lng > maxLng) {
 				maxLngPt = pt;
 				maxLng = pt.lng;
 			}
-			if (minLng === false || pt.lng < minLng) {
+			if (pt.lng < minLng) {
 				minLngPt = pt;
 				minLng = pt.lng;
 			}
@@ -140,8 +138,9 @@ export const QuickHull = {
 			maxPt = maxLngPt;
 		}
 
-		const ch = [].concat(this.buildConvexHull([minPt, maxPt], latLngs),
-			this.buildConvexHull([maxPt, minPt], latLngs));
-		return ch;
+		return [
+			...this.buildConvexHull([minPt, maxPt], latLngs),
+			...this.buildConvexHull([maxPt, minPt], latLngs)
+		];
 	}
 };

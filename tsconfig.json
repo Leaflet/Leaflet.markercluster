@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"target": "es2022",
+		"lib": ["es2022", "dom"],
+		"module": "nodenext",
+		"allowJs": true,
+		"checkJs": true,
+		"strict": true,
+		"strictPropertyInitialization": false,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"outDir": "dist/types",
+		"rootDir": "src",
+		"types": []
+	},
+	"files": ["src/index.js"]
+}
