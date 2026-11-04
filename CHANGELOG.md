@@ -215,7 +215,7 @@ Required leaflet version bumped to 1.3.1
 
 ### Improvements
 
-- Compatibility with Leaflet 1.0.0 (by [@danzel](https://githum.com/danzel), [@Eschon](https://github.com/Eschon), [@ghybs](https://github.com/ghybs), [@IvanSanchez](https://github.com/IvanSanchez))
+- Compatibility with Leaflet 1.0.0 (by [@danzel](https://github.com/danzel), [@Eschon](https://github.com/Eschon), [@ghybs](https://github.com/ghybs), [@IvanSanchez](https://github.com/IvanSanchez))
 - Support moving markers [#57](https://github.com/Leaflet/Leaflet.markercluster/issues/57)
 - chunkedLoading option to keep browser more responsive during larging a load data set [#292](https://github.com/Leaflet/Leaflet.markercluster/issues/292)
 - maxClusterRadius can be a function (by [@Schwanksta](https://github.com/Schwanksta)) [#298](https://github.com/Leaflet/Leaflet.markercluster/issues/298)
@@ -312,7 +312,7 @@ Required leaflet version bumped to 1.3.1
 - Support calling hasLayer with null (by [@l0c0luke](https://github.com/l0c0luke)) [#170](https://github.com/Leaflet/Leaflet.markercluster/issues/170)
 - Lots of fixes for removing a MarkerClusterGroup from the map (Reported by [@annetdeboer](https://github.com/annetdeboer)) [#200](https://github.com/Leaflet/Leaflet.markercluster/issues/200)
 - Throw error when being added to a map with no maxZoom.
-- Fixes for markers not appearing after a big zoom (Reported by [@arnoldbird](https://github.com/annetdeboer)) [#216](https://github.com/Leaflet/Leaflet.markercluster/issues/216) (Reported by [@mathilde-pellerin](https://github.com/mathilde-pellerin)) [#260](https://github.com/Leaflet/Leaflet.markercluster/issues/260)
+- Fixes for markers not appearing after a big zoom (Reported by [@arnoldbird](https://github.com/arnoldbird)) [#216](https://github.com/Leaflet/Leaflet.markercluster/issues/216) (Reported by [@mathilde-pellerin](https://github.com/mathilde-pellerin)) [#260](https://github.com/Leaflet/Leaflet.markercluster/issues/260)
 - Fix coverage polygon not being removed when a MarkerClusterGroup is removed (Reported by [@ZeusTheTrueGod](https://github.com/ZeusTheTrueGod)) [#245](https://github.com/Leaflet/Leaflet.markercluster/issues/245)
 - Fix getVisibleParent when no parent is visible (Reported by [@ajbeaven](https://github.com/ajbeaven)) [#265](https://github.com/Leaflet/Leaflet.markercluster/issues/265)
 - Fix spiderfied markers not hiding on a big zoom (Reported by [@Vaesive](https://github.com/Vaesive)) [#268](https://github.com/Leaflet/Leaflet.markercluster/issues/268)
