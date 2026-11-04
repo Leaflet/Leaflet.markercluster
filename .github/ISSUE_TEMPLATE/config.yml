@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and help
+    url: https://github.com/Leaflet/Leaflet/discussions
+    about: >
+      The issue tracker is for bugs and feature requests. For questions like "How do I do X with
+      Leaflet.markercluster?", ask in Leaflet discussions or on GIS Stack Exchange
+      (https://gis.stackexchange.com/questions/tagged/leaflet).

@@ -4,7 +4,7 @@ import pkg from '../package.json' with {type: 'json'};
 
 const banner = `/* @preserve
  * Leaflet.markercluster ${pkg.version}, animated marker clustering for Leaflet. https://github.com/Leaflet/Leaflet.markercluster
- * (c) 2012-${new Date().getFullYear()} Dave Leaver, Volodymyr Agafonkin
+ * (c) 2012-${new Date().getFullYear()} Dave Leaver and contributors
  */`;
 
 /** @type {import('rolldown').OutputOptions} */

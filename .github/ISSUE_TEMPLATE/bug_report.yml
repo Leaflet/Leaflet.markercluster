@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a bug in Leaflet.markercluster
+labels: ["bug"]
+body:
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: I'm sure this is an issue with Leaflet.markercluster, not with my app or other dependencies (React, Angular, other plugins, etc.).
+          required: false
+        - label: I've searched the [existing issues](https://github.com/Leaflet/Leaflet.markercluster/issues) to make sure this hasn't been reported yet.
+          required: false
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Add [...] markers
+        2. Zoom to [...]
+        3. See [...]
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen. Add screenshots, video or links if they help.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Current behavior
+      description: What actually happens. Add screenshots, video or links if they help.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Minimal example reproducing the issue
+      description: |
+        A link to an example on CodePen, JSFiddle or a similar site. The CDN setup from the [README](https://github.com/Leaflet/Leaflet.markercluster#getting-started) is an easy starting point.
+        **Keep it as simple as possible, with no third-party code.**
+      placeholder: Link to your example
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Environment
+      value: |
+        - Leaflet version:
+        - Leaflet.markercluster version:
+        - Browser (with version):
+        - OS/Platform (with version):
+    validations:
+      required: true
