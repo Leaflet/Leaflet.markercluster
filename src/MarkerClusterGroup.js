@@ -218,6 +218,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		 */
 		this._dragging = new Set();
 
+		/** Bumped by clearLayers, which stops the chunked addLayers calls started before it. @type {number} */
+		this._generation = 0;
+
 		// the class methods are the animated versions
 		const animate = this.options.animate;
 		if (!animate) {
@@ -380,11 +383,15 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		const fg = this._featureGroup,
+			generation = this._generation,
 			{chunkedLoading, chunkInterval, chunkProgress} = this.options,
 			started = performance.now();
 		let offset = 0;
 
 		const process = () => {
+			if (generation !== this._generation) {
+				return;
+			}
 			// removed from the map between chunks: the rest gets clustered when it's added back
 			if (!this._map) {
 				this.addLayers(layers.slice(offset));
@@ -531,6 +538,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/** Removes all layers from the group. */
 	clearLayers() {
+		this._generation++;
 		this._noanimationUnspiderfy();
 
 		//Remove all the visible layers

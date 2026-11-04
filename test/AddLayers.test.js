@@ -254,4 +254,28 @@ describe('addLayers adding multiple markers', () => {
 		map.addLayer(group);
 		expect(added).toHaveBeenCalledTimes(2);
 	});
+
+	it('stops chunked loading on clearLayers', () => {
+		vi.useFakeTimers();
+		let time = 0;
+		vi.spyOn(performance, 'now').mockImplementation(() => time++);
+
+		group = new MarkerClusterGroup({chunkedLoading: true, chunkInterval: 0});
+		const markers = [];
+		for (let i = 0; i < 1000; i++) {
+			markers.push(new L.Marker([1 + i / 1000, 1 + (i % 10) / 10]));
+		}
+
+		map.addLayer(group);
+		group.addLayers(markers);
+		expect(group.getLayers().length).toBe(200);
+
+		group.clearLayers();
+		group.addLayers(markers.slice(0, 100));
+		vi.runAllTimers();
+		vi.restoreAllMocks();
+
+		expect(group.getLayers().length).toBe(100);
+		vi.useRealTimers();
+	});
 });
