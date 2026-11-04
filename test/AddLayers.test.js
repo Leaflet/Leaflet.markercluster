@@ -196,6 +196,54 @@ describe('addLayers adding multiple markers', () => {
 		vi.useRealTimers();
 	});
 
+	it('pairs new markers with ones at the top level, keeping the order of the rest', () => {
+		map.setMinZoom(8);
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const top = [[1, 1], [1, 2], [2, 1], [2, 2]].map(p => new L.Marker(p));
+		group.addLayers(top);
+
+		// the first pairs with top[1], the second goes to the top level and pairs with the third in the same call
+		group.addLayers([new L.Marker([1, 2]), new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])]);
+
+		expect(group._topClusterLevel._markers).toEqual([top[0], top[2], top[3]]);
+		expect(group._topClusterLevel._childClusters.length).toBe(2);
+		expect(group._topClusterLevel.getChildCount()).toBe(7);
+		expect(map.hasLayer(top[1])).toBe(false);
+	});
+
+	it('pairs markers with ones at the top level from an earlier chunk', () => {
+		vi.useFakeTimers();
+		// every call takes 1 ms, so that each chunk stops after the first 200 markers
+		let time = 0;
+		vi.spyOn(performance, 'now').mockImplementation(() => time++);
+
+		map.setMinZoom(8);
+		group = new MarkerClusterGroup({chunkedLoading: true, chunkInterval: 0});
+		map.addLayer(group);
+
+		// 200 markers a degree apart, then the same 200 again
+		const markers = [];
+		for (let i = 0; i < 400; i++) {
+			const j = i % 200;
+			markers.push(new L.Marker([Math.floor(j / 14), j % 14]));
+		}
+		group.addLayers(markers);
+
+		const top = group._topClusterLevel;
+		expect(top._markers).toEqual(markers.slice(0, 200));
+
+		vi.runAllTimers();
+		vi.restoreAllMocks();
+
+		expect(top._markers).toEqual([]);
+		expect(top._childClusters.length).toBe(200);
+		expect(top.getChildCount()).toBe(400);
+
+		vi.useRealTimers();
+	});
+
 	it('fires layeradd while off the map, and not again when added to it', () => {
 		group = new MarkerClusterGroup();
 		const added = vi.fn();

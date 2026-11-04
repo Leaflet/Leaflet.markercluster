@@ -41,6 +41,7 @@
 		"test:types": "npm run build:types && tsc -p test/types",
 		"build": "rolldown --config build/rolldown-config.js && npm run build:types",
 		"build:types": "tsc && cp src/MarkerPatches.d.ts dist/types/",
+		"bench": "node bench/run.js",
 		"prepublishOnly": "npm run build"
 	},
 	"license": "MIT",

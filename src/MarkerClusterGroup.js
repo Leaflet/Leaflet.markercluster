@@ -259,7 +259,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		this._unspiderfy();
 
-		this._addLayer(layer, this._maxZoom);
+		/** @type {MarkerCluster<M> | undefined} */
+		let parent = this._addLayer(layer, this._maxZoom);
 		this.fire('layeradd', {layer});
 
 		// Refresh bounds and weighted positions.
@@ -270,8 +271,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		//Work out what is visible
 		const currentZoom = this._zoom;
 		/** @type {ClusterChild<M> | MarkerCluster<M>} */
-		let visibleLayer = layer,
-			parent = parents.get(layer);
+		let visibleLayer = layer;
 		while (parent && parent._zoom >= currentZoom) {
 			visibleLayer = parent;
 			parent = parent._parent;
@@ -319,7 +319,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		// not in this group, maybe in another one
-		if (parents.get(layer)?._group !== this) {
+		const parent = parents.get(layer);
+		if (parent?._group !== this) {
 			return this;
 		}
 
@@ -328,7 +329,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._unspiderfyLayer(layer);
 
 		//Remove the marker from clusters
-		this._removeLayer(layer, true);
+		this._removeLayer(layer, true, undefined, parent);
 		this.fire('layerremove', {layer});
 
 		// Refresh bounds and weighted positions.
@@ -394,7 +395,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			const start = performance.now(),
 				chunkStart = offset,
 				// checked once per chunk rather than per layer, which adds up for many layers
-				fireAdd = !skipLayerAddEvent && this.listens('layeradd');
+				fireAdd = !skipLayerAddEvent && this.listens('layeradd'),
+				/** @type {Set<ClusterChild<M> | MarkerCluster<M>>} */
+				removedFromTop = new Set();
 
 			// Make sure to unspiderfy before starting to add some layers
 			this._unspiderfy();
@@ -421,13 +424,12 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 					continue;
 				}
 
-				this._addLayer(m, this._maxZoom);
+				const parent = this._addLayer(m, this._maxZoom, removedFromTop);
 				if (fireAdd) {
 					this.fire('layeradd', {layer: m});
 				}
 
 				//If we just made a cluster of size 2 then we need to remove the other marker from the map (if it is) or we never will
-				const parent = /** @type {MarkerCluster<M>} */ (parents.get(m));
 				if (parent.getChildCount() === 2) {
 					const markers = parent.getAllChildMarkers(),
 						otherMarker = markers[0] === m ? markers[1] : markers[0];
@@ -437,6 +439,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 					}
 				}
 			}
+			this._removeFromTop(removedFromTop);
 
 			if (chunkProgress) {
 				chunkProgress(offset, l, performance.now() - started);
@@ -483,19 +486,20 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		const fireRemove = this.listens('layerremove'),
-			// filtered out of the top level's markers at once below, since there can be many of them
-			/** @type {Set<ClusterChild<M>>} */
+			/** @type {Set<ClusterChild<M> | MarkerCluster<M>>} */
 			removedFromTop = new Set();
 		for (const m of layers) {
+			const parent = parents.get(m);
+
 			if (this._needsClustering.delete(m)) {
 				if (fireRemove) this.fire('layerremove', {layer: m});
 
-			} else if (!parents.has(m)) {
+			} else if (!parent) {
 				npg.removeLayer(m);
 				if (fireRemove) this.fire('layerremove', {layer: m});
 
-			} else if (parents.get(m)?._group === this) {
-				this._removeLayer(m, true, removedFromTop);
+			} else if (parent._group === this) {
+				this._removeLayer(m, true, removedFromTop, parent);
 				if (fireRemove) this.fire('layerremove', {layer: m});
 
 				if (fg.hasLayer(m)) {
@@ -511,10 +515,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		if (!this._topClusterLevel) {
 			return this;
 		}
-		if (removedFromTop.size) {
-			const top = this._topClusterLevel;
-			top._markers = top._markers.filter(m => !removedFromTop.has(m));
-		}
+		this._removeFromTop(removedFromTop);
 
 		// Refresh bounds and weighted positions.
 		this._topClusterLevel._recalculateBounds();
@@ -765,6 +766,19 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 
 	/**
+	 * Takes the markers and clusters collected by a bulk function out of the top level at once, since there can be
+	 * many of them (with a high map minZoom, every marker that never clusters is there, and every cluster at minZoom).
+	 * @param {Set<ClusterChild<M> | MarkerCluster<M>>} removed
+	 */
+	_removeFromTop(removed) {
+		if (removed.size) {
+			const top = this._topClusterLevel;
+			top._markers = top._markers.filter(m => !removed.has(m));
+			top._childClusters = top._childClusters.filter(c => !removed.has(c));
+		}
+	}
+
+	/**
 	 * Removes the object from the array, returning true if it was there.
 	 * @template T
 	 * @param {T[]} anArray
@@ -848,10 +862,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	 * Removes a marker from everything. Works off the map too.
 	 * @param {ClusterChild<M>} marker
 	 * @param {boolean} removeFromDistanceGrid
-	 * @param {Set<ClusterChild<M>>} [removedFromTop] Given by bulk functions, which update the map themselves and filter
-	 *   the markers collected in it out of the top level's markers at once.
+	 * @param {Set<ClusterChild<M> | MarkerCluster<M>>} [removedFromTop] Given by bulk functions, which update the map
+	 *   themselves and filter the markers and clusters collected in it out of the top level at once.
+	 * @param {MarkerCluster<M>} [cluster] The marker's cluster, if the caller has it already.
 	 */
-	_removeLayer(marker, removeFromDistanceGrid, removedFromTop) {
+	_removeLayer(marker, removeFromDistanceGrid, removedFromTop, cluster = parents.get(marker)) {
 		const gridClusters = this._gridClusters,
 			gridUnclustered = this._gridUnclustered,
 			fg = this._featureGroup,
@@ -862,10 +877,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			this._removeFromGridUnclustered(marker, this._maxZoom);
 		}
 
-		//Work our way up the clusters removing them as we go if required
-		/** @type {MarkerCluster<M> | undefined} */
-		let cluster = parents.get(marker);
-
 		//Remove the marker from the immediate parents marker list
 		if (removedFromTop && cluster === this._topClusterLevel) {
 			removedFromTop.add(marker);
@@ -873,6 +884,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			this._arraySplice(/** @type {MarkerCluster<M>} */ (cluster)._markers, marker);
 		}
 
+		//Work our way up the clusters removing them as we go if required
 		while (cluster) {
 			cluster._childCount--;
 			cluster._boundsNeedUpdate = true;
@@ -890,7 +902,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				gridUnclustered[cluster._zoom].addObject(otherMarker, this._project(otherMarker.getLatLng(), cluster._zoom));
 
 				//Move otherMarker up to parent
-				this._arraySplice(parent._childClusters, cluster);
+				if (removedFromTop && parent === this._topClusterLevel) {
+					removedFromTop.add(cluster);
+				} else {
+					this._arraySplice(parent._childClusters, cluster);
+				}
 				parent._markers.push(otherMarker);
 				parents.set(otherMarker, parent);
 
@@ -1119,8 +1135,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	/**
 	 * @param {ClusterChild<M>} layer
 	 * @param {number} zoom Zoom to start adding at (this._maxZoom to start at the bottom).
+	 * @param {Set<ClusterChild<M> | MarkerCluster<M>>} [removedFromTop] Given by bulk functions, see _removeLayer.
+	 * @returns {MarkerCluster<M>} The cluster the layer went into.
 	 */
-	_addLayer(layer, zoom) {
+	_addLayer(layer, zoom, removedFromTop) {
 		const gridClusters = this._gridClusters,
 			gridUnclustered = this._gridUnclustered,
 			minZoom = this._minZoom;
@@ -1141,7 +1159,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			if (closestCluster) {
 				closestCluster._addChild(layer);
 				parents.set(layer, closestCluster);
-				return;
+				return closestCluster;
 			}
 
 			//Try find a marker close by to form a new cluster with
@@ -1149,7 +1167,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			if (closest) {
 				// markers in the grids always have a parent, the top cluster if no other
 				const parent = /** @type {MarkerCluster<M>} */ (parents.get(closest));
-				this._removeLayer(closest, false);
+				this._removeLayer(closest, false, removedFromTop, parent);
 
 				//Create new cluster with these 2 in it
 
@@ -1169,7 +1187,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				//Remove closest from this zoom level and any above that it is in, replace with newCluster
 				this._removeFromGridUnclustered(closest, zoom);
 
-				return;
+				return newCluster;
 			}
 
 			//Didn't manage to cluster in at this zoom, record us as a marker here and continue upwards
@@ -1179,7 +1197,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		//Didn't get in anything, add us to the top
 		this._topClusterLevel._addChild(layer);
 		parents.set(layer, this._topClusterLevel);
-
+		return this._topClusterLevel;
 	}
 
 	/**
