@@ -95,3 +95,8 @@ const radiusNumber: number = group.options.maxClusterRadius;
 circles.getLayers()[0].setIcon(new DivIcon());
 
 console.log(markers, found, radius, chunkedLoading, disableAt, radiusNumber);
+
+let parent: MarkerCluster | null = group.getParent(marker);
+while (parent) {
+	parent = group.getParent(parent);
+}

@@ -798,6 +798,17 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 
 	/**
+	 * The cluster a marker or cluster is directly in, whether shown or not, so calling it again walks up to the
+	 * lowest zoom. Null if there's none: the marker never clusters, isn't in the group, or waits to be clustered.
+	 * @param {M | MarkerCluster<M>} layer
+	 * @returns {MarkerCluster<M> | null}
+	 */
+	getParent(layer) {
+		const parent = layer instanceof MarkerCluster ? layer._parent : parents.get(/** @type {ClusterChild<M>} */ (layer));
+		return parent?._group === this && parent !== this._topClusterLevel ? parent : null;
+	}
+
+	/**
 	 * Takes the markers and clusters collected by a bulk function out of the top level at once, since there can be
 	 * many of them (with a high map minZoom, every marker that never clusters is there, and every cluster at minZoom).
 	 * @param {Set<ClusterChild<M> | MarkerCluster<M>>} removed
@@ -1634,7 +1645,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			}
 
 			//Remove all markers that aren't visible any more
-			//TODO: Do we actually need to do this on the higher levels too?
 			for (i = markers.length - 1; i >= 0; i--) {
 				m = markers[i];
 				if (!bounds.contains(m.getLatLng())) {
