@@ -1,6 +1,6 @@
 # Leaflet.markercluster
 
-Fast, animated marker clustering for [Leaflet](https://leafletjs.com), ready for hundreds of thousands of markers. Works with both **Leaflet 2.0 and 1.9**.
+Fast, animated marker clustering for [Leaflet](https://leafletjs.com) (2.0 and 1.9), ready for hundreds of thousands of markers.
 
 ![cluster map example](example/map.png)
 
@@ -8,24 +8,28 @@ Fast, animated marker clustering for [Leaflet](https://leafletjs.com), ready for
 
 Version 2.0 is in beta: install it with `npm install leaflet.markercluster@next`, and please report any problems in [#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115). See the [changelog](CHANGELOG.md) for what changed since 1.5. For Leaflet 1.0–1.8, use [1.5.3](https://github.com/Leaflet/Leaflet.markercluster/tree/v1.5.3).
 
+[Getting started](#getting-started) · [Options](#options) · [Events](#events) · [Methods](#methods) · [Accessibility](#accessibility) · [TypeScript](#typescript) · [Plugins](#plugins) · [Development](#development)
+
 ## Getting started
 
-Install the plugin with `npm install leaflet.markercluster`, then create a `MarkerClusterGroup`, add markers to it and add it to the map:
+Install the plugin with `npm install leaflet.markercluster@next`, along with `leaflet@beta` for Leaflet 2.0 or `leaflet` for 1.9. The examples below work with both.
+
+Create a `MarkerClusterGroup`, add markers to it and add it to the map:
 
 ```js
-import {LeafletMap, TileLayer, Marker} from 'leaflet';
+import * as L from 'leaflet';
 import {MarkerClusterGroup} from 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
-const map = new LeafletMap('map').setView([-37.82, 175.24], 13);
-new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+const map = new L.Map('map').setView([-37.82, 175.24], 13);
+new L.TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 const markers = new MarkerClusterGroup();
-markers.addLayers(points.map(p => new Marker(p)));
+markers.addLayers(latlngs.map(latlng => new L.Marker(latlng)));
 map.addLayer(markers);
 ```
 
-`MarkerCluster.Default.css` styles the default cluster icons. You don't need it if you make your own with [`iconCreateFunction`](#custom-cluster-icons). With Leaflet 1.9, import `Map` instead of `LeafletMap`; everything else is the same.
+`MarkerCluster.Default.css` styles the default cluster icons. You don't need it if you make your own with [`iconCreateFunction`](#custom-cluster-icons).
 
 ### In the browser without a build step
 
@@ -43,7 +47,7 @@ The plugin is an ES module that imports `leaflet`, so an [import map](https://de
 }
 </script>
 <script type="module">
-	import {LeafletMap, Marker} from 'leaflet';
+	import * as L from 'leaflet';
 	import {MarkerClusterGroup} from 'leaflet.markercluster';
 	// ...
 </script>
@@ -53,9 +57,11 @@ For Leaflet 1.9, point `leaflet` to `https://cdn.jsdelivr.net/npm/leaflet@1.9.4/
 
 ### As a plain script
 
-`dist/leaflet.markercluster-global.js` works with Leaflet's global build, with no modules involved. Load it after Leaflet and use `L.MarkerClusterGroup`:
+`dist/leaflet.markercluster-global.js` works with Leaflet's global build, with no modules involved. Load it after Leaflet and use `L.MarkerClusterGroup`. This example uses Leaflet 1.9:
 
 ```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.1/dist/MarkerCluster.Default.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.1/dist/leaflet.markercluster-global.js"></script>
 <script>
@@ -63,7 +69,7 @@ For Leaflet 1.9, point `leaflet` to `https://cdn.jsdelivr.net/npm/leaflet@1.9.4/
 </script>
 ```
 
-On Leaflet 2.0, load its `leaflet-global.js`. Leaflet 1.9 also gets the `L.markerClusterGroup()` factory.
+On Leaflet 2.0, load `leaflet-global.js` instead of `leaflet.js`. Only Leaflet 1.9 gets the `L.markerClusterGroup()` factory.
 
 ## Options
 
@@ -111,14 +117,14 @@ With `prefers-reduced-motion`, animations fade instead of moving.
 
 ### Chunked loading
 
-`addLayers` takes about 0.4 s for 200k markers. To keep the page responsive while adding even more, or on slow devices, split the work into chunks:
+`addLayers` takes about 0.4 s for 200k markers on a desktop. To keep the page responsive while adding even more, or on slow devices, split the work into chunks:
 
 | Option | Default | Description |
 | --- | --- | --- |
 | `chunkedLoading` | `false` | Split `addLayers` into chunks with breaks in between, so that the page doesn't freeze. |
 | `chunkInterval` | `200` | Milliseconds of work per chunk. |
 | `chunkDelay` | `50` | Milliseconds between chunks. |
-| `chunkProgress` | `null` | Called after each chunk with the number of markers processed, the total, and the milliseconds since the start, e.g. for a progress bar ([demo](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)). |
+| `chunkProgress` | `null` | Called after each chunk with the number of markers processed, the total, and the milliseconds since the start, e.g. for a progress bar ([demo](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-realworld.50000.html)). The total grows when `addLayers` finds a layer group in the array, so the progress can jump back. |
 
 ### Custom cluster icons
 
@@ -126,7 +132,7 @@ With `prefers-reduced-motion`, animations fade instead of moving.
 
 ```js
 const markers = new MarkerClusterGroup({
-	iconCreateFunction: cluster => new DivIcon({html: `<b>${cluster.getChildCount()}</b>`})
+	iconCreateFunction: cluster => new L.DivIcon({html: `<b>${cluster.getChildCount()}</b>`})
 });
 ```
 
@@ -140,7 +146,7 @@ If the icons depend on data that changes, call [`refreshClusters`](#refreshing-c
 const markers = new MarkerClusterGroup({
 	spiderfyShapePositions(count, center) {
 		const gap = 45, start = center.y - gap * (count - 1) / 2;
-		return Array.from({length: count}, (_, i) => new Point(center.x + 35, start + gap * i));
+		return Array.from({length: count}, (_, i) => new L.Point(center.x + 35, start + gap * i));
 	}
 });
 ```
@@ -167,8 +173,8 @@ The group also fires:
 
 Adding and removing:
 
-- `addLayer(layer)`, `removeLayer(layer)`: add or remove a marker. Both also take a layer group, whose markers are added or removed, and layers that aren't points, like polylines, are shown as they are, without clustering.
-- `addLayers(layers)`, `removeLayers(layers)`: the same for an array, much faster than one at a time. Layer groups in the array are flattened, even nested ones, but the groups themselves aren't added, so `hasLayer` is false for them. With `chunkedLoading`, `chunkProgress` jumps back when `addLayers` finds a group, since the total grows.
+- `addLayer(layer)`, `removeLayer(layer)`: add or remove a marker. Passing a layer group adds or removes its markers. Layers that aren't points, like polylines, are shown as they are, without clustering.
+- `addLayers(layers)`, `removeLayers(layers)`: the same for an array, much faster than one at a time. Layer groups in the array are flattened, even nested ones, but the groups themselves aren't added, so `hasLayer` is false for them.
 - `clearLayers()`: removes all markers.
 
 A marker can be in one group at a time: adding it to another group removes it from the first.
@@ -199,7 +205,7 @@ Clusters come in events like `clusterclick`, from `getVisibleParent` and `getPar
 - `getChildCount()`: the number of markers in the cluster.
 - `getAllChildMarkers()`: an array of the markers in the cluster.
 - `getBounds()`: the bounds of its markers.
-- `getConvexHull()`: the latlngs of the convex hull of its markers, e.g. for `new Polygon(cluster.getConvexHull())`.
+- `getConvexHull()`: the latlngs of the convex hull of its markers, e.g. for `new L.Polygon(cluster.getConvexHull())`.
 - `zoomToBounds(fitBoundsOptions)`: zooms in until the cluster splits, or until all of its markers are in view. Takes [`fitBounds` options](https://leafletjs.com/reference.html#fitbounds-options), e.g. `{padding: [20, 20]}`.
 - `spiderfy()`, `unspiderfy()`: spread out the cluster's markers and bring them back ([demo](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-spiderfier.html)).
 
@@ -227,17 +233,11 @@ These plugins extend Leaflet.markercluster. They were written for 1.x, so check 
 | [Leaflet.MarkerCluster.PlacementStrategies](https://github.com/adammertel/Leaflet.MarkerCluster.PlacementStrategies) | More ways to place spread-out markers, like clock and concentric circles. Works best with circle markers. [Demo](https://adammertel.github.io/Leaflet.MarkerCluster.PlacementStrategies/demo/demo1.html) | [adammertel](https://github.com/adammertel) / [UNIVIE](https://carto.univie.ac.at/) |
 | [Leaflet.MarkerCluster.List](https://github.com/adammertel/Leaflet.MarkerCluster.List) | Shows a cluster's markers in a list, suited for mobile. [Demo](https://adammertel.github.io/Leaflet.MarkerCluster.List/demo/demo1.html) | [adammertel](https://github.com/adammertel) / [UNIVIE](https://carto.univie.ac.at/) |
 
-Before asking for a new feature, look through the [issues](https://github.com/Leaflet/Leaflet.markercluster/issues): it may have been discussed already, with workarounds.
+If a feature you need isn't here, look through the [issues](https://github.com/Leaflet/Leaflet.markercluster/issues) too: it may have been discussed already, with workarounds.
 
 ## Development
 
-After `npm install`:
-
-- `npm test` runs the linter, the type checks and the tests in headless Chromium, on both Leaflet 2.0 and 1.9.
-- `npm run build` builds `dist/`.
-- `npm run bench` benchmarks loading, zooming and memory use in headless Chromium. Its options are listed at the top of `bench/run.js`.
-
-The demos in `example/` load `src/` directly, so they work from any static server in the repo root. The global script demo needs `npm run build` first.
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for running the tests, demos and benchmarks, reporting bugs and sending pull requests.
 
 ## License
 
