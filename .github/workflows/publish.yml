@@ -18,11 +18,12 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
-      - run: npm stage publish
+      - run: npm stage publish ${{ contains(github.ref_name, '-') && '--tag next' || '' }}
       - name: Create a GitHub release from the changelog
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = index($0, "## " v " ") == 1; next} p' CHANGELOG.md |
             perl -0pe 's/\n  (?=\S)/ /g' > notes.md
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md \
+            ${{ contains(github.ref_name, '-') && '--prerelease' || '' }}

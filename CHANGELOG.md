@@ -1,12 +1,82 @@
 # Leaflet.markercluster
 
-(part of repo mgmt responsibilities transferred to [@ykzeng](https://github.com/ykzeng))
+(all changes in 2.0.0-beta.1 without author notice are by [@mourner](https://github.com/mourner))
 
-## 1.5.4 (2021-10-18)
+## 2.0.0-beta.1 (2026-11-04)
 
-### Bugfixes
+The first beta of 2.0 and the first release since 2021: a full modernization of the plugin. It now works with both **Leaflet 2.0 and 1.9** from one package, is an **ES module** with its own **TypeScript types**, and uses only public Leaflet APIs where possible. Loading markers is **2× faster** with **over a third less memory**, cluster animations are smoother and no longer depend on CSS, clusters are **accessible** to keyboard and screen reader users, and over 20 bugs are fixed.
 
-- Resolve "mismatch Version declared in the json (1.4.1) is different than the resolved one (1.5.3)" issue
+The release targets [Baseline 2022](https://web.dev/baseline) browsers and Leaflet 1.9+. Breaking changes are listed after the improvements. Install it with `npm install leaflet.markercluster@next`, and please report any problems in [#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115).
+
+### ❇️ New features
+
+- Support Leaflet 2.0 alongside 1.9, from the same package and builds ([#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115))
+- Ship as an ES module: `import {MarkerClusterGroup} from 'leaflet.markercluster'` ([#874](https://github.com/Leaflet/Leaflet.markercluster/issues/874))
+- Add TypeScript types, generated from the source and checked in strict mode, with typed options and cluster events. Groups are generic over the member type, e.g. `MarkerClusterGroup<CircleMarker>` ([#982](https://github.com/Leaflet/Leaflet.markercluster/issues/982))
+- Animate clusters with the Web Animations API instead of CSS transitions. Markers stay at their real position during animations (no more `move` events or temporary latlngs), a new zoom cancels running animations cleanly, and spider legs draw out and fade in again (broken since Leaflet 1.0)
+- Add the `animationDuration` option (default 300 ms) for all cluster and spider animations
+- Add `getParent(layer)` to get the cluster a marker (or cluster) is directly in, replacing `marker.__parent`
+- Let `clusterclick` handlers cancel the default zoom or spiderfy with `e.originalEvent.preventDefault()` ([#1103](https://github.com/Leaflet/Leaflet.markercluster/pull/1103) by [@eriknikulski](https://github.com/eriknikulski))
+- Ship minified builds with source maps ([#864](https://github.com/Leaflet/Leaflet.markercluster/issues/864))
+
+### ⚡️ Performance
+
+- Add markers about 2× faster: `addLayers` of 200k markers takes 415 ms instead of 900 ms, 50k 72 ms instead of 172 ms, and adding a filled group to the map gets the same speedup
+- Make `addLayers` before the group is on the map (the common "add everything, then add the group" pattern) no longer quadratic: adding 200k markers and then the group takes 0.4 s instead of 21 s (thanks to [@pmarrapese](https://github.com/pmarrapese) for spotting it in [#988](https://github.com/Leaflet/Leaflet.markercluster/pull/988))
+- Use about 38% less memory per marker (600 → 370 bytes at 200k), with one listener per marker instead of three and no extra properties on markers
+- Zoom in about 4× faster on large groups (230 → 60 ms over 12 zoom levels with 200k markers)
+- Fix quadratic adding and removing when the map has a high `minZoom`: removing half of 200k scattered markers at `minZoom: 10` takes 0.4 s instead of 23 s
+- Make `clearLayers` up to 40% faster, and skip `layeradd`/`layerremove` events in bulk calls when nobody listens
+- Avoid forced layouts during cluster animations
+
+### ⚠️ Breaking changes
+
+- Require Leaflet 1.9 or 2.0 and a Baseline 2022 browser. Internet Explorer and the old-browser CSS fallbacks are gone
+- The package entry is now an ES module that exports `MarkerClusterGroup` and `MarkerCluster`, and no longer sets `L.MarkerClusterGroup`, `L.markerClusterGroup` or other globals. Use `new MarkerClusterGroup(options)`
+- `dist/leaflet.markercluster.js` is now the ES module build. For a plain `<script>` tag, use `dist/leaflet.markercluster-global.js`, which sets `L.MarkerClusterGroup` and `L.MarkerCluster` (and `L.markerClusterGroup` on Leaflet 1.x). The `-src` build and the `window.Leaflet.markercluster` global are gone
+- Remove `MarkerCluster.css`, since animations no longer use CSS: drop its import or `<link>` (keep `MarkerCluster.Default.css`). CSS overrides of `.leaflet-cluster-anim .leaflet-marker-icon` transitions no longer affect the animations; use `animationDuration`
+- Remove `marker.__parent` and the other properties the plugin set on markers (`_spiderLeg`, `_preSpiderfyLatlng`, `_backupLatlng`, `__dragStart`). Use `group.getParent(marker)` or `group.getVisibleParent(marker)` instead
+- `DistanceGrid`, `QuickHull` and `MarkerClusterNonAnimated` are no longer public
+- Keep a marker in one group at a time: adding it to another group removes it from the first. Before, this broke both groups and threw ([#1051](https://github.com/Leaflet/Leaflet.markercluster/issues/1051), [#1048](https://github.com/Leaflet/Leaflet.markercluster/pull/1048))
+- On Leaflet 2.0, subclass with `class extends MarkerClusterGroup` (`extend()` and `initialize()` still work on 1.9), and Enter or Space on a cluster fire `clusterclick` instead of `clusterkeypress`
+- `getLayer(id)` returns `undefined` for an unknown id like `LayerGroup` (was `null`), `getVisibleParent` returns a visible `CircleMarker` itself instead of its cluster, and `MarkerCluster.unspiderfy()` no longer takes arguments
+
+### ♿️ Accessibility
+
+- Give clusters an accessible name ("12 markers") on the focusable icon, also for custom icons, with the new `clusterLabel` option for translation ([#1107](https://github.com/Leaflet/Leaflet.markercluster/issues/1107), thanks to [@tmiaa](https://github.com/tmiaa) for [#1044](https://github.com/Leaflet/Leaflet.markercluster/pull/1044))
+- Make spiderfy a proper disclosure: clusters get `aria-expanded`, spiderfied markers come right after their cluster in the tab order, and activating a spiderfied cluster again (by keyboard or mouse) closes it
+- Close the spider with Escape, moving focus back to the cluster if it was on one of its markers. On Leaflet 1.9 and 2.0.0-beta.1, a Leaflet bug blocks this once any popup has been opened; it's fixed in 2.0.0-beta.2
+- Keep focus where it is after activating a cluster with the keyboard, and move it to the map instead of the page when a focused cluster disappears on zoom
+- Show the coverage polygon on keyboard focus, not just on hover
+- Respect `prefers-reduced-motion`: markers and spider legs fade in place instead of moving
+
+### 🐞 Bug fixes
+
+- Fix markers disappearing after the map's zoom range changes, e.g. when switching to a base layer with a different `maxZoom` ([#869](https://github.com/Leaflet/Leaflet.markercluster/issues/869))
+- Fix a dragged marker being clustered and vanishing when the map zooms mid-drag. It now leaves its clusters during the drag and rejoins on drop ([#808](https://github.com/Leaflet/Leaflet.markercluster/issues/808))
+- Fix a dragged spiderfied marker snapping back to the cluster on drop
+- Fix `clearLayers` during chunked `addLayers` not stopping the rest of the chunks ([#816](https://github.com/Leaflet/Leaflet.markercluster/pull/816) by [@frenomus](https://github.com/frenomus))
+- Fix an error when the group is removed from the map during chunked loading; the remaining markers are now added when it's added back
+- Fix unclustered markers never showing with a fractional map `minZoom`
+- Fix markers flying off when zooming in on a spiderfied cluster
+- Fix stale markers left on the map after an animated zoom out (thanks to [@KristjanESPERANTO](https://github.com/KristjanESPERANTO))
+- Fix a removed spiderfied marker staying at its spider position if removed during a zoom
+- Fix moving a marker after `removeLayers` adding it back to the group
+- Fix `removeLayer` of a marker from another group breaking that group's clusters
+- Fix removals while the group is off the map: `getBounds()` included removed markers, a marker removed and added back disappeared from `getLayers()`, and `clearLayers()` kept old markers
+- Fix `addLayer` of the same marker twice before the group is on the map adding it twice
+- Fix `getBounds()` returning the old bounds after removing all markers
+- Fix `addLayers` not firing `layeradd` while the group is off the map
+- Fix `removeLayer(id)` for clustered markers
+- Fix `animateAddingMarkers` and `refreshClusters` throwing or misbehaving with a `CircleMarker`
+- Fix a hang when the map has no finite `minZoom`; it throws an error now ([#991](https://github.com/Leaflet/Leaflet.markercluster/pull/991) by [@maranderan](https://github.com/maranderan))
+
+### 🔧 Workflow
+
+- Run tests with Vitest in the browser on both Leaflet 1.9 and 2.0 instead of Karma and PhantomJS, with many more specs
+- Build with Rolldown, lint with ESLint against Baseline 2022, and run CI and npm releases on GitHub Actions
+- Add a benchmark harness for loading, zooming and memory (`npm run bench`)
+- Update the demos to ES modules and Leaflet 2.0, and use the preferred OpenStreetMap tile URL ([#1072](https://github.com/Leaflet/Leaflet.markercluster/pull/1072) by [@Firefishy](https://github.com/Firefishy))
 
 ## 1.5.3 (2021-10-18)
 
