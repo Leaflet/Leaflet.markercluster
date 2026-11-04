@@ -31,12 +31,10 @@
 		attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
 	}).addTo(map);
 
-	const markers = new MarkerClusterGroup({spiderfyOnMaxZoom: false, showCoverageOnHover: false, zoomToBoundsOnClick: false});
+	const markers = new MarkerClusterGroup({spiderfyOnEveryZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: false});
 
 	for (let i = 0; i < 100; i++) markers.addLayer(new Marker(randomLatLng()));
 	map.addLayer(markers);
-
-	markers.on('clusterclick', e => e.layer.spiderfy());
 
 	// random positions within the current view
 	function randomLatLng() {

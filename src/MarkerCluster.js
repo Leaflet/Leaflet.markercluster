@@ -58,6 +58,15 @@ const animationId = 'leaflet.markercluster';
 const zoomDuration = 250;
 const zoomEasing = 'cubic-bezier(0,0,0.25,1)';
 
+/** @type {MediaQueryList | undefined} */
+let reducedMotionQuery;
+
+// with reduced motion, markers and legs only fade, as fades don't count as motion
+function reducedMotion() {
+	reducedMotionQuery ??= window.matchMedia('(prefers-reduced-motion: reduce)');
+	return reducedMotionQuery.matches;
+}
+
 /** @param {Marker} marker */
 function markerElements(marker) {
 	const shadow = /** @type {{_shadow?: HTMLElement | null}} */ (/** @type {unknown} */ (marker))._shadow;
@@ -83,7 +92,7 @@ function px(p) {
 export function animateMarker(marker, from, to, fromOpacity, duration, withZoom = false) {
 	const zero = new L.Point(0, 0);
 	for (const el of markerElements(marker)) {
-		if (from || to) {
+		if ((from || to) && !reducedMotion()) {
 			el.animate({translate: [px(from ?? zero), px(to ?? zero)]}, withZoom ?
 				{duration: zoomDuration, easing: zoomEasing, id: animationId} :
 				{duration, easing: 'ease-out', id: animationId});
@@ -122,8 +131,8 @@ export function stopAnimations(layer) {
 
 /**
  * Draws a spider leg out from the cluster, or back in, by animating its stroke dash offset (see
- * https://jakearchibald.com/2013/animated-line-drawing-svg/). Drawing it back in also sets its opacity to 0, so that
- * it stays hidden until it's removed. Only the opacity changes with the Canvas renderer.
+ * https://jakearchibald.com/2013/animated-line-drawing-svg/). Drawing it back in also sets its opacity to 0, so
+ * that it stays hidden until it's removed. With reduced motion it only fades, and with Canvas it doesn't animate.
  * @param {Polyline} leg
  * @param {boolean} reveal
  * @param {number} duration
@@ -138,13 +147,14 @@ function animateLeg(leg, reveal, duration, withZoom = false) {
 	if (!path) {
 		return;
 	}
-	const length = `${path.getTotalLength() + 0.1}`; // a bit longer to avoid a remaining dot in Firefox
-	const hidden = {strokeDasharray: length, strokeDashoffset: length},
-		shown = {strokeDasharray: length, strokeDashoffset: '0'};
-
-	path.animate(reveal ? [hidden, shown] : [shown, hidden], withZoom ?
-		{duration: zoomDuration, easing: zoomEasing, id: animationId} :
-		{duration, easing: 'ease-out', id: animationId});
+	if (!reducedMotion()) {
+		const length = `${path.getTotalLength() + 0.1}`; // a bit longer to avoid a remaining dot in Firefox
+		const hidden = {strokeDasharray: length, strokeDashoffset: length},
+			shown = {strokeDasharray: length, strokeDashoffset: '0'};
+		path.animate(reveal ? [hidden, shown] : [shown, hidden], withZoom ?
+			{duration: zoomDuration, easing: zoomEasing, id: animationId} :
+			{duration, easing: 'ease-out', id: animationId});
+	}
 	path.animate([{strokeOpacity: reveal ? 0 : opacity, offset: 0}], {duration, easing: 'ease-in', id: animationId});
 }
 
@@ -295,6 +305,56 @@ export class MarkerCluster extends L.Marker {
 	}
 	createShadow() {
 		return /** @type {Icon} */ (this._iconObj).createShadow();
+	}
+
+	_initIcon() {
+		super._initIcon();
+		const group = this._group,
+			icon = /** @type {HTMLElement} */ (this._icon);
+
+		// an icon's content alone would name the button with just the count
+		icon.setAttribute('aria-label', group.options.clusterLabel(this));
+		if (group._spiderfiesOnClick(this)) {
+			icon.setAttribute('aria-expanded', `${group._spiderfied === this}`);
+		} else {
+			icon.removeAttribute('aria-expanded');
+		}
+		if (group.options.showCoverageOnHover) {
+			L.DomEvent.on(icon, {focus: this._showCoverage, blur: this._hideCoverage}, this);
+		}
+	}
+
+	_removeIcon() {
+		// removing it while focused, e.g. when a zoom splits it, would send focus back to the start of the page
+		if (this._icon?.contains(document.activeElement)) {
+			this._map?.getContainer().focus({preventScroll: true});
+		}
+		super._removeIcon();
+	}
+
+	_showCoverage() {
+		this._group._showCoverage({layer: this});
+	}
+
+	_hideCoverage() {
+		this._group._hideCoverage();
+	}
+
+	/**
+	 * Updates aria-expanded, and when collapsing, moves focus to the cluster from a spiderfied marker that's about
+	 * to go.
+	 * @param {boolean} expanded
+	 */
+	_setExpanded(expanded) {
+		const icon = this._icon;
+		if (!icon) {
+			return;
+		}
+		icon.setAttribute('aria-expanded', `${expanded}`);
+		const active = document.activeElement;
+		if (!expanded && active && this._getChildren().some(m => m.getElement?.()?.contains(active))) {
+			icon.focus({preventScroll: true});
+		}
 	}
 
 
@@ -562,6 +622,7 @@ export class MarkerCluster extends L.Marker {
 
 		group._unspiderfy();
 		group._spiderfied = this;
+		this._setExpanded(true);
 
 		//TODO Maybe: childMarkers order by distance to center
 
@@ -575,6 +636,13 @@ export class MarkerCluster extends L.Marker {
 		}
 
 		this._animationSpiderfy(childMarkers, positions);
+
+		// right after the cluster in the tab order, like the content of a disclosure button, instead of last in the pane
+		const icon = this._icon;
+		if (icon) {
+			const elements = childMarkers.map(m => /** @type {HTMLElement} */ (m.getElement?.()));
+			icon.after(...elements.filter(el => el?.parentNode === icon.parentNode));
+		}
 	}
 
 	/** Brings the markers of a spiderfied cluster back in. */
@@ -587,6 +655,7 @@ export class MarkerCluster extends L.Marker {
 		if (this._group._inZoomAnimation) {
 			return;
 		}
+		this._setExpanded(false);
 		this._animationUnspiderfy(withZoom);
 
 		this._group._spiderfied = null;
@@ -652,6 +721,7 @@ export class MarkerCluster extends L.Marker {
 			spiders = group._spiders,
 			childMarkers = this._getChildren([], true);
 
+		this._setExpanded(false);
 		group._ignoreMove = true;
 
 		this.setOpacity(1);

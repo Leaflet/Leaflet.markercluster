@@ -140,14 +140,12 @@ describe('cluster DOM events', () => {
 
 	it('zooms to bounds once on Enter', () => {
 		const zoomToBounds = vi.spyOn(cluster, 'zoomToBounds');
-		const focus = vi.spyOn(map.getContainer(), 'focus');
 
 		// 1.x fires keypress on the cluster, 2.0 turns keydown into a click
 		const type = isV1 ? 'keypress' : 'keydown';
 		cluster._icon.dispatchEvent(new KeyboardEvent(type, {key: 'Enter', bubbles: true}));
 
 		expect(zoomToBounds).toHaveBeenCalledOnce();
-		expect(focus).toHaveBeenCalled();
 	});
 
 	it.runIf(isV1)('ignores keys other than Enter on 1.x', () => {

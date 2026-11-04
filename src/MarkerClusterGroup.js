@@ -13,6 +13,8 @@ import './MarkerPatches.js';
  *   center to its markers, or a function that returns it for a zoom. Smaller makes more, smaller clusters.
  * @property {(cluster: MarkerCluster<M>) => Icon | DivIcon} iconCreateFunction Creates the icon of a cluster. The
  *   default shows the marker count, styled by `MarkerCluster.Default.css`.
+ * @property {(cluster: MarkerCluster<M>) => string} clusterLabel The accessible name of a cluster's icon,
+ *   read out by screen readers, e.g. to translate it; "N markers" by default.
  * @property {string} clusterPane The map pane for clusters; the marker pane if not set.
  * @property {boolean} spiderfyOnEveryZoom Spiderfy a cluster when clicked at any zoom.
  * @property {boolean} spiderfyOnMaxZoom Spiderfy a cluster when clicked at the bottom zoom, where it can't split.
@@ -1037,7 +1039,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			c += 'large';
 		}
 
-		return new L.DivIcon({html: `<div><span>${childCount} <span aria-label="markers"></span></span></div>`, className: `marker-cluster${c}`, iconSize: new L.Point(40, 40)});
+		return new L.DivIcon({html: `<div><span>${childCount}</span></div>`, className: `marker-cluster${c}`, iconSize: new L.Point(40, 40)});
 	}
 
 	_bindEvents() {
@@ -1063,38 +1065,44 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	/** @param {LeafletEvent & {[key: string]: any}} e clusterclick, or clusterkeypress on 1.x */
 	_zoomOrSpiderfy(e) {
 		const cluster = /** @type {MarkerCluster<M>} */ (e.layer),
-			original = /** @type {Partial<PointerEvent & KeyboardEvent> | undefined} */ (e.originalEvent);
-		let bottomCluster = cluster;
+			original = /** @type {Partial<KeyboardEvent> | undefined} */ (e.originalEvent);
 
 		if (e.type === 'clusterkeypress' && original && original.key !== 'Enter' || original?.defaultPrevented) {
 			return;
 		}
 
-		while (bottomCluster._childClusters.length === 1) {
-			bottomCluster = bottomCluster._childClusters[0];
+		// it's a disclosure button for its spiderfied markers, so activating it again closes them
+		if (this._spiderfied === cluster) {
+			cluster.unspiderfy();
+			return;
 		}
 
-		if (bottomCluster._zoom === this._maxZoom &&
-			bottomCluster._childCount === cluster._childCount &&
-			this.options.spiderfyOnMaxZoom) {
-
-			// All child markers are contained in a single cluster from this._maxZoom to this cluster.
-			cluster.spiderfy();
-		} else if (this.options.zoomToBoundsOnClick) {
+		if (this.options.zoomToBoundsOnClick && !(this.options.spiderfyOnMaxZoom && this._neverSplits(cluster))) {
 			cluster.zoomToBounds();
 		}
-
-		if (this.options.spiderfyOnEveryZoom) {
+		if (this._spiderfiesOnClick(cluster)) {
 			cluster.spiderfy();
-		}
-
-		// Focus the map again for keyboard users: Enter on 1.x, or a click from Enter or Space on 2.0, which has no detail
-		if (original && (original.key === 'Enter' || original.detail === 0)) {
-			this._map.getContainer().focus();
 		}
 	}
 
-	/** @param {ClusterPointerEvent<M>} e */
+	/**
+	 * Whether all the cluster's markers stay in one cluster down to the bottom zoom.
+	 * @param {MarkerCluster<M>} cluster
+	 */
+	_neverSplits(cluster) {
+		let bottomCluster = cluster;
+		while (bottomCluster._childClusters.length === 1) {
+			bottomCluster = bottomCluster._childClusters[0];
+		}
+		return bottomCluster._zoom === this._maxZoom && bottomCluster._childCount === cluster._childCount;
+	}
+
+	/** @param {MarkerCluster<M>} cluster */
+	_spiderfiesOnClick(cluster) {
+		return this.options.spiderfyOnEveryZoom || this.options.spiderfyOnMaxZoom && this._neverSplits(cluster);
+	}
+
+	/** @param {{layer: MarkerCluster<M>}} e clustermouseover, or the cluster's icon getting focus */
 	_showCoverage(e) {
 		const map = this._map,
 			cluster = e.layer;
@@ -1504,6 +1512,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	_spiderfierOnAdd() {
 		this._map.on('click', this.unspiderfy, this);
+		L.DomEvent.on(this._map.getContainer(), 'keydown', this._onKeyDown, this);
 
 		if (this._map.options.zoomAnimation) {
 			this._map.on('zoomstart', this._unspiderfyZoomStart, this);
@@ -1514,6 +1523,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	_spiderfierOnRemove() {
 		this._map.off('click', this.unspiderfy, this);
+		L.DomEvent.off(this._map.getContainer(), 'keydown', this._onKeyDown, this);
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
 		this._map.off('zoomend', this._noanimationUnspiderfy, this);
@@ -1521,6 +1531,19 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		//Ensure that markers are back where they should be
 		// Use no animation to avoid a sticky leaflet-cluster-anim class on mapPane
 		this._noanimationUnspiderfy();
+	}
+
+	/**
+	 * Escape closes the spiderfied markers like it closes a popup, after Leaflet's own handler, so that it closes an
+	 * open popup first; and like there, not from a control, e.g. a geocoder input.
+	 * @param {KeyboardEvent} e
+	 */
+	_onKeyDown(e) {
+		if (e.key === 'Escape' && !e.defaultPrevented && this._spiderfied &&
+			!this._map._controlContainer?.contains(/** @type {Node} */ (e.target))) {
+			this.unspiderfy();
+			e.preventDefault();
+		}
 	}
 
 	//On zoom start we add a zoomanim handler so that we are guaranteed to be last (after markers are animated)
@@ -1760,6 +1783,8 @@ if (isV1) {
 MarkerClusterGroup.mergeOptions({
 	maxClusterRadius: 80, //A cluster will cover at most this many pixels from its center
 	iconCreateFunction: null,
+	/** @param {MarkerCluster<any>} cluster */
+	clusterLabel: cluster => `${cluster.getChildCount()} markers`,
 	clusterPane: (L.Marker.defaultOptions ?? L.Marker.prototype.options).pane,
 
 	spiderfyOnEveryZoom: false,
