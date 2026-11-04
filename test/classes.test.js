@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as L from 'leaflet';
 import {MarkerClusterGroup} from '../src/MarkerClusterGroup.js';
-import {MarkerCluster, latLngToNewLayerPoint} from '../src/MarkerCluster.js';
+import {MarkerCluster} from '../src/MarkerCluster.js';
 
 const isV1 = L.version.startsWith('1.');
 
@@ -220,15 +220,6 @@ describe('animated zoom', () => {
 		div.remove();
 	});
 
-	it('finds layer points after a zoom like the map does', () => {
-		map.panBy([37, -21], {animate: false});
-		const latlng = new L.LatLng(1.3, 1.7);
-
-		for (const [zoom, center] of [[9, new L.LatLng(1.5, 1.5)], [6, new L.LatLng(1.1, 2.2)], [8.5, map.getCenter()]]) {
-			expect(latLngToNewLayerPoint(map, latlng, zoom, center)).toEqual(map._latLngToNewLayerPoint(latlng, zoom, center));
-		}
-	});
-
 	it('unspiderfies when the map zooms out with animation', async () => {
 		const group = new MarkerClusterGroup();
 		const markers = [new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])];
@@ -251,5 +242,35 @@ describe('animated zoom', () => {
 			expect(marker._spiderLeg).toBe(undefined);
 		}
 		expect(group._spiderfied).toBe(null);
+	});
+
+	it('unspiderfies along with a zoom animation, moving markers to the cluster from where the zoom takes them', async () => {
+		const group = new MarkerClusterGroup();
+		const markers = [new L.Marker([1.5, 1.5]), new L.Marker([1.55, 1.5]), new L.Marker([1.5, 1.55])];
+		group.addLayers(markers);
+		map.addLayer(group);
+
+		const cluster = group.getVisibleParent(markers[0]);
+		const spiderfied = new Promise((resolve) => { group.once('spiderfied', resolve); });
+		cluster.spiderfy();
+		await spiderfied;
+
+		const zoomanim = new Promise((resolve) => { map.once('zoomanim', resolve); });
+		map.setZoom(map.getZoom() + 1);
+		await zoomanim;
+		await Promise.resolve();
+
+		// the map is at the new zoom now, and the marker at its real latlng, which the zoom transition moves it to
+		const el = markers[0].getElement();
+		const [move] = el.getAnimations().map(a => a.effect.getKeyframes()).filter(k => k[0].translate);
+		const [from, to] = move.map(k => k.translate.split(' ').map(parseFloat)).map(([x, y = 0]) => new L.Point(x, y));
+		const offset = map.latLngToLayerPoint(cluster.getLatLng()).round()
+			.subtract(map.latLngToLayerPoint(markers[0].getLatLng()).round());
+
+		expect(markers[0].getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
+		expect(cluster).toBeInstanceOf(MarkerCluster);
+		expect(offset.x).toBeGreaterThan(0);
+		expect(from).toEqual(new L.Point(0, 0));
+		expect(to).toEqual(offset);
 	});
 });

@@ -188,17 +188,54 @@ describe('spiderfy', () => {
 		marker.__parent.spiderfy();
 
 		const leg = marker._spiderLeg.getElement();
-		expect(leg.classList.contains('leaflet-cluster-spider-leg')).toBe(true);
-		expect(Number(leg.style.strokeDasharray)).toBeGreaterThan(0);
-		expect(parseFloat(leg.style.strokeDashoffset)).toBe(0);
+		const legKeyframes = () => leg.getAnimations().at(-2).effect.getKeyframes();
+
 		expect(marker._spiderLeg.options.opacity).toBe(0.5);
-		expect(leg.getAnimations().map(a => a.transitionProperty)).toContain('stroke-dashoffset');
+		expect(parseFloat(legKeyframes()[0].strokeDashoffset)).toBeGreaterThan(0);
+		expect(legKeyframes()[1].strokeDashoffset).toBe('0');
 
 		vi.advanceTimersByTime(1000);
 		marker.__parent.unspiderfy();
 
-		expect(parseFloat(leg.style.strokeDashoffset)).toBeGreaterThan(0);
 		expect(marker._spiderLeg.options.opacity).toBe(0);
+		expect(legKeyframes()[0].strokeDashoffset).toBe('0');
+		expect(parseFloat(legKeyframes()[1].strokeDashoffset)).toBeGreaterThan(0);
+	});
+
+	it('moves markers out of the cluster and back with a translate animation, at their spider positions', () => {
+
+		group = new MarkerClusterGroup();
+
+		const marker = new L.Marker([1.5, 1.5]);
+		const marker2 = new L.Marker([1.5, 1.5]);
+
+		group.addLayers([marker, marker2]);
+		map.addLayer(group);
+
+		const cluster = marker.__parent,
+			clusterPos = map.latLngToLayerPoint(cluster.getLatLng()).round();
+		cluster.spiderfy();
+
+		const spiderPos = map.latLngToLayerPoint(marker.getLatLng()).round();
+		const translate = () => marker.getElement().getAnimations().find(a => 'translate' in a.effect.getKeyframes()[0]).effect.getKeyframes()
+			.map((k) => {
+				const [x, y = 0] = k.translate.split(' ').map(parseFloat); // '10px 5px', or '10px' when y is 0
+				return new L.Point(x, y);
+			});
+		const offset = clusterPos.subtract(spiderPos);
+
+		expect(spiderPos).not.toEqual(clusterPos);
+		expect(translate()).toEqual([offset, new L.Point(0, 0)]);
+
+		vi.advanceTimersByTime(1000);
+		marker.getElement().getAnimations().forEach(a => a.cancel());
+		cluster.unspiderfy();
+
+		const pos = map.latLngToLayerPoint(marker.getLatLng()).round();
+		const from = spiderPos.subtract(pos), to = clusterPos.subtract(pos);
+		expect(marker.getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
+		expect(translate()).toEqual([from, to]);
+		expect(marker.getElement().style.opacity).toBe('0');
 	});
 
 	it('spiderfies and unspiderfies with the Canvas renderer', () => {
@@ -371,7 +408,7 @@ describe('spiderfy', () => {
 		it('Spiderfies 2 Markers', () => {
 			const fired = vi.fn();
 
-			group = new MarkerClusterGroup();
+			group = new MarkerClusterGroup({animationDuration: 200});
 			const marker = new L.Marker([1.5, 1.5]);
 			const marker2 = new L.Marker([1.5, 1.5]);
 
@@ -391,7 +428,9 @@ describe('spiderfy', () => {
 
 			marker.__parent.spiderfy();
 
-			vi.advanceTimersByTime(200);
+			vi.advanceTimersByTime(199);
+			expect(fired).not.toHaveBeenCalled();
+			vi.advanceTimersByTime(1);
 			expect(fired).toHaveBeenCalledOnce();
 		});
 
@@ -418,7 +457,7 @@ describe('spiderfy', () => {
 
 			marker.__parent.spiderfy();
 
-			vi.advanceTimersByTime(200);
+			vi.advanceTimersByTime(300);
 			expect(fired).toHaveBeenCalledOnce();
 		});
 	});

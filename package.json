@@ -23,7 +23,7 @@
 		"./dist/*.css": "./dist/*.css"
 	},
 	"types": "./dist/types/index.d.ts",
-	"style": "dist/MarkerCluster.css",
+	"style": "dist/MarkerCluster.Default.css",
 	"files": [
 		"src",
 		"dist"

@@ -18,13 +18,12 @@ const commonOptions = {
 // keep the minifier from emitting syntax newer than what the sources may use
 const transform = {target: 'es2022'};
 
-// the stylesheets ship as is, next to the scripts
+// the stylesheet ships as is, next to the scripts
 const copyCSS = {
 	name: 'copy-css',
 	generateBundle() {
-		for (const fileName of ['MarkerCluster.css', 'MarkerCluster.Default.css']) {
-			this.emitFile({type: 'asset', fileName, source: readFileSync(new URL(`../src/${fileName}`, import.meta.url))});
-		}
+		const fileName = 'MarkerCluster.Default.css';
+		this.emitFile({type: 'asset', fileName, source: readFileSync(new URL(`../src/${fileName}`, import.meta.url))});
 	}
 };
 

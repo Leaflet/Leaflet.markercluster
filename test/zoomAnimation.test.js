@@ -39,6 +39,12 @@ describe('zoomAnimation', () => {
 		div = map = group = null;
 	});
 
+	// a computed translate value ('10px 5px', or '10px' when y is 0) as a point
+	function toPoint(translate) {
+		const [x, y = 0] = translate.split(' ').map(parseFloat);
+		return new L.Point(x, y);
+	}
+
 	// the group skips padding the visible bounds for coarse pointers
 	function setBrowserToMobile() {
 		vi.stubGlobal('matchMedia', () => ({matches: true}));
@@ -47,6 +53,57 @@ describe('zoomAnimation', () => {
 	/////////////////////////////
 	// TESTS
 	/////////////////////////////
+	it('animates zooming in and out without moving the markers', () => {
+		group = new MarkerClusterGroup();
+		const markers = [new L.Marker([1.4, 1.4]), new L.Marker([1.6, 1.6])];
+		const move = vi.fn();
+		for (const m of markers) {
+			m.on('move', move);
+		}
+		group.addLayers(markers);
+		map.addLayer(group);
+
+		const cluster = markers[0].__parent;
+		expect(markers[1].__parent).toBe(cluster);
+		expect(map.hasLayer(cluster)).toBe(true);
+
+		/** @param {L.Marker} m */
+		const translate = m => m.getElement().getAnimations()
+			.map(a => a.effect.getKeyframes())
+			.find(k => 'translate' in k[0])
+			.map(k => toPoint(k.translate));
+		const zero = new L.Point(0, 0);
+
+		map.setZoom(map.getZoom() + 2);
+
+		let clusterPos = map.latLngToLayerPoint(cluster.getLatLng()).round();
+		for (const m of markers) {
+			const pos = map.latLngToLayerPoint(m.getLatLng()).round();
+			expect(translate(m)).toEqual([clusterPos.subtract(pos), zero]);
+			expect(m.getElement().style.opacity).not.toBe('0');
+		}
+		vi.advanceTimersByTime(1000);
+		expect(map.hasLayer(cluster)).toBe(false);
+
+		for (const m of markers) {
+			m.getElement().getAnimations().forEach(a => a.cancel());
+		}
+		map.setZoom(map.getZoom() - 2);
+
+		clusterPos = map.latLngToLayerPoint(cluster.getLatLng()).round();
+		for (const m of markers) {
+			const pos = map.latLngToLayerPoint(m.getLatLng()).round();
+			expect(translate(m)).toEqual([zero, clusterPos.subtract(pos)]);
+			expect(m.getElement().style.opacity).toBe('0');
+		}
+		vi.advanceTimersByTime(1000);
+		expect(map.hasLayer(cluster)).toBe(true);
+		expect(map.hasLayer(markers[0])).toBe(false);
+
+		expect(move).not.toHaveBeenCalled();
+		expect(markers[0].getLatLng()).toEqual(new L.LatLng(1.4, 1.4));
+	});
+
 	it('adds the visible marker to the map when zooming in', () => {
 		map.setView(new L.LatLng(-37.36142550190516, 174.254150390625), 7);
 

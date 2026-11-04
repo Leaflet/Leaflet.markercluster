@@ -54,7 +54,6 @@ Include the plugin CSS and JS files on your page after Leaflet files, using your
 * Install with npm: `npm install leaflet.markercluster`
 
 In each case, use files in the `dist` folder:
-* `MarkerCluster.css`
 * `MarkerCluster.Default.css` (not needed if you use your own `iconCreateFunction` instead of the default one)
 * `leaflet.markercluster.js` (or `leaflet.markercluster-src.js` for the non-minified version)
 
@@ -146,6 +145,7 @@ var markers = L.markerClusterGroup({
 * **spiderfyOnMaxZoom**: When you click a cluster at the bottom zoom level we spiderfy it so you can see all of its markers. (*Note: the spiderfy occurs at the current zoom level if all items within the cluster are still clustered at the maximum zoom level or at zoom specified by `disableClusteringAtZoom` option*).
 * **removeOutsideVisibleBounds**: Clusters and markers too far from the viewport are removed from the map for performance.
 * **animate**: Smoothly split / merge cluster children when zooming and spiderfying. If `L.DomUtil.TRANSITION` is false, this option has no effect (no animation is possible).
+* **animationDuration**: How long the cluster and spiderfy animations take, in milliseconds. Defaults to 300.
 
 #### Other options
 * **animateAddingMarkers**: If set to true (and `animate` option is also true) then adding individual markers to the MarkerClusterGroup after it has been added to the map will add the marker and animate it into the cluster. Defaults to false as this gives better performance when bulk adding markers. addLayers does not support this, only addLayer with individual Markers.

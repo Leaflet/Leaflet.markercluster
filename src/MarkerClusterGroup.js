@@ -1,9 +1,9 @@
 import * as L from 'leaflet';
 import {DistanceGrid} from './DistanceGrid.js';
-import {MarkerCluster, MarkerClusterNonAnimated} from './MarkerCluster.js';
+import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, cancelAnimations, stopAnimations} from './MarkerCluster.js';
 import './MarkerPatches.js';
 
-/** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, PolylineOptions, ZoomAnimEvent} from 'leaflet' */
+/** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, PolylineOptions} from 'leaflet' */
 /** @import {ClusterChild} from './MarkerCluster.js' */
 
 /**
@@ -23,6 +23,7 @@ import './MarkerPatches.js';
  * @property {boolean} removeOutsideVisibleBounds Remove clusters and markers far from the view from the map, for
  *   performance.
  * @property {boolean} animate Animate clusters splitting and merging on zoom, and spiderfying.
+ * @property {number} animationDuration How long those animations take, in milliseconds.
  * @property {boolean} animateAddingMarkers Animate markers added with `addLayer` into their clusters, once the group
  *   is on the map. Slow for many markers; `addLayers` never animates.
  * @property {((count: number, centerPoint: Point) => Point[]) | null} spiderfyShapePositions Places spiderfied
@@ -681,6 +682,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		/** The bounds of the currently shown area, from _getExpandedVisibleBounds. @type {LatLngBounds} */
 		this._currentShownBounds = this._getExpandedVisibleBounds();
 
+		this._map.on('zoomstart', this._stopAnimations, this);
 		this._map.on('zoomend', this._zoomEnd, this);
 		this._map.on('moveend', this._moveEnd, this);
 
@@ -695,6 +697,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 	/** @param {LeafletMap} map */
 	onRemove(map) {
+		map.off('zoomstart', this._stopAnimations, this);
 		map.off('zoomend', this._zoomEnd, this);
 		map.off('moveend', this._moveEnd, this);
 
@@ -995,6 +998,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._map.off('zoomend', this._hideCoverage, this);
 	}
 
+	// Our animations move markers by pixel offsets, which would be wrong once the zoom changes.
+	_stopAnimations() {
+		cancelAnimations([this._map.getContainer()], true);
+	}
+
 	_zoomEnd() {
 		if (!this._map) { //May have been removed from the map by a zoomEnd handler
 			return;
@@ -1148,7 +1156,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	_enqueue(fn) {
 		this._queue.push(fn);
 		if (!this._queueTimeout) {
-			this._queueTimeout = setTimeout(() => this._processQueue(), 300);
+			this._queueTimeout = setTimeout(() => this._processQueue(), this.options.animationDuration);
 		}
 	}
 	_processQueue() {
@@ -1373,16 +1381,16 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._map.on('zoomanim', this._unspiderfyZoomAnim, this);
 	}
 
-	/** @param {ZoomAnimEvent} zoomDetails */
-	_unspiderfyZoomAnim(zoomDetails) {
+	_unspiderfyZoomAnim() {
 		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
-		this._unspiderfy(zoomDetails);
+		// the map only switches to the new zoom after the zoomanim handlers
+		queueMicrotask(() => this._unspiderfy(true));
 	}
 
-	/** @param {ZoomAnimEvent} [zoomDetails] */
-	_unspiderfy(zoomDetails) {
+	/** @param {boolean} [withZoom] */
+	_unspiderfy(withZoom) {
 		if (this._spiderfied) {
-			this._spiderfied.unspiderfy(zoomDetails);
+			this._spiderfied._unspiderfy(withZoom);
 		}
 	}
 
@@ -1425,10 +1433,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		//Animate all of the markers in the clusters to move to their cluster center point
 		cluster._recursivelyAnimateChildrenInAndAddSelfToMap(bounds, this._currentShownBounds, minZoom, previousZoomLevel + 1, newZoomLevel);
 
-		//Update the opacity (If we immediately set it they won't animate)
-		this._forceLayout();
-		cluster._recursivelyBecomeVisible(bounds, newZoomLevel);
-
 		//TODO: Maybe use the transition timing stuff to make this more reliable
 		//When the animations are done, tidy up
 		this._enqueue(() => {
@@ -1437,9 +1441,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			if (cluster._childCount === 1) {
 				const m = cluster._markers[0];
 				//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
-				this._ignoreMove = true;
-				m.setLatLng(m.getLatLng());
-				this._ignoreMove = false;
+				stopAnimations(m);
 				if (m.clusterShow) {
 					m.clusterShow();
 				}
@@ -1469,8 +1471,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			minZoom = this._minZoom;
 		let i;
 
-		this._ignoreMove = true;
-
 		//Add all children of current clusters to map and remove those clusters from map
 		this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, (c) => {
 			const markers = c._markers,
@@ -1482,7 +1482,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				c._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
 			} else {
 				//Fade out old cluster
+				const opacity = c.options.opacity;
 				c.clusterHide();
+				animateMarker(c, null, null, opacity, this.options.animationDuration);
 				c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
 			}
 
@@ -1497,28 +1499,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		});
 
-		this._forceLayout();
-
-		//Update opacities
-		this._topClusterLevel._recursivelyBecomeVisible(bounds, newZoomLevel);
-		//TODO Maybe? Update markers in _recursivelyBecomeVisible
-		fg.eachLayer((n) => {
-			if (!(n instanceof MarkerCluster) && n instanceof L.Marker) {
-				n.clusterShow();
-			}
-		});
-
-		// update the positions of the just added clusters/markers, going through the same clusters as when adding them
-		// (deeper levels would make each restore walk the whole subtree down to the max zoom)
-		this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, (c) => {
-			c._recursivelyRestoreChildPositions(newZoomLevel);
-		});
-
-		this._ignoreMove = false;
-
 		//Remove the old clusters and close the zoom animation
 		this._enqueue(() => {
-			//update the positions of the just added clusters/markers
 			this._topClusterLevel._recursively(bounds, previousZoomLevel, minZoom, (c) => {
 				fg.removeLayer(c);
 				c.clusterShow();
@@ -1553,13 +1535,15 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			if (newCluster._childCount > 2) { //Was already a cluster
 
 				newCluster._updateIcon();
-				this._forceLayout();
 				this._animationStart();
 
 				if (layer instanceof L.Marker) {
-					layer._setPos(this._map.latLngToLayerPoint(newCluster.getLatLng()));
+					const opacity = layer.options.opacity,
+						clusterPos = this._map.latLngToLayerPoint(newCluster.getLatLng()).round(),
+						pos = this._map.latLngToLayerPoint(layer.getLatLng()).round();
+					layer.clusterHide();
+					animateMarker(layer, null, clusterPos.subtract(pos), opacity, this.options.animationDuration);
 				}
-				layer.clusterHide?.();
 
 				this._enqueue(() => {
 					fg.removeLayer(layer);
@@ -1569,8 +1553,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				});
 
 			} else { //Just became a cluster
-				this._forceLayout();
-
 				this._animationStart();
 				this._animationZoomOutSingle(newCluster, this._map.getMaxZoom(), this._zoom);
 			}
@@ -1583,12 +1565,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 		this._inZoomAnimation--;
 		this.fire('animationend');
-	}
-
-	//Force a browser layout of stuff in the map
-	// Should apply the current opacity and location to all elements so we can update them again for an animation
-	_forceLayout() {
-		document.body.getBoundingClientRect();
 	}
 }
 
@@ -1646,6 +1622,7 @@ MarkerClusterGroup.mergeOptions({
 	// Set to false to disable all animations (zoom and spiderfy).
 	// If false, option animateAddingMarkers below has no effect.
 	animate: true,
+	animationDuration: 300,
 
 	//Whether to animate adding markers after adding the MarkerClusterGroup to the map
 	// If you are adding individual markers set to true, if adding bulk markers leave false for massive performance gains.

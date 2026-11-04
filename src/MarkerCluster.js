@@ -1,7 +1,7 @@
 import * as L from 'leaflet';
 import {QuickHull} from './QuickHull.js';
 
-/** @import {FitBoundsOptions, Icon, LatLng, LatLngBounds, LatLngExpression, Layer, LeafletMap, Marker, Point, Polyline, ZoomAnimEvent} from 'leaflet' */
+/** @import {FitBoundsOptions, Icon, LatLng, LatLngBounds, LatLngExpression, Layer, LeafletMap, Marker, Point, Polyline} from 'leaflet' */
 /** @import {MarkerClusterGroup} from './MarkerClusterGroup.js' */
 
 /**
@@ -20,8 +20,7 @@ import {QuickHull} from './QuickHull.js';
  *   __parent?: MarkerCluster<M>,
  *   __dragStart?: boolean,
  *   _spiderLeg?: Polyline,
- *   _preSpiderfyLatlng?: LatLng,
- *   _backupLatlng?: LatLng
+ *   _preSpiderfyLatlng?: LatLng
  * }} ClusterChild
  */
 
@@ -43,27 +42,118 @@ const isV1 = L.version.startsWith('1.');
 const defaultLegOpacity = 0.5;
 
 /**
- * Where the map's latLngToLayerPoint will put latlng once a zoom animation to zoom and center ends.
- * @param {LeafletMap} map
- * @param {LatLng} latlng
- * @param {number} zoom
- * @param {LatLng} center
- */
-export function latLngToNewLayerPoint(map, latlng, zoom, center) {
-	const pixelOrigin = map.project(center, zoom)
-		.subtract(map.getSize().divideBy(2))
-		.subtract(map.containerPointToLayerPoint(new L.Point(0, 0)))
-		.round();
-	return map.project(latlng, zoom).subtract(pixelOrigin);
-}
-
-/**
  * The leg's path element for the line drawing animation, or null with the Canvas renderer.
  * @param {Polyline | undefined} leg
  */
 function svgPath(leg) {
 	const el = leg?.getElement();
 	return el instanceof SVGGeometryElement ? el : null;
+}
+
+const animationId = 'leaflet.markercluster';
+
+// Leaflet's zoom animation timing (the leaflet-zoom-anim transition), for animations that run together with it
+const zoomDuration = 250;
+const zoomEasing = 'cubic-bezier(0,0,0.25,1)';
+
+/** @param {Marker} marker */
+function markerElements(marker) {
+	const shadow = /** @type {{_shadow?: HTMLElement | null}} */ (/** @type {unknown} */ (marker))._shadow;
+	return [marker.getElement(), shadow].filter(el => el != null);
+}
+
+/** @param {Point} p */
+function px(p) {
+	return `${p.x}px ${p.y}px`;
+}
+
+/**
+ * Animates a marker into its current state from the given one. Leaflet keeps positioning the icon and shadow with an
+ * inline `transform`; the animation moves them with the separate `translate` property on top of it, so the marker can
+ * stay at its real latlng. The final opacity is the inline one, so the caller sets it (e.g. clusterHide) before.
+ * @param {Marker} marker
+ * @param {Point | null} from Pixel offset to start from, or null to start at the marker's position.
+ * @param {Point | null} to Pixel offset to end at, or null. It's not held, so the marker should end up hidden or removed.
+ * @param {number | undefined} fromOpacity Opacity to fade from.
+ * @param {number} duration
+ * @param {boolean} [withZoom] Move with the timing of the map zoom animation that's starting.
+ */
+export function animateMarker(marker, from, to, fromOpacity, duration, withZoom = false) {
+	const zero = new L.Point(0, 0);
+	for (const el of markerElements(marker)) {
+		if (from || to) {
+			el.animate({translate: [px(from ?? zero), px(to ?? zero)]}, withZoom ?
+				{duration: zoomDuration, easing: zoomEasing, id: animationId} :
+				{duration, easing: 'ease-out', id: animationId});
+		}
+		if (fromOpacity !== undefined) {
+			el.animate([{opacity: fromOpacity, offset: 0}], {duration, easing: 'ease-in', id: animationId});
+		}
+	}
+}
+
+/**
+ * Cancels our running animations on the elements (and their descendants with subtree), putting them in their final
+ * state right away.
+ * @param {Element[]} elements
+ * @param {boolean} [subtree]
+ */
+export function cancelAnimations(elements, subtree = false) {
+	for (const el of elements) {
+		for (const anim of el.getAnimations({subtree})) {
+			if (anim.id === animationId) {
+				anim.cancel();
+			}
+		}
+	}
+}
+
+/**
+ * Cancels the marker's running animations, putting it where it is and at its inline opacity right away.
+ * @param {Layer} layer
+ */
+export function stopAnimations(layer) {
+	if (layer instanceof L.Marker) {
+		cancelAnimations(markerElements(layer));
+	}
+}
+
+/**
+ * Draws a spider leg out from the cluster, or back in, by animating its stroke dash offset (see
+ * https://jakearchibald.com/2013/animated-line-drawing-svg/). Drawing it back in also sets its opacity to 0, so that
+ * it stays hidden until it's removed. Only the opacity changes with the Canvas renderer.
+ * @param {Polyline} leg
+ * @param {boolean} reveal
+ * @param {number} duration
+ * @param {boolean} [withZoom] Draw with the timing of the map zoom animation that's starting.
+ */
+function animateLeg(leg, reveal, duration, withZoom = false) {
+	const opacity = /** @type {number} */ (leg.options.opacity);
+	if (!reveal) {
+		leg.setStyle({opacity: 0});
+	}
+	const path = svgPath(leg);
+	if (!path) {
+		return;
+	}
+	const length = `${path.getTotalLength() + 0.1}`; // a bit longer to avoid a remaining dot in Firefox
+	const hidden = {strokeDasharray: length, strokeDashoffset: length},
+		shown = {strokeDasharray: length, strokeDashoffset: '0'};
+
+	path.animate(reveal ? [hidden, shown] : [shown, hidden], withZoom ?
+		{duration: zoomDuration, easing: zoomEasing, id: animationId} :
+		{duration, easing: 'ease-out', id: animationId});
+	path.animate([{strokeOpacity: reveal ? 0 : opacity, offset: 0}], {duration, easing: 'ease-in', id: animationId});
+}
+
+/**
+ * The marker's offset in pixels from the given layer point.
+ * @param {LeafletMap} map
+ * @param {Point} point
+ * @param {ClusterChild<any>} marker
+ */
+function offsetFrom(map, point, marker) {
+	return point.subtract(map.latLngToLayerPoint(marker.getLatLng()).round());
 }
 
 /**
@@ -285,45 +375,36 @@ export class MarkerCluster extends L.Marker {
 		this._boundsNeedUpdate = false;
 	}
 
-	/**
-	 * Sets our position as given and adds us to the map.
-	 * @param {LatLng | null} [startPos]
-	 */
-	_addToMap(startPos) {
-		if (startPos) {
-			this._backupLatlng = this.getLatLng();
-			this.setLatLng(startPos);
-		}
+	_addToMap() {
 		this._group._featureGroup.addLayer(this);
 	}
 
 	/**
+	 * Moves the markers and clusters below us into center and fades them out.
 	 * @param {LatLngBounds} bounds
 	 * @param {Point} center
 	 * @param {number} maxZoom
 	 */
 	_recursivelyAnimateChildrenIn(bounds, center, maxZoom) {
+		const map = this._group._map;
+		/** @param {ClusterChild<M> | MarkerCluster<M>} m */
+		const animateIn = (m) => {
+			//Only do it if the icon is still on the map
+			if (m instanceof L.Marker && m.getElement()) {
+				const opacity = m.options.opacity;
+				m.clusterHide();
+				animateMarker(m, null, offsetFrom(map, center, m), opacity, this._group.options.animationDuration);
+			}
+		};
 		this._recursively(bounds, this._group._minZoom, maxZoom - 1,
 			(c) => {
-				const markers = c._markers;
-				for (let i = markers.length - 1; i >= 0; i--) {
-					const m = markers[i];
-
-					//Only do it if the icon is still on the map
-					if (m instanceof L.Marker && m.getElement()) {
-						m._setPos(center);
-						m.clusterHide();
-					}
+				for (let i = c._markers.length - 1; i >= 0; i--) {
+					animateIn(c._markers[i]);
 				}
 			},
 			(c) => {
-				const childClusters = c._childClusters;
-				for (let j = childClusters.length - 1; j >= 0; j--) {
-					const cm = childClusters[j];
-					if (cm.getElement()) {
-						cm._setPos(center);
-						cm.clusterHide();
-					}
+				for (let j = c._childClusters.length - 1; j >= 0; j--) {
+					animateIn(c._childClusters[j]);
 				}
 			}
 		);
@@ -341,43 +422,36 @@ export class MarkerCluster extends L.Marker {
 			(c) => {
 				c._recursivelyAnimateChildrenIn(bounds, c._group._map.latLngToLayerPoint(c.getLatLng()).round(), previousZoomLevel);
 
+				c._addToMap();
+
 				//TODO: depthToAnimateIn affects _isSingleParent, if there is a multizoom we may/may not be.
 				//As a hack we only do a animation free zoom on a single level zoom, if someone does multiple levels then we always animate
 				if (c._isSingleParent() && previousZoomLevel - 1 === newZoomLevel) {
-					c.clusterShow();
 					c._recursivelyRemoveChildrenFromMap(previousBounds, mapMinZoom, previousZoomLevel); //Immediately remove our children as we are replacing them
 				} else {
-					c.clusterHide();
+					animateMarker(c, null, null, 0, c._group.options.animationDuration);
 				}
-
-				c._addToMap();
 			}
 		);
 	}
 
 	/**
-	 * @param {LatLngBounds} bounds
-	 * @param {number} zoomLevel
-	 */
-	_recursivelyBecomeVisible(bounds, zoomLevel) {
-		this._recursively(bounds, this._group._minZoom, zoomLevel, null, (c) => {
-			c.clusterShow();
-		});
-	}
-
-	/**
+	 * Adds the markers and clusters below us down to zoomLevel to the map. With startPos, they move out of it and the
+	 * markers fade in.
 	 * @param {LatLng | null} startPos
 	 * @param {number} zoomLevel
 	 * @param {LatLngBounds} bounds
 	 */
 	_recursivelyAddChildrenToMap(startPos, zoomLevel, bounds) {
-		this._recursively(bounds, this._group._minZoom - 1, zoomLevel,
+		const group = this._group,
+			startPoint = startPos && group._map.latLngToLayerPoint(startPos).round();
+
+		this._recursively(bounds, group._minZoom - 1, zoomLevel,
 			(c) => {
 				if (zoomLevel === c._zoom) {
 					return;
 				}
 
-				//Add our child markers at startPos (so they can be animated out)
 				for (let i = c._markers.length - 1; i >= 0; i--) {
 					const nm = c._markers[i];
 
@@ -385,52 +459,20 @@ export class MarkerCluster extends L.Marker {
 						continue;
 					}
 
-					if (startPos) {
-						nm._backupLatlng = nm.getLatLng();
+					group._featureGroup.addLayer(nm);
 
-						nm.setLatLng(startPos);
-						if (nm.clusterHide) {
-							nm.clusterHide();
-						}
+					if (startPoint && nm instanceof L.Marker) {
+						animateMarker(nm, offsetFrom(group._map, startPoint, nm), null, 0, group.options.animationDuration);
 					}
-
-					c._group._featureGroup.addLayer(nm);
 				}
 			},
 			(c) => {
-				c._addToMap(startPos);
+				c._addToMap();
+				if (startPoint) {
+					animateMarker(c, offsetFrom(group._map, startPoint, c), null, undefined, group.options.animationDuration);
+				}
 			}
 		);
-	}
-
-	/** @param {number} zoomLevel */
-	_recursivelyRestoreChildPositions(zoomLevel) {
-		//Fix positions of child markers
-		for (let i = this._markers.length - 1; i >= 0; i--) {
-			const nm = this._markers[i];
-			if (nm._backupLatlng) {
-				nm.setLatLng(nm._backupLatlng);
-				delete nm._backupLatlng;
-			}
-		}
-
-		if (zoomLevel - 1 === this._zoom) {
-			//Reposition child clusters
-			for (let j = this._childClusters.length - 1; j >= 0; j--) {
-				this._childClusters[j]._restorePosition();
-			}
-		} else {
-			for (let k = this._childClusters.length - 1; k >= 0; k--) {
-				this._childClusters[k]._recursivelyRestoreChildPositions(zoomLevel);
-			}
-		}
-	}
-
-	_restorePosition() {
-		if (this._backupLatlng) {
-			this.setLatLng(this._backupLatlng);
-			delete this._backupLatlng;
-		}
 	}
 
 	/**
@@ -540,15 +582,17 @@ export class MarkerCluster extends L.Marker {
 		this._animationSpiderfy(childMarkers, positions);
 	}
 
-	/**
-	 * Brings the markers of a spiderfied cluster back in.
-	 * @param {ZoomAnimEvent} [zoomDetails] The zoomanim event, if called in a zoom animation.
-	 */
-	unspiderfy(zoomDetails) {
+	/** Brings the markers of a spiderfied cluster back in. */
+	unspiderfy() {
+		this._unspiderfy();
+	}
+
+	/** @param {boolean} [withZoom] Called when a map zoom animation starts. */
+	_unspiderfy(withZoom = false) {
 		if (this._group._inZoomAnimation) {
 			return;
 		}
-		this._animationUnspiderfy(zoomDetails);
+		this._animationUnspiderfy(withZoom);
 
 		this._group._spiderfied = null;
 	}
@@ -651,18 +695,18 @@ export class MarkerCluster extends L.Marker {
 			map = group._map,
 			fg = group._featureGroup,
 			thisLayerLatLng = this.getLatLng(),
-			thisLayerPos = map.latLngToLayerPoint(thisLayerLatLng),
-			legOptions = {...this._group.options.spiderLegPolylineOptions}, // Copy the options so that we can modify them for animation.
-			finalLegOpacity = legOptions.opacity ?? defaultLegOpacity;
+			thisLayerPos = map.latLngToLayerPoint(thisLayerLatLng).round(),
+			duration = group.options.animationDuration,
+			legOptions = {...group.options.spiderLegPolylineOptions};
 
 		// Make sure we have a defined opacity.
-		legOptions.opacity = finalLegOpacity;
+		legOptions.opacity ??= defaultLegOpacity;
 
 		group._ignoreMove = true;
+		group._animationStart();
 
-		// Add markers and spider legs to map, hidden at our center point.
+		// Add markers and spider legs to map, moving out of our center point.
 		// Traverse in ascending order to make sure that inner circleMarkers are on top of further legs. Normal markers are re-ordered by newPosition.
-		// The reverse order trick no longer improves performance on modern browsers.
 		for (let i = 0; i < childMarkers.length; i++) {
 			const m = childMarkers[i];
 
@@ -672,62 +716,24 @@ export class MarkerCluster extends L.Marker {
 			const leg = new L.Polyline([thisLayerLatLng, newPos], legOptions);
 			map.addLayer(leg);
 			m._spiderLeg = leg;
+			animateLeg(leg, true, duration);
 
-			// Explanations: https://jakearchibald.com/2013/animated-line-drawing-svg/
-			// In our case the transition property is declared in the CSS file.
-			const legPath = svgPath(leg);
-			if (legPath) {
-				const legLength = legPath.getTotalLength() + 0.1; // Need a small extra length to avoid remaining dot in Firefox.
-				legPath.style.strokeDasharray = `${legLength}`; // Just 1 length is enough, it will be duplicated.
-				legPath.style.strokeDashoffset = `${legLength}`;
-				// hidden until the reveal below, or it shows before the animation starts
-				leg.setStyle({opacity: 0});
-			}
-
-			// If it is a marker, add it now and we'll animate it out
 			if (m.setZIndexOffset) {
 				m.setZIndexOffset(1000000); // Make normal markers appear on top of EVERYTHING
 			}
-			if (m.clusterHide) {
-				m.clusterHide();
-			}
+
+			m._preSpiderfyLatlng = m.getLatLng();
+			m.setLatLng(newPos);
 
 			// Vectors just get immediately added
 			fg.addLayer(m);
 
 			if (m instanceof L.Marker) {
-				m._setPos(thisLayerPos);
-			}
-		}
-
-		group._forceLayout();
-		group._animationStart();
-
-		// Reveal markers and spider legs.
-		for (let i = childMarkers.length - 1; i >= 0; i--) {
-			const newPos = map.layerPointToLatLng(positions[i]);
-			const m = childMarkers[i];
-
-			//Move marker to new position
-			m._preSpiderfyLatlng = m.getLatLng();
-			m.setLatLng(newPos);
-
-			if (m.clusterShow) {
-				m.clusterShow();
-			}
-
-			// Animate leg (animation is actually delegated to CSS transition).
-			const leg = m._spiderLeg,
-				legPath = svgPath(leg);
-			if (leg && legPath) {
-				// the class with the CSS transitions is added only now, after the forced layout: getTotalLength computes
-				// the leg's style early, so with the class on, the starting values would transition instead of applying
-				legPath.classList.add('leaflet-cluster-spider-leg');
-				legPath.style.strokeDashoffset = '0';
-				leg.setStyle({opacity: finalLegOpacity});
+				animateMarker(m, offsetFrom(map, thisLayerPos, m), null, 0, duration);
 			}
 		}
 		this.setOpacity(0.3);
+		animateMarker(this, null, null, 1, duration);
 
 		group._ignoreMove = false;
 
@@ -737,58 +743,64 @@ export class MarkerCluster extends L.Marker {
 				cluster: this,
 				markers: childMarkers
 			});
-		}, 200);
+		}, duration);
 	}
 
-	/** @param {ZoomAnimEvent} [zoomDetails] */
-	_animationUnspiderfy(zoomDetails) {
+	/**
+	 * With withZoom, it runs right after a zoom animation starts, when the map is already at the new zoom: setLatLng puts
+	 * a marker at its new position, and it moves there from where it was with the zoom transition, so our animation
+	 * moves it on from there to the cluster, with the same timing to keep it on a straight line.
+	 * @param {boolean} withZoom
+	 */
+	_animationUnspiderfy(withZoom) {
 		const group = this._group,
 			map = group._map,
 			fg = group._featureGroup,
-			latlng = this.getLatLng(),
-			thisLayerPos = zoomDetails ? latLngToNewLayerPoint(map, latlng, zoomDetails.zoom, zoomDetails.center) : map.latLngToLayerPoint(latlng),
+			// with a zoom, finish before it ends and the group reclusters
+			duration = withZoom ? zoomDuration - 50 : group.options.animationDuration,
 			childMarkers = this._getChildren([], true);
+
+		/** @param {LatLng} latlng */
+		const layerPoint = latlng => map.latLngToLayerPoint(latlng).round();
+		const thisLayerPos = layerPoint(this.getLatLng());
 
 		group._ignoreMove = true;
 		group._animationStart();
 
 		//Make us visible and bring the child markers back in
 		this.setOpacity(1);
+		animateMarker(this, null, null, 0.3, duration);
+
 		for (let i = childMarkers.length - 1; i >= 0; i--) {
 			const m = childMarkers[i],
-				leg = m._spiderLeg;
+				leg = m._spiderLeg,
+				latlng = m._preSpiderfyLatlng;
 
 			//Marker was added to us after we were spiderfied
-			if (!m._preSpiderfyLatlng) {
+			if (!latlng) {
 				continue;
 			}
 
 			//Close any popup on the marker first, otherwise setting the location of the marker will make the map scroll
 			m.closePopup();
 
+			const pos = layerPoint(latlng),
+				spiderPos = withZoom ? pos : layerPoint(m.getLatLng());
+
 			//Fix up the location to the real one
-			m.setLatLng(m._preSpiderfyLatlng);
+			m.setLatLng(latlng);
 			delete m._preSpiderfyLatlng;
 
-			//Hack override the location to be our center
-			let nonAnimatable = true;
 			if (m instanceof L.Marker) {
-				m._setPos(thisLayerPos);
-				nonAnimatable = false;
-			}
-			if (m.clusterHide) {
+				const opacity = m.options.opacity;
 				m.clusterHide();
-				nonAnimatable = false;
-			}
-			if (nonAnimatable) {
+				animateMarker(m, spiderPos.subtract(pos), thisLayerPos.subtract(pos), opacity, duration, withZoom);
+			} else {
 				fg.removeLayer(m);
 			}
 
-			// Animate the spider leg back in (animation is actually delegated to CSS transition).
-			const legPath = svgPath(leg);
-			if (leg && legPath) {
-				legPath.style.strokeDashoffset = `${legPath.getTotalLength() + 0.1}`;
-				leg.setStyle({opacity: 0});
+			if (leg) {
+				animateLeg(leg, false, duration, withZoom);
 			}
 		}
 
@@ -814,6 +826,7 @@ export class MarkerCluster extends L.Marker {
 				if (m.clusterShow) {
 					m.clusterShow();
 				}
+				stopAnimations(m);
 				if (m.setZIndexOffset) {
 					m.setZIndexOffset(0);
 				}
@@ -830,7 +843,7 @@ export class MarkerCluster extends L.Marker {
 				cluster: this,
 				markers: childMarkers
 			});
-		}, 200);
+		}, duration);
 	}
 }
 
