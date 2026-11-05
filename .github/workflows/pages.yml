@@ -27,10 +27,15 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run build
-      # demos import ../src and ../dist, so keep the repo layout; the root redirects to the demos
+      # demos import ../src, so keep the repo layout; the root redirects to the demos. dist/ serves the frozen
+      # gh-pages snapshot for old pages hotlinking it (to be removed with 2.0.0 final), so v2 builds go to dist-v2/
       - run: |
           mkdir _site
-          cp -r example src dist _site/
+          cp -r example src _site/
+          cp -r dist _site/dist-v2
+          git fetch --depth=1 origin gh-pages
+          git archive FETCH_HEAD dist | tar -x -C _site
+          sed -i 's|\.\./dist/|../dist-v2/|g' _site/example/global.html
           echo '<meta http-equiv="refresh" content="0; url=example/">' > _site/index.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
