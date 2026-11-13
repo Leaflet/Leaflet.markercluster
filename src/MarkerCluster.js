@@ -199,6 +199,8 @@ export class MarkerCluster extends L.Marker {
 		this._childCount = 0;
 		this._iconNeedsUpdate = true;
 		this._boundsNeedUpdate = true;
+		/** Spiderfied and fading out in a live map zoom (see _fadeUnspiderfy). */
+		this._fading = false;
 
 		this._bounds = new L.LatLngBounds();
 		/** @type {MarkerCluster<M> | undefined} */
@@ -652,6 +654,10 @@ export class MarkerCluster extends L.Marker {
 
 	/** @param {boolean} [withZoom] Called when a map zoom animation starts. */
 	_unspiderfy(withZoom = false) {
+		if (this._fading) {
+			this._noanimationUnspiderfy();
+			return;
+		}
 		if (this._group._inZoomAnimation) {
 			return;
 		}
@@ -714,6 +720,33 @@ export class MarkerCluster extends L.Marker {
 		return res;
 	}
 
+	/**
+	 * Fades the spider out in place for a live map zoom. It stays spiderfied, and layers other than markers stay
+	 * visible, until _noanimationUnspiderfy removes it; unspiderfying before that does so right away.
+	 */
+	_fadeUnspiderfy() {
+		const group = this._group,
+			duration = group.options.animationDuration;
+
+		this._fading = true;
+		this.setOpacity(1);
+		animateMarker(this, null, null, 0.3, duration);
+
+		for (const m of this._getChildren([], true)) {
+			const spider = group._spiders.get(m);
+			if (!spider) {
+				continue;
+			}
+			m.closePopup();
+			if (m instanceof L.Marker) {
+				const opacity = m.options.opacity;
+				m.clusterHide();
+				animateMarker(m, null, null, opacity, duration);
+			}
+			animateLeg(spider.leg, false, duration);
+		}
+	}
+
 	_noanimationUnspiderfy() {
 		const group = this._group,
 			map = group._map,
@@ -722,15 +755,21 @@ export class MarkerCluster extends L.Marker {
 			childMarkers = this._getChildren([], true);
 
 		this._setExpanded(false);
+		this._fading = false;
 		group._ignoreMove = true;
 
 		this.setOpacity(1);
 		for (let i = childMarkers.length - 1; i >= 0; i--) {
-			const m = childMarkers[i];
+			const m = childMarkers[i],
+				spider = spiders.get(m);
 
+			if (spider) {
+				// without a fade that may still be running, while it has an element
+				stopAnimations(m);
+				m.clusterShow?.();
+			}
 			fg.removeLayer(m);
 
-			const spider = spiders.get(m);
 			if (!spider) {
 				continue;
 			}
@@ -979,6 +1018,10 @@ export class MarkerClusterNonAnimated extends MarkerCluster {
 	}
 
 	_animationUnspiderfy() {
+		this._noanimationUnspiderfy();
+	}
+
+	_fadeUnspiderfy() {
 		this._noanimationUnspiderfy();
 	}
 }

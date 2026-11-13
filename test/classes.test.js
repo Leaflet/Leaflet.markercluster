@@ -242,9 +242,9 @@ describe('animated zoom', () => {
 		expect(group._spiderfied).toBe(null);
 	});
 
-	it('unspiderfies along with a zoom animation, moving markers to the cluster from where the zoom takes them', async () => {
+	async function spiderfyThree(latlngs = [[1.5, 1.5], [1.55, 1.5], [1.5, 1.55]]) {
 		const group = new MarkerClusterGroup();
-		const markers = [new L.Marker([1.5, 1.5]), new L.Marker([1.55, 1.5]), new L.Marker([1.5, 1.55])];
+		const markers = latlngs.map(latlng => new L.Marker(latlng));
 		group.addLayers(markers);
 		map.addLayer(group);
 
@@ -252,10 +252,31 @@ describe('animated zoom', () => {
 		const spiderfied = new Promise((resolve) => { group.once('spiderfied', resolve); });
 		cluster.spiderfy();
 		await spiderfied;
+		return {group, markers, cluster};
+	}
 
-		const zoomanim = new Promise((resolve) => { map.once('zoomanim', resolve); });
+	// CSS zoom animations fire zoomanim right after zoomstart, live zooms fire zoom on every frame instead
+	function nextZoomEvent() {
+		return new Promise((resolve) => {
+			map.once('zoomstart', () => {
+				const done = (/** @type {{type: string}} */ e) => {
+					map.off('zoomanim zoom', done);
+					resolve(e.type);
+				};
+				map.on('zoomanim zoom', done);
+			});
+		});
+	}
+
+	it('unspiderfies along with a zoom animation, moving markers to the cluster from where the zoom takes them', async ({skip}) => {
+		const {markers, cluster} = await spiderfyThree();
+
+		const zoomEvent = nextZoomEvent();
+		const zoomend = new Promise((resolve) => { map.once('zoomend', resolve); });
 		map.setZoom(map.getZoom() + 1);
-		await zoomanim;
+		if (await zoomEvent !== 'zoomanim') {
+			skip('Leaflet zooms live');
+		}
 		await Promise.resolve();
 
 		// the map is at the new zoom now, and the marker at its real latlng, which the zoom transition moves it to
@@ -270,5 +291,71 @@ describe('animated zoom', () => {
 		expect(offset.x).toBeGreaterThan(0);
 		expect(from).toEqual(new L.Point(0, 0));
 		expect(to).toEqual(offset);
+		await zoomend; // 1.x doesn't cancel the end of a zoom animation on remove()
+	});
+
+	it('fades the spider out in place during a live zoom, and removes it on zoomend', async () => {
+		const {group, markers, cluster} = await spiderfyThree();
+		const spiderLatLng = markers[0].getLatLng();
+
+		// flyTo zooms live in every version
+		const zoomEvent = nextZoomEvent();
+		const moveend = new Promise((resolve) => { map.once('moveend', resolve); });
+		map.flyTo(map.getCenter(), map.getZoom() - 1, {duration: 0.3});
+		expect(await zoomEvent).toBe('zoom');
+
+		const el = markers[0].getElement();
+		const leg = group._spiders.get(markers[0]).leg;
+		expect(group._spiderfied).toBe(cluster);
+		expect(markers[0].getLatLng()).toEqual(spiderLatLng);
+		expect(el.style.opacity).toBe('0');
+		expect(el.getAnimations().some(a => a.effect.getKeyframes()[0].opacity === '1')).toBe(true);
+		expect(el.getAnimations().some(a => a.effect.getKeyframes().some(k => k.translate))).toBe(false);
+		expect(leg.options.opacity).toBe(0);
+
+		await moveend;
+		expect(group._spiderfied).toBe(null);
+		expect(map.hasLayer(leg)).toBe(false);
+		for (const marker of markers) {
+			expect(group._spiders.has(marker)).toBe(false);
+			expect(map.hasLayer(marker)).toBe(false);
+		}
+		expect(markers[0].getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
+		expect(el.style.opacity).toBe('1');
+		expect(el.getAnimations()).toEqual([]);
+	});
+
+	it('removes the fading spider right away when its cluster is clicked during a live zoom', async () => {
+		const {group, markers, cluster} = await spiderfyThree();
+
+		const zoomEvent = nextZoomEvent();
+		const moveend = new Promise((resolve) => { map.once('moveend', resolve); });
+		map.flyTo(map.getCenter(), map.getZoom() - 1, {duration: 0.3});
+		await zoomEvent;
+
+		const leg = group._spiders.get(markers[0]).leg;
+		cluster.fire('click', null, true);
+		expect(group._spiderfied).toBe(null);
+		expect(cluster._fading).toBe(false);
+		expect(map.hasLayer(leg)).toBe(false);
+		expect(markers[0].getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
+		await moveend;
+	});
+
+	it('shows spiderfied markers on their own when a zoom splits their cluster', async () => {
+		const {group, markers} = await spiderfyThree([[1.5, 1.5], [1.5, 1.7], [1.7, 1.5]]);
+
+		const animationend = new Promise((resolve) => { group.once('animationend', resolve); });
+		map.setZoom(map.getZoom() + 3, {animate: false});
+		expect(group._spiderfied).toBe(null);
+		await animationend; // the split animation
+
+		const elements = markers.map(m => m.getElement());
+		await Promise.all(elements.flatMap(el => el.getAnimations().map(a => a.finished)));
+		for (const marker of markers) {
+			expect(group.getVisibleParent(marker)).toBe(marker);
+			expect(map.hasLayer(marker)).toBe(true);
+			expect(getComputedStyle(marker.getElement()).opacity).toBe('1');
+		}
 	});
 });

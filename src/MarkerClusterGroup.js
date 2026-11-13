@@ -1142,6 +1142,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		if (!this._map) { //May have been removed from the map by a zoomEnd handler
 			return;
 		}
+		// before reclustering, which may show the spiderfied markers on their own
+		this._unspiderfyZoomOff();
+		this._noanimationUnspiderfy();
 		this._mergeSplitClusters();
 
 		this._zoom = Math.round(this._map.getZoom());
@@ -1517,16 +1520,13 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		if (this._map.options.zoomAnimation) {
 			this._map.on('zoomstart', this._unspiderfyZoomStart, this);
 		}
-		//Browsers without zoomAnimation or a big zoom don't fire zoomstart
-		this._map.on('zoomend', this._noanimationUnspiderfy, this);
 	}
 
 	_spiderfierOnRemove() {
 		this._map.off('click', this.unspiderfy, this);
 		L.DomEvent.off(this._map.getContainer(), 'keydown', this._onKeyDown, this);
 		this._map.off('zoomstart', this._unspiderfyZoomStart, this);
-		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
-		this._map.off('zoomend', this._noanimationUnspiderfy, this);
+		this._unspiderfyZoomOff();
 
 		//Ensure that markers are back where they should be
 		// Use no animation to avoid a sticky leaflet-cluster-anim class on mapPane
@@ -1546,20 +1546,35 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 	}
 
-	//On zoom start we add a zoomanim handler so that we are guaranteed to be last (after markers are animated)
-	//This means we can define the animation they do rather than Markers doing an animation to their actual location
+	// A zoom either animates with CSS, firing zoomanim right after zoomstart with where it ends and zoom once at the end
+	// (Leaflet 1.x and 2.0 betas), or live, firing zoom on every frame (1.x pinch and flyTo, and later versions), so
+	// we only know which it is on the next of the two. Handlers added on zoomstart run after the markers' own.
 	_unspiderfyZoomStart() {
 		if (!this._map) { //May have been removed from the map by a zoomEnd handler
 			return;
 		}
 
 		this._map.on('zoomanim', this._unspiderfyZoomAnim, this);
+		this._map.on('zoom', this._unspiderfyZoom, this);
+	}
+
+	_unspiderfyZoomOff() {
+		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
+		this._map.off('zoom', this._unspiderfyZoom, this);
 	}
 
 	_unspiderfyZoomAnim() {
-		this._map.off('zoomanim', this._unspiderfyZoomAnim, this);
+		this._unspiderfyZoomOff();
 		// the map only switches to the new zoom after the zoomanim handlers
 		queueMicrotask(() => this._unspiderfy(true));
+	}
+
+	// pixel offsets change on every frame of a live zoom, so the spider fades out in place, and zoomend removes it
+	_unspiderfyZoom() {
+		this._unspiderfyZoomOff();
+		if (this._spiderfied) {
+			this._spiderfied._fadeUnspiderfy();
+		}
 	}
 
 	/** @param {boolean} [withZoom] */
