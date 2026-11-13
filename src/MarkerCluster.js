@@ -309,6 +309,31 @@ export class MarkerCluster extends L.Marker {
 		return /** @type {Icon} */ (this._iconObj).createShadow();
 	}
 
+	// Marker reads popup and tooltip anchors from its icon, which is the one iconCreateFunction returns rather than us
+	_getPopupAnchor() {
+		return this._withIconObj(() => super._getPopupAnchor());
+	}
+	/** @param {string} [direction] Taken by Leaflet versions after 2.0.0-beta.4. */
+	_getTooltipAnchor(direction) {
+		const getAnchor = /** @type {(direction?: string) => Point} */ (super._getTooltipAnchor);
+		return this._withIconObj(() => getAnchor.call(this, direction));
+	}
+	/**
+	 * @template T
+	 * @param {() => T} fn
+	 */
+	_withIconObj(fn) {
+		const options = this.options,
+			icon = options.icon;
+		this._iconObj ??= this._group.options.iconCreateFunction(this);
+		options.icon = this._iconObj;
+		try {
+			return fn();
+		} finally {
+			options.icon = icon;
+		}
+	}
+
 	_initIcon() {
 		super._initIcon();
 		const group = this._group,
@@ -955,7 +980,7 @@ export class MarkerCluster extends L.Marker {
 if (isV1) {
 	MarkerCluster.prototype.options = Object.create(L.Marker.prototype.options);
 }
-// the cluster is its own icon (see createIcon), so Marker reads icon options like popupAnchor from it
+// the cluster is its own icon (see createIcon), so it has the Icon options for code that reads them from the icon
 MarkerCluster.mergeOptions(L.Icon.defaultOptions ?? L.Icon.prototype.options);
 
 Object.assign(MarkerCluster.prototype, {

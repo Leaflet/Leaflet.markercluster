@@ -109,6 +109,22 @@ describe('subclassing and extending', () => {
 		cluster.bindPopup('hi').openPopup();
 		expect(cluster.isPopupOpen()).toBe(true);
 	});
+
+	it('takes popup and tooltip anchors from the icon iconCreateFunction returns', () => {
+		const group = new MarkerClusterGroup({iconCreateFunction: () => new L.DivIcon({
+			iconSize: [40, 40], popupAnchor: [0, -20], tooltipAnchor: [20, 0]
+		})});
+		const [cluster] = addTwoMarkers(group);
+
+		// a Point or an array, depending on the version
+		const xy = (/** @type {any} */ p) => Array.isArray(p) ? p : [p.x, p.y];
+		expect(xy(cluster._getPopupAnchor())).toEqual([0, -20]);
+		expect(xy(cluster._getTooltipAnchor('right'))).toEqual([20, 0]);
+		expect(cluster.options.icon).toBe(cluster);
+
+		cluster.bindTooltip('hi', {permanent: true}).openTooltip();
+		expect(cluster.isTooltipOpen()).toBe(true);
+	});
 });
 
 describe('cluster DOM events', () => {
