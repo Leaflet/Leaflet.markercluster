@@ -2,6 +2,22 @@
 
 (all changes in 2.0.0-beta.1 without author notice are by [@mourner](https://github.com/mourner))
 
+## 2.0.0-beta.2 (2026-11-13)
+
+Bug fixes from the beta feedback and older issues. Please keep reporting problems in [#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115).
+
+### 🐞 Bug fixes
+
+- Fix spiderfied markers vanishing when a zoom splits their cluster (with `zoomAnimation: false`), which also kept `zoomToShowLayer` from spiderfying with `animate: false` ([#780](https://github.com/Leaflet/Leaflet.markercluster/issues/780))
+- Fade spiderfied markers out in place during pinch zooms and `flyTo` instead of collapsing them to a position the zoom has moved away from
+- Fix an error and invisible clusters when removing the map's only layer with a `maxZoom`, e.g. while switching base layers. The clusters now stay until the zoom range is back ([#1127](https://github.com/Leaflet/Leaflet.markercluster/issues/1127))
+- Fix the browser freezing on an invalid latlng or a very high `maxZoom` ([#1043](https://github.com/Leaflet/Leaflet.markercluster/issues/1043), [#1008](https://github.com/Leaflet/Leaflet.markercluster/issues/1008))
+- Free the memory of emptied grid rows when removing markers ([#977](https://github.com/Leaflet/Leaflet.markercluster/issues/977))
+- Take cluster popup and tooltip anchors from the icon `iconCreateFunction` returns ([#1087](https://github.com/Leaflet/Leaflet.markercluster/issues/1087))
+- Fix clusters not expanding on click when `zoomToBounds` gets padding in its `fitBoundsOptions` ([#932](https://github.com/Leaflet/Leaflet.markercluster/issues/932))
+- Make `zoomToShowLayer` do nothing for a marker that isn't in the group or a group that isn't on the map, and stop waiting if the marker is removed during the zoom, instead of throwing ([#1125](https://github.com/Leaflet/Leaflet.markercluster/issues/1125))
+- Serve the 1.x builds on leaflet.github.io again for pages that load them from there ([#1126](https://github.com/Leaflet/Leaflet.markercluster/issues/1126))
+
 ## 2.0.0-beta.1 (2026-11-04)
 
 The first beta of 2.0 and the first release since 2021: a full modernization of the plugin. It now works with both **Leaflet 2.0 and 1.9** from one package, is an **ES module** with its own **TypeScript types**, and uses only public Leaflet APIs where possible. Loading markers is **2× faster** with **over a third less memory**, cluster animations are smoother and no longer depend on CSS, clusters are **accessible** to keyboard and screen reader users, and over 20 bugs are fixed.
