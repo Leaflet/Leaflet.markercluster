@@ -1180,9 +1180,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		return minZoom !== this._minZoom || maxZoom !== this._maxZoom;
 	}
 
-	// e.g. from setMinZoom, or adding a tile layer with a wider zoom range than the map had
+	// e.g. from setMinZoom, or adding a tile layer with a wider zoom range than the map had; without a finite range,
+	// e.g. between removing the only tile layer and adding another, we keep the clusters until the range is back
 	_zoomLevelsChange() {
-		if (this._zoomRangeChanged()) {
+		const [minZoom, maxZoom] = this._zoomRange();
+		if (isFinite(minZoom) && isFinite(maxZoom) && this._zoomRangeChanged()) {
 			// onAdd reclusters everything when the range changed, as when it changed while we were off the map
 			const map = this._map;
 			this._processQueue();

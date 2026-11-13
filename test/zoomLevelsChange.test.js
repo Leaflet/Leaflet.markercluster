@@ -76,6 +76,26 @@ describe('map zoom range changes', () => {
 		expect(group.getVisibleParent(markers[6])).toBe(markers[6]);
 	});
 
+	it('keeps the clusters while the map has no zoom range, between swapping its only tile layer', () => {
+		map.remove();
+		map = new L.Map(div, {trackResize: false}).setView([1.5, 1.5], 8);
+		const tiles = new L.TileLayer('', {minZoom: 6, maxZoom: 12}).addTo(map);
+		map.addLayer(group);
+		const markers = addMarkers(),
+			cluster = group.getVisibleParent(markers[0]);
+
+		map.removeLayer(tiles);
+		expect(map.getMaxZoom()).toBe(Infinity);
+		expect(group.getVisibleParent(markers[0])).toBe(cluster);
+		expect(map.hasLayer(cluster)).toBe(true);
+
+		new L.TileLayer('', {minZoom: 0, maxZoom: 18}).addTo(map);
+		map.setZoom(0);
+		expect(group.getVisibleParent(markers[0]).getChildCount()).toBe(7);
+		map.setZoom(18);
+		expect(group.getVisibleParent(markers[6])).toBe(markers[6]);
+	});
+
 	it('clusters again when the range changed while off the map', () => {
 		map.addLayer(group);
 		const markers = addMarkers();
