@@ -1,6 +1,6 @@
 {
 	"name": "leaflet.markercluster",
-	"version": "2.0.0-beta.1",
+	"version": "2.0.0-beta.2",
 	"description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet",
 	"homepage": "https://github.com/Leaflet/Leaflet.markercluster",
 	"keywords": [
