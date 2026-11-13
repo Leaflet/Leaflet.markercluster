@@ -1,7 +1,7 @@
 import * as L from 'leaflet';
 import {QuickHull} from './QuickHull.js';
 
-/** @import {FitBoundsOptions, Icon, LatLng, LatLngBounds, LatLngExpression, Layer, LeafletMap, Marker, Point, Polyline} from 'leaflet' */
+/** @import {FitBoundsOptions, Icon, LatLng, LatLngBounds, LatLngExpression, Layer, LeafletMap, Marker, Point, PointExpression, Polyline} from 'leaflet' */
 /** @import {MarkerClusterGroup} from './MarkerClusterGroup.js' */
 
 /**
@@ -71,6 +71,11 @@ function reducedMotion() {
 function markerElements(marker) {
 	const shadow = /** @type {{_shadow?: HTMLElement | null}} */ (/** @type {unknown} */ (marker))._shadow;
 	return [marker.getElement(), shadow].filter(el => el != null);
+}
+
+/** @param {PointExpression | undefined} p */
+function toPoint(p) {
+	return !p ? new L.Point(0, 0) : Array.isArray(p) ? new L.Point(p[0], p[1]) : new L.Point(p.x, p.y);
 }
 
 /** @param {Point} p */
@@ -260,7 +265,10 @@ export class MarkerCluster extends L.Marker {
 		let childClusters = this._childClusters.slice(),
 			zoom = this._zoom + 1;
 		const map = this._group._map,
-			boundsZoom = map.getBoundsZoom(this._bounds),
+			options = fitBoundsOptions ?? {},
+			padding = toPoint(options.paddingTopLeft || options.padding).add(toPoint(options.paddingBottomRight || options.padding)),
+			// the zoom fitBounds would go to
+			boundsZoom = map.getBoundsZoom(this._bounds, false, padding),
 			mapZoom = map.getZoom();
 
 		//calculate how far we need to zoom down to see all of the markers
