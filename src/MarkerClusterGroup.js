@@ -664,28 +664,34 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 
 	/**
-	 * Zooms in to show the marker, spiderfying its cluster if needed, then calls the callback.
+	 * Zooms in to show the marker, spiderfying its cluster if needed, then calls the callback. Does nothing if the group
+	 * isn't on the map or doesn't have the marker, and stops without calling the callback if either changes on the way.
 	 * @param {M} marker
 	 * @param {() => void} [callback]
 	 */
 	zoomToShowLayer(marker, callback) {
+		const map = this._map;
+		if (!map || !this.hasLayer(marker)) {
+			return;
+		}
 
-		const map = this._map,
-			layer = /** @type {ClusterChild<M>} */ (marker);
-
-		const done = typeof callback === 'function' ? callback : () => {},
-			parent = /** @type {MarkerCluster<M>} */ (parents.get(layer));
+		const layer = /** @type {ClusterChild<M>} */ (marker),
+			done = typeof callback === 'function' ? callback : () => {},
+			parent = parents.get(layer);
 
 		const showMarker = () => {
-			// Assumes that map.hasLayer checks for direct appearance on map, not recursively calling
-			// hasLayer on Layer Groups that are on map (typically not calling this MarkerClusterGroup.hasLayer, which would always return true)
-			if ((map.hasLayer(layer) || map.hasLayer(parent)) && !this._inZoomAnimation) {
-				this._map.off('moveend', showMarker, this);
+			const gone = this._map !== map || !this.hasLayer(marker);
+			// map.hasLayer checks for layers directly on the map, so not for markers in a cluster
+			if (gone || (map.hasLayer(layer) || parent && map.hasLayer(parent)) && !this._inZoomAnimation) {
+				map.off('moveend', showMarker, this);
 				this.off('animationend', showMarker, this);
 
+				if (gone) {
+					return;
+				}
 				if (map.hasLayer(layer)) {
 					done();
-				} else if (map.hasLayer(parent)) {
+				} else if (parent) {
 					this.once('spiderfied', done, this);
 					parent.spiderfy();
 				}

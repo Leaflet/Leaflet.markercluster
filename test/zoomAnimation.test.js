@@ -470,5 +470,45 @@ describe('zoomAnimation', () => {
 			expect(map.hasLayer(marker3)).toBe(true);
 			expect(zoomCallbackSpy).toHaveBeenCalledOnce();
 		});
+
+		it('does nothing for a marker not in the group, or when the group is off the map', () => {
+			group = new MarkerClusterGroup();
+			const marker = new L.Marker([1.5, 1.5]);
+			group.addLayer(marker);
+			map.addLayer(group);
+
+			const zoomCallbackSpy = vi.fn(),
+				center = map.getCenter(),
+				zoom = map.getZoom();
+
+			group.zoomToShowLayer(new L.Marker([10, 10]), zoomCallbackSpy);
+			map.removeLayer(group);
+			group.zoomToShowLayer(marker, zoomCallbackSpy);
+			vi.advanceTimersByTime(1000);
+
+			expect(map.getCenter()).toEqual(center);
+			expect(map.getZoom()).toBe(zoom);
+			expect(zoomCallbackSpy).not.toHaveBeenCalled();
+		});
+
+		it('stops waiting when the marker is removed during the zoom', () => {
+			group = new MarkerClusterGroup();
+			const markers = [new L.Marker([59.9520, 30.3307]), new L.Marker([59.9516, 30.3308]),
+				new L.Marker([59.9513, 30.3312])];
+			group.addLayers(markers);
+			map.addLayer(group);
+			map.setView([59.9520, 30.3307], 16);
+			vi.advanceTimersByTime(1000);
+
+			const zoomCallbackSpy = vi.fn();
+			group.zoomToShowLayer(markers[0], zoomCallbackSpy);
+			group.removeLayer(markers[0]);
+			vi.advanceTimersByTime(1000);
+			map.panBy([10, 10], {animate: false});
+
+			expect(zoomCallbackSpy).not.toHaveBeenCalled();
+			// only the group's own moveend listener is left
+			expect(map._events.moveend.filter(l => l.ctx === group).map(l => l.fn)).toEqual([group._moveEnd]);
+		});
 	});
 });
