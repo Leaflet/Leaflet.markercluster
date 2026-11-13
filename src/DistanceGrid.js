@@ -44,7 +44,8 @@ export class DistanceGrid {
 	 */
 	removeObject(obj, point) {
 		const x = this._getCoord(point.x),
-			row = this._rows.get(this._getCoord(point.y)),
+			y = this._getCoord(point.y),
+			row = this._rows.get(y),
 			cell = row?.get(x);
 		if (!row || !cell) {
 			return false;
@@ -54,6 +55,9 @@ export class DistanceGrid {
 			if (cell[i] === obj) {
 				if (cell.length === 3) {
 					row.delete(x);
+					if (row.size === 0) {
+						this._rows.delete(y);
+					}
 				} else {
 					for (let k = i + 3; k < cell.length; k++) cell[k - 3] = cell[k];
 					cell.length -= 3;
@@ -77,12 +81,13 @@ export class DistanceGrid {
 		let closestDistSq = this._sqRadius,
 			closest = null;
 
-		for (let i = y; i <= y + 1; i++) {
-			const row = this._rows.get(i);
+		// by offset, since y + 1 === y for an infinite or huge coordinate, e.g. from an invalid latlng
+		for (let dy = 0; dy < 2; dy++) {
+			const row = this._rows.get(y + dy);
 			if (!row) continue;
 
-			for (let j = x; j <= x + 1; j++) {
-				const cell = row.get(j);
+			for (let dx = 0; dx < 2; dx++) {
+				const cell = row.get(x + dx);
 				if (!cell) continue;
 
 				for (let k = 0; k < cell.length; k += 3) {

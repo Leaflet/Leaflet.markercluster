@@ -11,6 +11,31 @@ describe('distance grid', () => {
 		expect(grid.removeObject(obj, {x: 0, y: 0})).toEqual(false);
 	});
 
+	it('removeObject deletes empty rows', () => {
+		const grid = new DistanceGrid(100),
+			a = {},
+			b = {};
+
+		grid.addObject(a, {x: 0, y: 0});
+		grid.addObject(b, {x: 500, y: 0});
+		grid.removeObject(a, {x: 0, y: 0});
+		expect(grid._rows.size).toBe(1);
+		grid.removeObject(b, {x: 500, y: 0});
+		expect(grid._rows.size).toBe(0);
+	});
+
+	it('getNearObject terminates for infinite and huge coordinates', () => {
+		const grid = new DistanceGrid(100),
+			a = {},
+			b = {};
+
+		grid.addObject(a, {x: Infinity, y: -Infinity});
+		expect(grid.getNearObject({x: Infinity, y: -Infinity})).toBe(null);
+
+		grid.addObject(b, {x: 2 ** 70, y: 2 ** 70});
+		expect(grid.getNearObject({x: 2 ** 70, y: 2 ** 70})).toBe(b);
+	});
+
 	it('getNearObject', () => {
 		const grid = new DistanceGrid(100),
 			obj = {};
