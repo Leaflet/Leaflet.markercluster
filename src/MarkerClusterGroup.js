@@ -649,10 +649,18 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 
 	/**
-	 * Whether the layer is in the group, either in a cluster or not.
-	 * @param {M} layer
+	 * Whether the layer is in the group, either in a cluster or not. For a layer group, whether all its layers are.
+	 * @param {M | LayerGroup<M> | number} layer A layer, a layer group, or a layer's id.
+	 * @returns {boolean}
 	 */
 	hasLayer(layer) {
+		if (typeof layer === 'number') {
+			return !!this.getLayer(layer);
+		}
+		if (layer instanceof L.LayerGroup) {
+			const layers = flattenGroups([layer]);
+			return layers.length > 0 && layers.every(l => this.hasLayer(l));
+		}
 		if (!layer) {
 			return false;
 		}
@@ -1118,7 +1126,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		if (this._shownPolygon) {
 			map.removeLayer(this._shownPolygon);
 		}
-		if (cluster.getChildCount() > 2 && cluster !== this._spiderfied) {
+		if (cluster !== this._spiderfied) {
 			this._shownPolygon = new L.Polygon(cluster.getConvexHull(), this.options.polygonOptions);
 			map.addLayer(this._shownPolygon);
 		}
