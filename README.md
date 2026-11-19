@@ -36,12 +36,12 @@ map.addLayer(markers);
 The plugin is an ES module that imports `leaflet`, so an [import map](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap) tells the browser where to find both:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.5/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.2/dist/MarkerCluster.Default.css">
 <script type="importmap">
 {
 	"imports": {
-		"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.4/dist/leaflet.js",
+		"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.5/dist/leaflet.js",
 		"leaflet.markercluster": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.2/dist/leaflet.markercluster.js"
 	}
 }
