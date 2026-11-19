@@ -90,4 +90,13 @@ describe('getLayers', () => {
 		expect(group.getLayer(L.Util.stamp(polygon))).toBe(polygon);
 		expect(group.getLayer(-1)).toBe(undefined);
 	});
+
+	it('includes clustered markers in toGeoJSON', () => {
+		const group = new MarkerClusterGroup();
+		group.addLayers([new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.501])]);
+		expect(group.toGeoJSON().features).toHaveLength(2);
+
+		map.addLayer(group);
+		expect(group.toGeoJSON().features).toHaveLength(2);
+	});
 });

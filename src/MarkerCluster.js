@@ -321,10 +321,9 @@ export class MarkerCluster extends L.Marker {
 	_getPopupAnchor() {
 		return this._withIconObj(() => super._getPopupAnchor());
 	}
-	/** @param {string} [direction] Taken by Leaflet versions after 2.0.0-beta.4. */
+	/** @param {string} [direction] Taken by Leaflet 2.0.0-beta.4 and later. */
 	_getTooltipAnchor(direction) {
-		const getAnchor = /** @type {(direction?: string) => Point} */ (super._getTooltipAnchor);
-		return this._withIconObj(() => getAnchor.call(this, direction));
+		return this._withIconObj(() => super._getTooltipAnchor(direction));
 	}
 	/**
 	 * @template T

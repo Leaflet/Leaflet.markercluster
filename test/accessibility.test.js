@@ -158,6 +158,14 @@ describe('accessibility', () => {
 		expect(group._shownPolygon).toBe(null);
 	});
 
+	it('shows the coverage of a cluster of two as a line', () => {
+		const {cluster} = addCluster(undefined, [[1.4, 1.4], [1.6, 1.6]]);
+		cluster.getElement().focus();
+
+		expect(map.hasLayer(group._shownPolygon)).toBe(true);
+		expect(group._shownPolygon.getLatLngs()[0]).toHaveLength(2);
+	});
+
 	it('fades instead of moving markers with reduced motion', () => {
 		vi.spyOn(MediaQueryList.prototype, 'matches', 'get').mockReturnValue(true);
 
