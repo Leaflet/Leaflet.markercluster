@@ -33,7 +33,7 @@ describe('non-integer min/max zoom', () => {
 	/////////////////////////////
 	// TESTS
 	/////////////////////////////
-	it('dont break adding and removing markers', () => {
+	it('don’t break adding and removing markers', () => {
 		const group = new MarkerClusterGroup();
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);

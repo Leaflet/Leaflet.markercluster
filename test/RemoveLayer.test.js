@@ -58,7 +58,7 @@ describe('removeLayer', () => {
 		expect(marker._icon).toBe(null);
 	});
 
-	it('doesnt remove a layer not added to it', () => {
+	it('doesn’t remove a layer not added to it', () => {
 
 		group = new MarkerClusterGroup();
 

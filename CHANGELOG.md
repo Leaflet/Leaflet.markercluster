@@ -99,7 +99,7 @@ The release targets [Baseline 2022](https://web.dev/baseline) browsers and Leafl
 ### Bugfixes
 
 - Removing unnecessary files on npm package
-- Inlucding correct versioning on Github repo
+- Including correct versioning on Github repo
 
 ## 1.5.2 (2021-10-18)
 
@@ -220,7 +220,7 @@ Required leaflet version bumped to 1.3.1
 ### Improvements
 
 - Add install and build steps with jake (by [@kazes](https://github.com/kazes)) [#733](https://github.com/Leaflet/Leaflet.markercluster/pull/733)
-- Readme improvements (by [@ghybs](https://github.com/ghybs), [@bertyhell](https://github.com/bertyhell)) [#734](https://github.com/Leaflet/Leaflet.markercluster/pull/738), [#734](https://github.com/Leaflet/Leaflet.markercluster/pull/738
+- Readme improvements (by [@ghybs](https://github.com/ghybs), [@bertyhell](https://github.com/bertyhell)) [#734](https://github.com/Leaflet/Leaflet.markercluster/pull/738), [#734](https://github.com/Leaflet/Leaflet.markercluster/pull/738)
 - Bump all examples to leaflet 1.0.3
 
 ### Bugfixes

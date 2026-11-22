@@ -133,7 +133,7 @@ describe('removeLayers', () => {
 		expect(group.getLayers().length).toBe(0);
 	});
 
-	it('doesnt break if we are spiderfied', () => {
+	it('doesn’t break if we are spiderfied', () => {
 
 		group = new MarkerClusterGroup();
 

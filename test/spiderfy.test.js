@@ -385,10 +385,10 @@ describe('spiderfy', () => {
 		const marker = new L.Marker([1.5, 1.5]);
 		const marker2 = new L.Marker([1.5, 1.5]);
 
-		const spiderfyShapePositionsFuntion =  vi.fn(() => [{x: 1.6, y: 1.6}, {x: 1.6, y: 1.6}]
+		const spiderfyShapePositionsFunction = vi.fn(() => [{x: 1.6, y: 1.6}, {x: 1.6, y: 1.6}]
 		);
 
-		group = new MarkerClusterGroup({spiderfyShapePositions: spiderfyShapePositionsFuntion});
+		group = new MarkerClusterGroup({spiderfyShapePositions: spiderfyShapePositionsFunction});
 
 		group.addLayer(marker);
 		group.addLayer(marker2);
@@ -396,7 +396,7 @@ describe('spiderfy', () => {
 
 		parents.get(marker).spiderfy();
 
-		expect(spiderfyShapePositionsFuntion).toHaveBeenCalledOnce();
+		expect(spiderfyShapePositionsFunction).toHaveBeenCalledOnce();
 	});
 
 	describe('zoomend event listener', () => {
