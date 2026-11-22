@@ -259,6 +259,27 @@ describe('moving markers', () => {
 		expect(group._spiders.size).toBe(0);
 	});
 
+	it.each([true, false])('keeps the new latlng of a spiderfied marker moved with setLatLng (animate: %s)', (animate) => {
+		map.setView([1.5, 1.5], 18, {animate: false});
+		group = new MarkerClusterGroup({animate});
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.5, 1.5]),
+			others = [new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])];
+		group.addLayers([marker, ...others]);
+		parents.get(marker).spiderfy();
+		vi.runAllTimers();
+
+		const latlng = map.containerPointToLatLng([200, 100]);
+		marker.setLatLng(latlng);
+		vi.runAllTimers();
+
+		expect(marker.getLatLng()).toEqual(latlng);
+		expect(group.getVisibleParent(marker)).toBe(marker);
+		expect(group.getVisibleParent(others[0]).getChildCount()).toBe(2);
+		expect(group._spiders.size).toBe(0);
+	});
+
 	it('clusters a marker dragged when the group was removed from the map', () => {
 		group = new MarkerClusterGroup();
 		map.addLayer(group);

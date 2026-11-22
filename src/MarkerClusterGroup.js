@@ -903,6 +903,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	 * @param {ClusterChild<M>} layer
 	 */
 	_moveChild(layer) {
+		const spider = this._spiders.get(layer);
+		if (spider) {
+			// it was moved to its new real latlng, so unspiderfying must not put it back at the old one
+			spider.latlng = null;
+		}
 		this.removeLayer(layer);
 		this.addLayer(layer);
 	}
