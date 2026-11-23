@@ -89,6 +89,51 @@ describe('moving markers', () => {
 		expect(group.getLayers().length).toBe(2);
 	});
 
+	it('keeps the icon of a moved marker that stays shown', () => {
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.1, 1.9]);
+		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
+		const icon = marker.getElement();
+
+		marker.setLatLng([1.9, 1.1]);
+
+		expect(group.getVisibleParent(marker)).toBe(marker);
+		expect(marker.getElement()).toBe(icon);
+		expect(icon.isConnected).toBe(true);
+		expect(group.getVisibleParent(marker)).toBe(marker);
+	});
+
+	it('takes a marker moved into a cluster off the map', () => {
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.1, 1.9]);
+		const others = [new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])];
+		group.addLayers([marker, ...others]);
+
+		marker.setLatLng([1.5, 1.5]);
+
+		expect(map.hasLayer(marker)).toBe(false);
+		expect(group.getVisibleParent(marker)).toBe(group.getVisibleParent(others[0]));
+		expect(group.getVisibleParent(marker).getChildCount()).toBe(3);
+	});
+
+	it('takes a marker moved out of view off the map', () => {
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.1, 1.9]);
+		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
+
+		marker.setLatLng([40, 40]);
+
+		expect(map.hasLayer(marker)).toBe(false);
+		expect(group.getVisibleParent(marker)).toBe(null);
+		expect(group.hasLayer(marker)).toBe(true);
+	});
+
 	it('reclusters a dragged marker on dragend', () => {
 
 		group = new MarkerClusterGroup();
