@@ -3,7 +3,7 @@ import {DistanceGrid} from './DistanceGrid.js';
 import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, animationOpacity, canAnimate, cancelAnimations, parents, stopAnimations} from './MarkerCluster.js';
 import './MarkerPatches.js';
 
-/** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, Polyline, PolylineOptions} from 'leaflet' */
+/** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, Polyline, PolylineOptions, PopupEvent} from 'leaflet' */
 /** @import {ClusterChild} from './MarkerCluster.js' */
 
 /**
@@ -769,6 +769,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._map.on('zoomend', this._zoomEnd, this);
 		this._map.on('moveend', this._moveEnd, this);
 		this._map.on('zoomlevelschange', this._zoomLevelsChange, this);
+		this._featureGroup.on('popupclose', this._popupClose, this);
 
 		this._spiderfierOnAdd();
 		this._bindEvents();
@@ -785,6 +786,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		map.off('zoomend', this._zoomEnd, this);
 		map.off('moveend', this._moveEnd, this);
 		map.off('zoomlevelschange', this._zoomLevelsChange, this);
+		this._featureGroup.off('popupclose', this._popupClose, this);
 
 		// the drag can't end on the map now, so its marker is clustered again when we're added back
 		for (const m of this._dragging) {
@@ -1202,6 +1204,15 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		this._currentShownBounds = newBounds;
 
+	}
+
+	/** @param {PopupEvent} e */
+	_popupClose(e) {
+		const layer = /** @type {ClusterChild<M> | MarkerCluster<M>} */ (e.sourceTarget);
+		if (this._map && layer && this._featureGroup.hasLayer(layer) &&
+			!this._getExpandedVisibleBounds().contains(layer.getLatLng())) {
+			this._featureGroup.removeLayer(layer);
+		}
 	}
 
 	/** The lowest and highest zoom with clusters for the map's zoom range. */

@@ -108,6 +108,90 @@ describe('Option removeOutsideVisibleBounds', () => {
 
 	});
 
+	it('keeps an open popup when its marker moves outside the visible bounds', () => {
+		group = new MarkerClusterGroup();
+		prepareGroup();
+		marker3.bindPopup('popup');
+		marker3.openPopup();
+
+		map.panBy([2000, 0], {animate: false});
+		vi.advanceTimersByTime(1000);
+
+		expect(marker3.isPopupOpen()).toBe(true);
+		expect(map.hasLayer(marker3)).toBe(true);
+	});
+
+	it('keeps an oversized popup open after autopan', () => {
+		group = new MarkerClusterGroup();
+		prepareGroup();
+		marker3.bindPopup(Array.from({length: 100}, (_, i) => `line ${i}`).join('<br>'));
+		marker3.openPopup();
+		vi.advanceTimersByTime(1000);
+
+		expect(marker3.getPopup().getElement().getBoundingClientRect().height).toBeGreaterThan(2 * div.clientHeight);
+		expect(marker3.isPopupOpen()).toBe(true);
+		expect(map.hasLayer(marker3)).toBe(true);
+	});
+
+	it('keeps an open popup on a cluster, then removes the cluster when it closes', () => {
+		group = new MarkerClusterGroup();
+		const markers = [new L.Marker([1.5, 1.5]), new L.Marker([1.5, 1.5])];
+		group.addLayers(markers);
+		group.addTo(map);
+		const cluster = group.getVisibleParent(markers[0]);
+		cluster.bindPopup('cluster popup').openPopup();
+
+		map.panBy([2000, 0], {animate: false});
+		vi.advanceTimersByTime(1000);
+		expect(cluster.isPopupOpen()).toBe(true);
+		expect(map.hasLayer(cluster)).toBe(true);
+
+		cluster.closePopup();
+		expect(map.hasLayer(cluster)).toBe(false);
+	});
+
+	it('keeps an open marker popup through a zoom', () => {
+		group = new MarkerClusterGroup({animate: false});
+		prepareGroup();
+		marker3.bindPopup('popup');
+		marker3.openPopup();
+
+		map.panBy([2000, 0], {animate: false});
+		map.setZoom(map.getZoom() + 1);
+		vi.advanceTimersByTime(1000);
+
+		expect(marker3.isPopupOpen()).toBe(true);
+		expect(map.hasLayer(marker3)).toBe(true);
+	});
+
+	it('removes the marker after its out-of-bounds popup closes', () => {
+		group = new MarkerClusterGroup();
+		prepareGroup();
+		marker3.bindPopup('popup');
+		marker3.openPopup();
+
+		map.panBy([2000, 0], {animate: false});
+		vi.advanceTimersByTime(1000);
+		marker3.closePopup();
+
+		expect(marker3.isPopupOpen()).toBe(false);
+		expect(map.hasLayer(marker3)).toBe(false);
+	});
+
+	it('can explicitly remove a marker with an out-of-bounds popup', () => {
+		group = new MarkerClusterGroup();
+		prepareGroup();
+		marker3.bindPopup('popup');
+		marker3.openPopup();
+		map.panBy([2000, 0], {animate: false});
+		vi.advanceTimersByTime(1000);
+
+		group.removeLayer(marker3);
+
+		expect(group.hasLayer(marker3)).toBe(false);
+		expect(map.hasLayer(marker3)).toBe(false);
+	});
+
 
 	// Following tests need markers at very high latitude.
 	// They test the _checkBoundsMaxLat method against the default Web/Spherical Mercator projection maximum latitude (85.0511287798).

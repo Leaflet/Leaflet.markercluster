@@ -593,7 +593,7 @@ export class MarkerCluster extends L.Marker {
 				//Remove markers at every level
 				for (let i = c._markers.length - 1; i >= 0; i--) {
 					const m = c._markers[i];
-					if (!exceptBounds || !exceptBounds.contains(m.getLatLng())) {
+					if ((!exceptBounds || !exceptBounds.contains(m.getLatLng())) && !m.isPopupOpen()) {
 						c._group._featureGroup.removeLayer(m);
 						if (m.clusterShow) {
 							m.clusterShow();
@@ -605,7 +605,7 @@ export class MarkerCluster extends L.Marker {
 				//Remove child clusters at just the bottom level
 				for (let i = c._childClusters.length - 1; i >= 0; i--) {
 					const m = c._childClusters[i];
-					if (!exceptBounds || !exceptBounds.contains(m.getLatLng())) {
+					if ((!exceptBounds || !exceptBounds.contains(m.getLatLng())) && !m.isPopupOpen()) {
 						c._group._featureGroup.removeLayer(m);
 						if (m.clusterShow) {
 							m.clusterShow();
