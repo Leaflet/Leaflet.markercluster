@@ -102,7 +102,23 @@ describe('moving markers', () => {
 		expect(group.getVisibleParent(marker)).toBe(marker);
 		expect(marker.getElement()).toBe(icon);
 		expect(icon.isConnected).toBe(true);
+	});
+
+	it('keeps the icon of a dragged marker that stays shown', () => {
+		group = new MarkerClusterGroup();
+		map.addLayer(group);
+
+		const marker = new L.Marker([1.1, 1.9], {draggable: true});
+		group.addLayers([marker, new L.Marker([1.5, 1.5])]);
+		const icon = marker.getElement();
+
+		const dragged = drag(marker);
+		dragged.move(new L.Point(-20, 0));
+		dragged.end();
+
 		expect(group.getVisibleParent(marker)).toBe(marker);
+		expect(marker.getElement()).toBe(icon);
+		expect(icon.isConnected).toBe(true);
 	});
 
 	it('takes a marker moved into a cluster off the map', () => {

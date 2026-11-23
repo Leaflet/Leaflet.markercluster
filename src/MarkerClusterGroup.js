@@ -888,7 +888,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		layer.off('move', this._childMarkerMoved, this);
 		if (this._dragging.delete(layer)) {
 			layer.off('dragend', this._childMarkerDragEnd, this);
-			this._featureGroup.removeLayer(layer);
+			if (layer !== this._moving) {
+				this._featureGroup.removeLayer(layer);
+			}
 		}
 	}
 
@@ -922,7 +924,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			// it was moved to its new real latlng, so unspiderfying must not put it back at the old one
 			spider.latlng = null;
 		}
-		// a marker that stays shown keeps its element, and with it its focus and CSS transitions
+		// a marker that stays shown keeps its element, and with it its focus and CSS transitions (unless spiderfied)
 		const moving = this._moving;
 		this._moving = layer;
 		this.removeLayer(layer);
