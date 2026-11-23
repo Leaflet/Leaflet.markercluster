@@ -1,7 +1,7 @@
 import * as L from 'leaflet';
 import {QuickHull} from './QuickHull.js';
 
-/** @import {FitBoundsOptions, Icon, LatLng, LatLngBounds, LatLngExpression, Layer, LeafletMap, Marker, Point, PointExpression, Polyline} from 'leaflet' */
+/** @import {FitBoundsOptions, Icon, LatLng, LatLngBounds, LatLngExpression, Layer, LeafletMap, Marker, Path, Point, PointExpression, Polyline} from 'leaflet' */
 /** @import {MarkerClusterGroup} from './MarkerClusterGroup.js' */
 
 /**
@@ -67,10 +67,27 @@ function reducedMotion() {
 	return reducedMotionQuery.matches;
 }
 
-/** @param {Marker} marker */
-function markerElements(marker) {
-	const shadow = /** @type {{_shadow?: HTMLElement | null}} */ (/** @type {unknown} */ (marker))._shadow;
-	return [marker.getElement(), shadow].filter(el => el != null);
+/** @param {Marker | Path} layer */
+function markerElements(layer) {
+	const shadow = /** @type {{_shadow?: HTMLElement | null}} */ (/** @type {unknown} */ (layer))._shadow;
+	return [layer.getElement(), shadow].filter(el => el != null);
+}
+
+/**
+ * Whether the layer has an element to animate: a marker, or a path with the SVG renderer.
+ * @param {Layer} layer
+ * @returns {layer is Marker | Path}
+ */
+export function canAnimate(layer) {
+	return (layer instanceof L.Marker || layer instanceof L.Path) && !!layer.getElement();
+}
+
+/**
+ * The opacity to fade the layer out from. A path's options.opacity is its stroke's, and it's hidden with the element's.
+ * @param {Marker | Path} layer
+ */
+export function animationOpacity(layer) {
+	return layer instanceof L.Marker ? layer.options.opacity ?? 1 : 1;
 }
 
 /** @param {PointExpression | undefined} p */
@@ -87,7 +104,7 @@ function px(p) {
  * Animates a marker into its current state from the given one. Leaflet keeps positioning the icon and shadow with an
  * inline `transform`; the animation moves them with the separate `translate` property on top of it, so the marker can
  * stay at its real latlng. The final opacity is the inline one, so the caller sets it (e.g. clusterHide) before.
- * @param {Marker} marker
+ * @param {Marker | Path} marker
  * @param {Point | null} from Pixel offset to start from, or null to start at the marker's position.
  * @param {Point | null} to Pixel offset to end at, or null. It's not held, so the marker should end up hidden or removed.
  * @param {number | undefined} fromOpacity Opacity to fade from.
@@ -129,7 +146,7 @@ export function cancelAnimations(elements, subtree = false) {
  * @param {Layer} layer
  */
 export function stopAnimations(layer) {
-	if (layer instanceof L.Marker) {
+	if (canAnimate(layer)) {
 		cancelAnimations(markerElements(layer));
 	}
 }
@@ -479,8 +496,8 @@ export class MarkerCluster extends L.Marker {
 		/** @param {ClusterChild<M> | MarkerCluster<M>} m */
 		const animateIn = (m) => {
 			//Only do it if the icon is still on the map
-			if (m instanceof L.Marker && m.getElement()) {
-				const opacity = m.options.opacity;
+			if (canAnimate(m)) {
+				const opacity = animationOpacity(m);
 				m.clusterHide();
 				animateMarker(m, null, offsetFrom(map, center, m), opacity, this._group.options.animationDuration);
 			}
@@ -550,7 +567,7 @@ export class MarkerCluster extends L.Marker {
 
 					group._featureGroup.addLayer(nm);
 
-					if (startPoint && nm instanceof L.Marker) {
+					if (startPoint && canAnimate(nm)) {
 						animateMarker(nm, offsetFrom(group._map, startPoint, nm), null, 0, group.options.animationDuration);
 					}
 				}
@@ -753,8 +770,8 @@ export class MarkerCluster extends L.Marker {
 	}
 
 	/**
-	 * Fades the spider out in place for a live map zoom. It stays spiderfied, and layers other than markers stay
-	 * visible, until _noanimationUnspiderfy removes it; unspiderfying before that does so right away.
+	 * Fades the spider out in place for a live map zoom. It stays spiderfied, and Canvas paths stay visible, until
+	 * _noanimationUnspiderfy removes it; unspiderfying before that does so right away.
 	 */
 	_fadeUnspiderfy() {
 		const group = this._group,
@@ -770,8 +787,8 @@ export class MarkerCluster extends L.Marker {
 				continue;
 			}
 			m.closePopup();
-			if (m instanceof L.Marker) {
-				const opacity = m.options.opacity;
+			if (canAnimate(m)) {
+				const opacity = animationOpacity(m);
 				m.clusterHide();
 				animateMarker(m, null, null, opacity, duration);
 			}
@@ -861,10 +878,9 @@ export class MarkerCluster extends L.Marker {
 
 			m.setLatLng(newPos);
 
-			// Vectors just get immediately added
 			fg.addLayer(m);
 
-			if (m instanceof L.Marker) {
+			if (canAnimate(m)) {
 				animateMarker(m, offsetFrom(map, thisLayerPos, m), null, 0, duration);
 			}
 		}
@@ -928,8 +944,8 @@ export class MarkerCluster extends L.Marker {
 			m.setLatLng(latlng);
 			spider.latlng = null;
 
-			if (m instanceof L.Marker) {
-				const opacity = m.options.opacity;
+			if (canAnimate(m)) {
+				const opacity = animationOpacity(m);
 				m.clusterHide();
 				animateMarker(m, spiderPos.subtract(pos), thisLayerPos.subtract(pos), opacity, duration, withZoom);
 			} else {

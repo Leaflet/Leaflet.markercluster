@@ -1,6 +1,6 @@
 import * as L from 'leaflet';
 import {DistanceGrid} from './DistanceGrid.js';
-import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, cancelAnimations, parents, stopAnimations} from './MarkerCluster.js';
+import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, animationOpacity, canAnimate, cancelAnimations, parents, stopAnimations} from './MarkerCluster.js';
 import './MarkerPatches.js';
 
 /** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, Polyline, PolylineOptions} from 'leaflet' */
@@ -1751,8 +1751,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				newCluster._updateIcon();
 				this._animationStart();
 
-				if (layer instanceof L.Marker) {
-					const opacity = layer.options.opacity,
+				if (canAnimate(layer)) {
+					const opacity = animationOpacity(layer),
 						clusterPos = this._map.latLngToLayerPoint(newCluster.getLatLng()).round(),
 						pos = this._map.latLngToLayerPoint(layer.getLatLng()).round();
 					layer.clusterHide();

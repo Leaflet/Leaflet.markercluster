@@ -78,6 +78,46 @@ describe('spiderfy', () => {
 		expect(marker2._path.parentNode.parentNode.parentNode).toBe(map.getPane('overlayPane'));
 	});
 
+	it('animates CircleMarkers out and back in with the SVG renderer', () => {
+		group = new MarkerClusterGroup();
+		const markers = [new L.CircleMarker([1.5, 1.5]), new L.CircleMarker([1.5, 1.5])];
+		group.addLayers(markers);
+		map.addLayer(group);
+
+		const keyframes = m => m.getElement().getAnimations().flatMap(a => a.effect.getKeyframes());
+		const moves = m => keyframes(m).some(k => 'translate' in k);
+
+		const cluster = group.getVisibleParent(markers[0]);
+		cluster.spiderfy();
+		expect(markers.every(m => moves(m) && keyframes(m).some(k => k.opacity === '0'))).toBe(true);
+		vi.advanceTimersByTime(1000);
+
+		cluster.unspiderfy();
+		expect(markers.every(m => moves(m) && m.getElement().style.opacity === '0')).toBe(true);
+		expect(markers.every(m => map.hasLayer(m))).toBe(true);
+		vi.advanceTimersByTime(1000);
+		expect(markers.some(m => map.hasLayer(m))).toBe(false);
+		expect(map.hasLayer(cluster)).toBe(true);
+	});
+
+	it('spiderfies CircleMarkers without animating them with the Canvas renderer', () => {
+		group = new MarkerClusterGroup();
+		const renderer = new L.Canvas();
+		const markers = [new L.CircleMarker([1.5, 1.5], {renderer}), new L.CircleMarker([1.5, 1.5], {renderer})];
+		group.addLayers(markers);
+		map.addLayer(group);
+
+		const cluster = group.getVisibleParent(markers[0]);
+		cluster.spiderfy();
+		expect(markers.every(m => map.hasLayer(m))).toBe(true);
+		vi.advanceTimersByTime(1000);
+
+		cluster.unspiderfy();
+		expect(markers.some(m => map.hasLayer(m))).toBe(false);
+		vi.advanceTimersByTime(1000);
+		expect(map.hasLayer(cluster)).toBe(true);
+	});
+
 	it('Spiderfies 2 Circles', () => {
 
 		group = new MarkerClusterGroup();
