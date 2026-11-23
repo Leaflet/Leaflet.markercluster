@@ -1,8 +1,8 @@
 import * as L from 'leaflet';
 import {parents} from './MarkerCluster.js';
 
-// Methods added to every marker. The group calls clusterHide / clusterShow on the markers it holds, and apps call
-// refreshIconOptions on them.
+// Methods added to every marker and path. The group calls clusterHide / clusterShow on the layers it holds, and apps
+// call refreshIconOptions on markers.
 L.Marker.include({
 	// setOpacity(0) and back, but without overwriting options.opacity
 	clusterHide() {
@@ -38,6 +38,24 @@ L.Marker.include({
 			parents.get(this)?._group.refreshClusters(this);
 		}
 
+		return this;
+	}
+});
+
+// A path only has an element to hide with the SVG renderer. Leaflet creates a new one each time it's added to the map,
+// so the inline opacity only needs clearing while it stays on the map.
+L.Path.include({
+	clusterHide() {
+		if (this._path) {
+			this._path.style.opacity = '0';
+		}
+		return this;
+	},
+
+	clusterShow() {
+		if (this._path) {
+			this._path.style.opacity = '';
+		}
 		return this;
 	}
 });
