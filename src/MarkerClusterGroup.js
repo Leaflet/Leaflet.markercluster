@@ -220,6 +220,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		 */
 		this._dragging = new Set();
 
+		/** The marker being reclustered after a move, which stays on the map meanwhile. @type {ClusterChild<M> | null} */
+		this._moving = null;
+
 		/** Bumped by clearLayers, which stops the chunked addLayers calls started before it. @type {number} */
 		this._generation = 0;
 
@@ -283,7 +286,14 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			parent = parent._parent;
 		}
 
-		if (this._currentShownBounds.contains(visibleLayer.getLatLng())) {
+		const shown = this._currentShownBounds.contains(visibleLayer.getLatLng());
+
+		// a moved marker is still on the map, where it stays only if it's shown as itself
+		if (layer === this._moving && !(shown && visibleLayer === layer)) {
+			this._featureGroup.removeLayer(layer);
+		}
+
+		if (shown) {
 			if (this.options.animateAddingMarkers) {
 				this._animationAddLayer(layer, visibleLayer);
 			} else {
@@ -344,7 +354,11 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._refreshClustersIcons();
 
 		if (this._featureGroup.hasLayer(layer)) {
-			this._featureGroup.removeLayer(layer);
+			if (layer === this._moving) {
+				stopAnimations(layer);
+			} else {
+				this._featureGroup.removeLayer(layer);
+			}
 			if (layer.clusterShow) {
 				layer.clusterShow();
 			}
@@ -874,7 +888,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		layer.off('move', this._childMarkerMoved, this);
 		if (this._dragging.delete(layer)) {
 			layer.off('dragend', this._childMarkerDragEnd, this);
-			this._featureGroup.removeLayer(layer);
+			if (layer !== this._moving) {
+				this._featureGroup.removeLayer(layer);
+			}
 		}
 	}
 
@@ -908,8 +924,12 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			// it was moved to its new real latlng, so unspiderfying must not put it back at the old one
 			spider.latlng = null;
 		}
+		// a marker that stays shown keeps its element, and with it its focus and CSS transitions (unless spiderfied)
+		const moving = this._moving;
+		this._moving = layer;
 		this.removeLayer(layer);
 		this.addLayer(layer);
+		this._moving = moving;
 	}
 
 	/**
