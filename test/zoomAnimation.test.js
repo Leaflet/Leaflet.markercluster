@@ -105,6 +105,36 @@ describe('zoomAnimation', () => {
 		expect(markers[0].getLatLng()).toEqual(new L.LatLng(1.4, 1.4));
 	});
 
+	it('animates CircleMarkers while zooming in and out, keeping their inline opacity', () => {
+		group = new MarkerClusterGroup();
+		const markers = [new L.CircleMarker([1.4, 1.4]), new L.CircleMarker([1.6, 1.6])];
+		group.addLayers(markers);
+		map.addLayer(group);
+
+		/** @param {L.CircleMarker} m */
+		const keyframes = m => m.getElement().getAnimations().flatMap(a => a.effect.getKeyframes());
+		const movesAndFades = m => keyframes(m).some(k => 'translate' in k) && keyframes(m).some(k => 'opacity' in k);
+
+		const cluster = parents.get(markers[0]);
+		map.setZoom(map.getZoom() + 2);
+
+		expect(markers.every(movesAndFades)).toBe(true);
+		vi.advanceTimersByTime(1000);
+		expect(map.hasLayer(cluster)).toBe(false);
+
+		markers[0].getElement().style.opacity = '0.7';
+		map.setZoom(map.getZoom() - 2);
+
+		expect(markers.every(movesAndFades)).toBe(true);
+		expect(keyframes(markers[0]).find(k => 'opacity' in k).opacity).toBe('0.7');
+		expect(markers[0].getElement().style.opacity).toBe('0');
+		vi.advanceTimersByTime(1000);
+		expect(map.hasLayer(cluster)).toBe(true);
+		expect(map.hasLayer(markers[0])).toBe(false);
+		expect(markers[0].getElement().style.opacity).toBe('0.7');
+		expect(markers[1].getElement().style.opacity).toBe('');
+	});
+
 	it('adds the visible marker to the map when zooming in', () => {
 		map.setView(new L.LatLng(-37.36142550190516, 174.254150390625), 7);
 

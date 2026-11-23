@@ -1,6 +1,6 @@
 import * as L from 'leaflet';
 import {DistanceGrid} from './DistanceGrid.js';
-import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, cancelAnimations, parents, stopAnimations} from './MarkerCluster.js';
+import {MarkerCluster, MarkerClusterNonAnimated, animateMarker, animationOpacity, canAnimate, cancelAnimations, hideLayer, parents, showLayer, stopAnimations} from './MarkerCluster.js';
 import './MarkerPatches.js';
 
 /** @import {CRS, DivIcon, FeatureGroupEventMap, Icon, InteractiveLayerOptions, LatLng, LatLngBounds, Layer, LayerGroup, LeafletEvent, LeafletMap, LeafletPointerEvent, Marker, Point, Polygon, Polyline, PolylineOptions} from 'leaflet' */
@@ -344,10 +344,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._refreshClustersIcons();
 
 		if (this._featureGroup.hasLayer(layer)) {
+			showLayer(layer);
 			this._featureGroup.removeLayer(layer);
-			if (layer.clusterShow) {
-				layer.clusterShow();
-			}
 		}
 
 		return this;
@@ -520,10 +518,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				if (fireRemove) this.fire('layerremove', {layer: m});
 
 				if (fg.hasLayer(m)) {
+					showLayer(m);
 					fg.removeLayer(m);
-					if (m.clusterShow) {
-						m.clusterShow();
-					}
 				}
 			}
 		}
@@ -1619,11 +1615,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		const spider = this._spiders.get(layer);
 		if (spider) {
 			this._spiders.delete(layer);
+			showLayer(layer);
 			this._featureGroup.removeLayer(layer);
-
-			if (layer.clusterShow) {
-				layer.clusterShow();
-			}
 			// still at the spider position if the cluster couldn't unspiderfy (in a zoom animation)
 			if (spider.latlng) {
 				layer.setLatLng(spider.latlng);
@@ -1657,9 +1650,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				const m = cluster._markers[0];
 				//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
 				stopAnimations(m);
-				if (m.clusterShow) {
-					m.clusterShow();
-				}
+				showLayer(m);
 			} else {
 				cluster._recursively(bounds, newZoomLevel, minZoom, (c) => {
 					c._recursivelyRemoveChildrenFromMap(bounds, minZoom, previousZoomLevel + 1);
@@ -1751,17 +1742,17 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				newCluster._updateIcon();
 				this._animationStart();
 
-				if (layer instanceof L.Marker) {
-					const opacity = layer.options.opacity,
+				if (canAnimate(layer)) {
+					const opacity = animationOpacity(layer),
 						clusterPos = this._map.latLngToLayerPoint(newCluster.getLatLng()).round(),
 						pos = this._map.latLngToLayerPoint(layer.getLatLng()).round();
-					layer.clusterHide();
+					hideLayer(layer);
 					animateMarker(layer, null, clusterPos.subtract(pos), opacity, this.options.animationDuration);
 				}
 
 				this._enqueue(() => {
+					showLayer(layer);
 					fg.removeLayer(layer);
-					layer.clusterShow?.();
 
 					this._animationEnd();
 				});

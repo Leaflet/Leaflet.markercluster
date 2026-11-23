@@ -113,7 +113,7 @@ Pass options when creating the group, e.g. `new MarkerClusterGroup({maxClusterRa
 | `animationDuration` | `300` | How long those animations take, in milliseconds. |
 | `animateAddingMarkers` | `false` | Animate markers into their clusters when added with `addLayer` while the group is on the map. It's slow for many markers, and `addLayers` never animates. |
 
-With `prefers-reduced-motion`, animations fade instead of moving.
+With `prefers-reduced-motion`, animations fade instead of moving. Circle markers animate like markers with the default SVG renderer, and just appear and disappear with Canvas.
 
 ### Chunked loading
 
