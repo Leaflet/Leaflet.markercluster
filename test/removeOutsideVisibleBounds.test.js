@@ -178,6 +178,70 @@ describe('Option removeOutsideVisibleBounds', () => {
 		expect(map.hasLayer(marker3)).toBe(false);
 	});
 
+	describe.each([false, true])('with animate: %s', (animate) => {
+		it('removes a marker with an open popup when zooming out clusters it', () => {
+			map.setView([1.5, 1.5], 15, {animate: false});
+			group = new MarkerClusterGroup({animate}).addTo(map);
+			const a = new L.Marker([1.5, 1.5]), b = new L.Marker([1.5, 1.51]);
+			group.addLayers([a, b]);
+			a.bindPopup('popup').openPopup();
+
+			map.setZoom(6, {animate: false});
+			vi.advanceTimersByTime(1000);
+
+			expect(map.hasLayer(a)).toBe(false);
+			expect(map.hasLayer(group.getVisibleParent(a))).toBe(true);
+		});
+
+		it('removes a cluster with an open popup when zooming in splits it', () => {
+			map.setView([1.5, 1.5], 6, {animate: false});
+			group = new MarkerClusterGroup({animate}).addTo(map);
+			const a = new L.Marker([1.5, 1.5]), b = new L.Marker([1.5, 1.51]);
+			group.addLayers([a, b]);
+			const cluster = group.getVisibleParent(a);
+			cluster.bindPopup('popup').openPopup();
+
+			map.setZoom(15, {animate: false});
+			vi.advanceTimersByTime(1000);
+
+			expect(map.hasLayer(cluster)).toBe(false);
+			expect(map.hasLayer(a)).toBe(true);
+			expect(map.hasLayer(b)).toBe(true);
+		});
+
+		it('removes a marker kept for its popup when zooming out', () => {
+			group = new MarkerClusterGroup({animate});
+			prepareGroup();
+			marker3.bindPopup('popup');
+			marker3.openPopup();
+			map.panBy([2000, 0], {animate: false});
+			vi.advanceTimersByTime(1000);
+
+			map.setZoom(map.getZoom() - 3, {animate: false});
+			vi.advanceTimersByTime(1000);
+
+			expect(marker3.isPopupOpen()).toBe(false);
+			expect(map.hasLayer(marker3)).toBe(false);
+		});
+	});
+
+	it('keeps a popup bound on the group open when its marker moves outside the visible bounds', () => {
+		group = new MarkerClusterGroup();
+		prepareGroup();
+		group.bindPopup('popup');
+		marker3.fire('click', {latlng: marker3.getLatLng()}, true);
+		expect(group.isPopupOpen()).toBe(true);
+
+		map.panBy([2000, 0], {animate: false});
+		vi.advanceTimersByTime(1000);
+
+		expect(group.isPopupOpen()).toBe(true);
+		expect(map.hasLayer(marker3)).toBe(true);
+
+		group.closePopup();
+		expect(map.hasLayer(marker3)).toBe(false);
+	});
+
 	it('can explicitly remove a marker with an out-of-bounds popup', () => {
 		group = new MarkerClusterGroup();
 		prepareGroup();

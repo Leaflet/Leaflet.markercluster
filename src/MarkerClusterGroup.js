@@ -223,6 +223,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		/** The marker being reclustered after a move, which stays on the map meanwhile. @type {ClusterChild<M> | null} */
 		this._moving = null;
 
+		/** Markers and clusters panned out of view but kept on the map for their open popup. @type {Set<ClusterChild<M> | MarkerCluster<M>>} */
+		this._keptForPopup = new Set();
+
 		/** Bumped by clearLayers, which stops the chunked addLayers calls started before it. @type {number} */
 		this._generation = 0;
 
@@ -787,6 +790,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		map.off('moveend', this._moveEnd, this);
 		map.off('zoomlevelschange', this._zoomLevelsChange, this);
 		this._featureGroup.off('popupclose', this._popupClose, this);
+		this._keptForPopup.clear();
 
 		// the drag can't end on the map now, so its marker is clustered again when we're added back
 		for (const m of this._dragging) {
@@ -1199,18 +1203,43 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		const newBounds = this._getExpandedVisibleBounds();
 
-		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._minZoom, this._zoom, newBounds);
+		// panning can take a layer with an open popup out of view, e.g. autopan of an oversized popup
+		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._minZoom, this._zoom, newBounds, true);
 		this._topClusterLevel._recursivelyAddChildrenToMap(null, Math.round(this._map.getZoom()), newBounds);
 
 		this._currentShownBounds = newBounds;
 
 	}
 
+	/**
+	 * Whether a layer has an open popup, its own or the group's, and so stays on the map out of view; removing it
+	 * would close the popup. Called during autopan too, which runs before popupopen fires.
+	 * @param {ClusterChild<M> | MarkerCluster<M>} layer
+	 */
+	_keepForPopup(layer) {
+		const popup = layer.isPopupOpen() ? layer.getPopup() : this.isPopupOpen() ? this.getPopup() : null;
+		if (popup && /** @type {{_source?: Layer}} */ (popup)._source === layer) {
+			this._keptForPopup.add(layer);
+			return true;
+		}
+		return false;
+	}
+
 	/** @param {PopupEvent} e */
 	_popupClose(e) {
 		const layer = /** @type {ClusterChild<M> | MarkerCluster<M>} */ (e.sourceTarget);
-		if (this._map && layer && this._featureGroup.hasLayer(layer) &&
-			!this._getExpandedVisibleBounds().contains(layer.getLatLng())) {
+		if (this._keptForPopup.has(layer)) {
+			this._removeKeptForPopup(layer);
+		}
+	}
+
+	/**
+	 * Removes a layer kept for its popup if it's still out of view, where the recursive removals don't reach it.
+	 * @param {ClusterChild<M> | MarkerCluster<M>} layer
+	 */
+	_removeKeptForPopup(layer) {
+		this._keptForPopup.delete(layer);
+		if (this._featureGroup.hasLayer(layer) && !this._currentShownBounds.contains(layer.getLatLng())) {
 			this._featureGroup.removeLayer(layer);
 		}
 	}
@@ -1392,6 +1421,13 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		//In case we are starting to split before the animation finished
 		this._processQueue();
+
+		// a marker kept for its popup stays a marker when zooming in, but a cluster splits and a marker may merge
+		for (const layer of [...this._keptForPopup]) {
+			if (this._zoom >= mapZoom || layer instanceof MarkerCluster) {
+				this._removeKeptForPopup(layer);
+			}
+		}
 
 		if (this._zoom < mapZoom && this._currentShownBounds.intersects(this._getExpandedVisibleBounds())) { //Zoom in, split
 			this._animationStart();
