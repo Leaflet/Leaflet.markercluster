@@ -586,14 +586,15 @@ export class MarkerCluster extends L.Marker {
 	 * @param {number} mapMinZoom
 	 * @param {number} zoomLevel
 	 * @param {LatLngBounds} [exceptBounds] If set, don't remove any markers/clusters in it.
+	 * @param {boolean} [keepPopups] Don't remove markers/clusters with an open popup.
 	 */
-	_recursivelyRemoveChildrenFromMap(previousBounds, mapMinZoom, zoomLevel, exceptBounds) {
+	_recursivelyRemoveChildrenFromMap(previousBounds, mapMinZoom, zoomLevel, exceptBounds, keepPopups) {
 		this._recursively(previousBounds, mapMinZoom - 1, zoomLevel - 1,
 			(c) => {
 				//Remove markers at every level
 				for (let i = c._markers.length - 1; i >= 0; i--) {
 					const m = c._markers[i];
-					if (!exceptBounds || !exceptBounds.contains(m.getLatLng())) {
+					if ((!exceptBounds || !exceptBounds.contains(m.getLatLng())) && !(keepPopups && c._group._keepForPopup(m))) {
 						c._group._featureGroup.removeLayer(m);
 						if (m.clusterShow) {
 							m.clusterShow();
@@ -605,7 +606,7 @@ export class MarkerCluster extends L.Marker {
 				//Remove child clusters at just the bottom level
 				for (let i = c._childClusters.length - 1; i >= 0; i--) {
 					const m = c._childClusters[i];
-					if (!exceptBounds || !exceptBounds.contains(m.getLatLng())) {
+					if ((!exceptBounds || !exceptBounds.contains(m.getLatLng())) && !(keepPopups && c._group._keepForPopup(m))) {
 						c._group._featureGroup.removeLayer(m);
 						if (m.clusterShow) {
 							m.clusterShow();
