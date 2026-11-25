@@ -521,4 +521,75 @@ describe('spiderfy', () => {
 			expect(fired).toHaveBeenCalledOnce();
 		});
 	});
+
+	describe('changes to other markers', () => {
+		let cluster, marker, other;
+
+		beforeEach(() => {
+			group = new MarkerClusterGroup();
+			marker = new L.Marker([1.5, 1.5]);
+			other = new L.Marker([1.1, 1.9]);
+			group.addLayers([marker, new L.Marker([1.5, 1.5]), other]);
+			map.addLayer(group);
+
+			cluster = parents.get(marker);
+			cluster.spiderfy();
+			vi.advanceTimersByTime(1000);
+		});
+
+		function expectSpiderfied() {
+			vi.advanceTimersByTime(1000);
+			expect(group._spiderfied).toBe(cluster);
+			expect(marker.getLatLng()).not.toEqual(new L.LatLng(1.5, 1.5));
+			expect(map.hasLayer(marker)).toBe(true);
+		}
+
+		it('keeps the spider when adding markers elsewhere', () => {
+			group.addLayer(new L.Marker([1.1, 1.1]));
+			group.addLayers([new L.Marker([1.9, 1.1]), new L.Marker([1.9, 1.1]), new L.Marker([10, 10])]);
+			expectSpiderfied();
+		});
+
+		it('keeps the spider when adding a marker that clusters with one elsewhere', () => {
+			group.addLayer(new L.Marker([1.1, 1.9]));
+			expect(group.getVisibleParent(other)).not.toBe(other);
+			expectSpiderfied();
+		});
+
+		it('keeps the spider when removing markers elsewhere', () => {
+			const more = [new L.Marker([1.9, 1.1]), new L.Marker([1.9, 1.1])];
+			group.addLayers(more);
+			group.removeLayer(other);
+			group.removeLayers(more);
+			expectSpiderfied();
+		});
+
+		it('keeps the spider when moving a marker elsewhere', () => {
+			other.setLatLng([1.05, 1.95]);
+			expect(group.getVisibleParent(other)).toBe(other);
+			expectSpiderfied();
+		});
+
+		it('unspiderfies when adding a marker to the spiderfied cluster', () => {
+			group.addLayers([new L.Marker([1.1, 1.1]), new L.Marker([1.5, 1.5])]);
+			expect(group._spiderfied).toBe(null);
+			vi.advanceTimersByTime(1000);
+			expect(map.hasLayer(marker)).toBe(false);
+			expect(marker.getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
+		});
+
+		it('unspiderfies when moving a marker into the spiderfied cluster', () => {
+			other.setLatLng([1.5, 1.5]);
+			expect(group._spiderfied).toBe(null);
+			vi.advanceTimersByTime(1000);
+			expect(map.hasLayer(marker)).toBe(false);
+			expect(cluster.getChildCount()).toBe(3);
+		});
+
+		it('unspiderfies when removing a marker from the spiderfied cluster', () => {
+			group.removeLayers([other, marker]);
+			expect(group._spiderfied).toBe(null);
+			expect(marker.getLatLng()).toEqual(new L.LatLng(1.5, 1.5));
+		});
+	});
 });

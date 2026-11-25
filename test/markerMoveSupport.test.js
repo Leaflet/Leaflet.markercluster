@@ -295,6 +295,27 @@ describe('moving markers', () => {
 		expect(group.getLayers().length).toBe(3);
 	});
 
+	it('keeps the spider when dragging a marker elsewhere', () => {
+		group = new MarkerClusterGroup();
+		const marker = new L.Marker([1.5, 1.5]),
+			other = new L.Marker([1.1, 1.9], {draggable: true});
+		group.addLayers([marker, new L.Marker([1.5, 1.5]), other]);
+		map.addLayer(group);
+
+		const cluster = parents.get(marker);
+		cluster.spiderfy();
+		vi.advanceTimersByTime(1000);
+
+		const dragged = drag(other);
+		dragged.move(new L.Point(-20, 0));
+		dragged.end();
+		vi.advanceTimersByTime(1000);
+
+		expect(group._spiderfied).toBe(cluster);
+		expect(map.hasLayer(marker)).toBe(true);
+		expect(group.getVisibleParent(other)).toBe(other);
+	});
+
 	it('keeps a spiderfied marker where it was dragged', () => {
 		map.setView([1.5, 1.5], 18, {animate: false});
 		group = new MarkerClusterGroup();

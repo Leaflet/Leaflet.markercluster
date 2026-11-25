@@ -269,10 +269,9 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			return this;
 		}
 
-		this._unspiderfy();
-
 		/** @type {MarkerCluster<M> | undefined} */
 		let parent = this._addLayer(layer);
+		this._unspiderfyIfIn(parent);
 		this.fire('layeradd', {layer});
 
 		// Refresh bounds and weighted positions.
@@ -344,7 +343,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		// the rest works off the map too, where nothing is spiderfied or shown
-		this._unspiderfy();
 		this._unspiderfyLayer(layer);
 
 		//Remove the marker from clusters
@@ -428,9 +426,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				/** @type {Set<ClusterChild<M> | MarkerCluster<M>>} */
 				removedFromTop = new Set();
 
-			// Make sure to unspiderfy before starting to add some layers
-			this._unspiderfy();
-
 			for (; offset < l; offset++) {
 				// every couple hundred markers (but not at the chunk's start, so that it always makes progress),
 				// check whether the chunk has run long enough to give the browser a break
@@ -459,6 +454,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 				}
 
 				const parent = this._addLayer(m, removedFromTop);
+				this._unspiderfyIfIn(parent);
 				if (fireAdd) {
 					this.fire('layeradd', {layer: m});
 				}
@@ -514,7 +510,6 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		}
 
 		// the rest works off the map too, where nothing is spiderfied or shown
-		this._unspiderfy();
 		for (const m of layers) {
 			this._unspiderfyLayer(m);
 		}
@@ -954,8 +949,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			this._spiders.delete(marker);
 			this._map.removeLayer(spider.leg);
 			marker.setZIndexOffset?.(0);
+			this._unspiderfy();
 		}
-		this._unspiderfy();
 
 		this._removeLayer(marker, true);
 		this._needsClustering.add(marker);
@@ -1679,12 +1674,30 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 	}
 
 	/**
-	 * If the given layer is currently being spiderfied then we unspiderfy it so it isn't on the map anymore etc.
+	 * Unspiderfies if the cluster that a marker was added to is the spiderfied one or inside it.
+	 * @param {MarkerCluster<M> | undefined} cluster
+	 */
+	_unspiderfyIfIn(cluster) {
+		const spiderfied = this._spiderfied;
+		if (!spiderfied) {
+			return;
+		}
+		for (let c = cluster; c && c._zoom >= spiderfied._zoom; c = c._parent) {
+			if (c === spiderfied) {
+				this._unspiderfy();
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Takes the layer out of the spider if it's in one, unspiderfying the rest of its cluster.
 	 * @param {ClusterChild<M>} layer
 	 */
 	_unspiderfyLayer(layer) {
 		const spider = this._spiders.get(layer);
 		if (spider) {
+			this._unspiderfy();
 			this._spiders.delete(layer);
 			this._featureGroup.removeLayer(layer);
 
