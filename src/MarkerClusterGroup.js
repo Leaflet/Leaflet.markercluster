@@ -698,6 +698,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		const layer = /** @type {ClusterChild<M>} */ (marker),
 			done = typeof callback === 'function' ? callback : () => {},
 			parent = parents.get(layer);
+		let retried = false;
 
 		const showMarker = () => {
 			const gone = this._map !== map || !this.hasLayer(marker);
@@ -715,6 +716,10 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 					this.once('spiderfied', done, this);
 					parent.spiderfy();
 				}
+			} else if (parent && !retried && !this._inZoomAnimation) {
+				// zoomToBounds lands short of the parent when its bounds don't fit the map at the parent's zoom
+				retried = true;
+				map.setView(layer.getLatLng(), parent._zoom + 1);
 			}
 		};
 

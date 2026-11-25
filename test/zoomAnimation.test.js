@@ -517,6 +517,27 @@ describe('zoomAnimation', () => {
 			expect(zoomCallbackSpy).not.toHaveBeenCalled();
 		});
 
+		it('zooms on when fitting the cluster bounds lands short of the cluster', () => {
+			// 280px apart at zoom 12, so they cluster there with a 300px radius, but don't fit the 200px map
+			const center = map.project([1.5, 1.5], 12),
+				markers = [-140, 140].map(dx => new L.Marker(map.unproject(center.add([dx, 0]), 12)));
+			group = new MarkerClusterGroup({maxClusterRadius: 300}).addLayers(markers);
+			map.addLayer(group);
+			vi.advanceTimersByTime(1000);
+
+			const parent = parents.get(markers[0]);
+			expect(parent._zoom).toBe(12);
+			expect(map.getBoundsZoom(parent.getBounds())).toBe(11);
+
+			const zoomCallbackSpy = vi.fn();
+			group.zoomToShowLayer(markers[0], zoomCallbackSpy);
+			vi.advanceTimersByTime(1000);
+
+			expect(map.hasLayer(markers[0])).toBe(true);
+			expect(zoomCallbackSpy).toHaveBeenCalledOnce();
+			expect(map._events.moveend.filter(l => l.ctx === group).map(l => l.fn)).toEqual([group._moveEnd]);
+		});
+
 		it('stops waiting when the marker is removed during the zoom', () => {
 			group = new MarkerClusterGroup();
 			const markers = [new L.Marker([59.9520, 30.3307]), new L.Marker([59.9516, 30.3308]),
