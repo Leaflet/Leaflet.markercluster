@@ -81,7 +81,7 @@ Pass options when creating the group, e.g. `new MarkerClusterGroup({maxClusterRa
 | --- | --- | --- |
 | `maxClusterRadius` | `80` | The maximum distance in pixels from a cluster's center to its markers. Smaller values make more, smaller clusters. Can be a function that takes a zoom and returns the radius for it. |
 | `disableClusteringAtZoom` | `null` | Don't cluster markers at this zoom and above ([demo](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-realworld-maxzoom.388.html)). You may want to turn off `spiderfyOnMaxZoom` with it. |
-| `removeOutsideVisibleBounds` | `true` | Take clusters and markers far from the view off the map, for performance. Layers with an open popup stay until it closes. |
+| `removeOutsideVisibleBounds` | `true` | Take clusters and markers far from the view off the map, for performance. Layers with an open popup stay until it closes. Turn it off to keep off-screen markers reachable by keyboard and screen readers. |
 | `singleMarkerMode` | `false` | Give single markers the cluster icon too, as clusters of 1. Only the icon changes, so the markers keep their events, and the icon stays at zooms where clustering is disabled. |
 
 ### Clicking clusters
