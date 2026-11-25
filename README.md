@@ -6,13 +6,13 @@ Fast, animated marker clustering for [Leaflet](https://leafletjs.com) (2.0 and 1
 
 **[See the demos](https://leaflet.github.io/Leaflet.markercluster/example/)**
 
-Version 2.0 is in beta: install it with `npm install leaflet.markercluster@next`, and please report any problems in [#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115). See the [changelog](CHANGELOG.md) for what changed since 1.5. For Leaflet 1.0–1.8, use [1.5.3](https://github.com/Leaflet/Leaflet.markercluster/tree/v1.5.3).
+Version 2.0 works with Leaflet 1.9 and 2.0: see the [changelog](CHANGELOG.md) for what changed since 1.5. For Leaflet 1.0–1.8, use [1.5.3](https://github.com/Leaflet/Leaflet.markercluster/tree/v1.5.3).
 
 [Getting started](#getting-started) · [Options](#options) · [Events](#events) · [Methods](#methods) · [Accessibility](#accessibility) · [TypeScript](#typescript) · [Plugins](#plugins) · [Development](#development)
 
 ## Getting started
 
-Install the plugin with `npm install leaflet.markercluster@next`, along with `leaflet@beta` for Leaflet 2.0 or `leaflet` for 1.9. The examples below work with both.
+Install the plugin with `npm install leaflet.markercluster`, along with `leaflet@beta` for Leaflet 2.0 or `leaflet` for 1.9. The examples below work with both.
 
 Create a `MarkerClusterGroup`, add markers to it and add it to the map:
 
@@ -37,12 +37,12 @@ The plugin is an ES module that imports `leaflet`, so an [import map](https://de
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.5/dist/leaflet.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.2/dist/MarkerCluster.Default.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0/dist/MarkerCluster.Default.css">
 <script type="importmap">
 {
 	"imports": {
 		"leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-beta.5/dist/leaflet.js",
-		"leaflet.markercluster": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.2/dist/leaflet.markercluster.js"
+		"leaflet.markercluster": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0/dist/leaflet.markercluster.js"
 	}
 }
 </script>
@@ -61,9 +61,9 @@ For Leaflet 1.9, point `leaflet` to `https://cdn.jsdelivr.net/npm/leaflet@1.9.4/
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.2/dist/MarkerCluster.Default.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0/dist/MarkerCluster.Default.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0-beta.2/dist/leaflet.markercluster-global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@2.0.0/dist/leaflet.markercluster-global.js"></script>
 <script>
 	const markers = new L.MarkerClusterGroup();
 </script>

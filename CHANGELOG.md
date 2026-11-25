@@ -1,28 +1,12 @@
 # Leaflet.markercluster
 
-(all changes in 2.0.0-beta.1 without author notice are by [@mourner](https://github.com/mourner))
+(all changes in 2.0.0 without author notice are by [@mourner](https://github.com/mourner))
 
-## 2.0.0-beta.2 (2026-11-13)
+## 2.0.0 (2026-11-25)
 
-Bug fixes from the beta feedback and older issues. Please keep reporting problems in [#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115).
+The first release since 2021: a full modernization of the plugin. It now works with both **Leaflet 2.0 and 1.9** from one package, is an **ES module** with its own **TypeScript types**, and uses only public Leaflet APIs where possible. Loading markers is **2× faster** with **over a third less memory**, cluster animations are smoother and no longer depend on CSS, clusters are **accessible** to keyboard and screen reader users, and over 30 bugs are fixed.
 
-### 🐞 Bug fixes
-
-- Fix spiderfied markers vanishing when a zoom splits their cluster (with `zoomAnimation: false`), which also kept `zoomToShowLayer` from spiderfying with `animate: false` ([#780](https://github.com/Leaflet/Leaflet.markercluster/issues/780))
-- Fade spiderfied markers out in place during pinch zooms and `flyTo` instead of collapsing them to a position the zoom has moved away from
-- Fix an error and invisible clusters when removing the map's only layer with a `maxZoom`, e.g. while switching base layers. The clusters now stay until the zoom range is back ([#1127](https://github.com/Leaflet/Leaflet.markercluster/issues/1127))
-- Fix the browser freezing on an invalid latlng or a very high `maxZoom` ([#1043](https://github.com/Leaflet/Leaflet.markercluster/issues/1043), [#1008](https://github.com/Leaflet/Leaflet.markercluster/issues/1008))
-- Free the memory of emptied grid rows when removing markers ([#977](https://github.com/Leaflet/Leaflet.markercluster/issues/977))
-- Take cluster popup and tooltip anchors from the icon `iconCreateFunction` returns ([#1087](https://github.com/Leaflet/Leaflet.markercluster/issues/1087))
-- Fix clusters not expanding on click when `zoomToBounds` gets padding in its `fitBoundsOptions` ([#932](https://github.com/Leaflet/Leaflet.markercluster/issues/932))
-- Make `zoomToShowLayer` do nothing for a marker that isn't in the group or a group that isn't on the map, and stop waiting if the marker is removed during the zoom, instead of throwing ([#1125](https://github.com/Leaflet/Leaflet.markercluster/issues/1125))
-- Serve the 1.x builds on leaflet.github.io again for pages that load them from there ([#1126](https://github.com/Leaflet/Leaflet.markercluster/issues/1126))
-
-## 2.0.0-beta.1 (2026-11-04)
-
-The first beta of 2.0 and the first release since 2021: a full modernization of the plugin. It now works with both **Leaflet 2.0 and 1.9** from one package, is an **ES module** with its own **TypeScript types**, and uses only public Leaflet APIs where possible. Loading markers is **2× faster** with **over a third less memory**, cluster animations are smoother and no longer depend on CSS, clusters are **accessible** to keyboard and screen reader users, and over 20 bugs are fixed.
-
-The release targets [Baseline 2022](https://web.dev/baseline) browsers and Leaflet 1.9+. Breaking changes are listed after the improvements. Install it with `npm install leaflet.markercluster@next`, and please report any problems in [#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115).
+The release targets [Baseline 2022](https://web.dev/baseline) browsers and Leaflet 1.9+. Breaking changes are listed after the improvements. Thanks to everyone who tested the betas! If you're upgrading from one, see [the changes since beta.2](#since-200-beta2) at the end.
 
 ### ❇️ New features
 
@@ -34,6 +18,9 @@ The release targets [Baseline 2022](https://web.dev/baseline) browsers and Leafl
 - Add `getParent(layer)` to get the cluster a marker (or cluster) is directly in, replacing `marker.__parent`
 - Let `clusterclick` handlers cancel the default zoom or spiderfy with `e.originalEvent.preventDefault()` ([#1103](https://github.com/Leaflet/Leaflet.markercluster/pull/1103) by [@eriknikulski](https://github.com/eriknikulski))
 - Ship minified builds with source maps ([#864](https://github.com/Leaflet/Leaflet.markercluster/issues/864))
+- Animate circle markers on zoom and spiderfy like markers, with the default SVG renderer ([#1056](https://github.com/Leaflet/Leaflet.markercluster/issues/1056), [#1024](https://github.com/Leaflet/Leaflet.markercluster/issues/1024), [#1129](https://github.com/Leaflet/Leaflet.markercluster/pull/1129) by [@KristjanESPERANTO](https://github.com/KristjanESPERANTO))
+- Add the `spiderfiedClusterOpacity` option (default 0.3) ([#632](https://github.com/Leaflet/Leaflet.markercluster/issues/632))
+- Let `polygonOptions` be a function that takes the cluster and returns the options ([#562](https://github.com/Leaflet/Leaflet.markercluster/issues/562))
 
 ### ⚡️ Performance
 
@@ -86,6 +73,21 @@ The release targets [Baseline 2022](https://web.dev/baseline) browsers and Leafl
 - Fix `removeLayer(id)` for clustered markers
 - Fix `animateAddingMarkers` and `refreshClusters` throwing or misbehaving with a `CircleMarker`
 - Fix a hang when the map has no finite `minZoom`; it throws an error now ([#991](https://github.com/Leaflet/Leaflet.markercluster/pull/991) by [@maranderan](https://github.com/maranderan))
+- Fix spiderfied markers vanishing when a zoom splits their cluster (with `zoomAnimation: false`), which also kept `zoomToShowLayer` from spiderfying with `animate: false` ([#780](https://github.com/Leaflet/Leaflet.markercluster/issues/780))
+- Fade spiderfied markers out in place during pinch zooms and `flyTo` instead of collapsing them to a position the zoom has moved away from
+- Fix the browser freezing on an invalid latlng or a very high `maxZoom` ([#1043](https://github.com/Leaflet/Leaflet.markercluster/issues/1043), [#1008](https://github.com/Leaflet/Leaflet.markercluster/issues/1008))
+- Free the memory of emptied grid rows when removing markers ([#977](https://github.com/Leaflet/Leaflet.markercluster/issues/977))
+- Take cluster popup and tooltip anchors from the icon `iconCreateFunction` returns ([#1087](https://github.com/Leaflet/Leaflet.markercluster/issues/1087))
+- Fix clusters not expanding on click when `zoomToBounds` gets padding in its `fitBoundsOptions` ([#932](https://github.com/Leaflet/Leaflet.markercluster/issues/932))
+- Make `zoomToShowLayer` do nothing for a marker that isn't in the group or a group that isn't on the map, and stop waiting if the marker is removed during the zoom, instead of throwing ([#1125](https://github.com/Leaflet/Leaflet.markercluster/issues/1125))
+- Make `hasLayer` work with a layer group (e.g. a `GeoJSON` layer) added to the cluster group, returning whether all its layers are in the group, and with a layer id ([#915](https://github.com/Leaflet/Leaflet.markercluster/issues/915))
+- Show the coverage of clusters of two markers too, as a line ([#806](https://github.com/Leaflet/Leaflet.markercluster/issues/806), [#986](https://github.com/Leaflet/Leaflet.markercluster/issues/986))
+- Keep a marker's element when `setLatLng` moves it and it stays shown, so CSS transitions can animate the move ([#1000](https://github.com/Leaflet/Leaflet.markercluster/issues/1000), [#963](https://github.com/Leaflet/Leaflet.markercluster/issues/963), [#774](https://github.com/Leaflet/Leaflet.markercluster/issues/774), [#1130](https://github.com/Leaflet/Leaflet.markercluster/pull/1130) by [@KristjanESPERANTO](https://github.com/KristjanESPERANTO))
+- Keep layers with an open popup on the map when they're panned out of view, e.g. by the autopan of a popup bigger than the map ([#993](https://github.com/Leaflet/Leaflet.markercluster/issues/993), [#1131](https://github.com/Leaflet/Leaflet.markercluster/pull/1131) by [@KristjanESPERANTO](https://github.com/KristjanESPERANTO))
+- Keep the spider open when markers are added, removed, moved or dragged elsewhere; it only closes when the change involves the spiderfied cluster ([#318](https://github.com/Leaflet/Leaflet.markercluster/issues/318), [#778](https://github.com/Leaflet/Leaflet.markercluster/issues/778), [#716](https://github.com/Leaflet/Leaflet.markercluster/issues/716), [#871](https://github.com/Leaflet/Leaflet.markercluster/issues/871))
+- Keep markers that are unclustered at both zooms on the map when zooming without animation, so they keep their element, popup and focus ([#844](https://github.com/Leaflet/Leaflet.markercluster/issues/844))
+- Fix `zoomToShowLayer` stopping short when `zoomToBounds` lands at a zoom where the marker is still clustered ([#1114](https://github.com/Leaflet/Leaflet.markercluster/issues/1114))
+- Fix doubled clusters when a `moveend` fires in the middle of a pinch zoom that snaps back to the same zoom ([#930](https://github.com/Leaflet/Leaflet.markercluster/issues/930), [#790](https://github.com/Leaflet/Leaflet.markercluster/issues/790))
 
 ### 🔧 Workflow
 
@@ -93,6 +95,41 @@ The release targets [Baseline 2022](https://web.dev/baseline) browsers and Leafl
 - Build with Rolldown, lint with ESLint against Baseline 2022, and run CI and npm releases on GitHub Actions
 - Add a benchmark harness for loading, zooming and memory (`npm run bench`)
 - Update the demos to ES modules and Leaflet 2.0, and use the preferred OpenStreetMap tile URL ([#1072](https://github.com/Leaflet/Leaflet.markercluster/pull/1072) by [@Firefishy](https://github.com/Firefishy))
+
+### Since 2.0.0-beta.2
+
+- Make `hasLayer` work with layer groups and layer ids ([#915](https://github.com/Leaflet/Leaflet.markercluster/issues/915))
+- Show the coverage of clusters of two markers as a line ([#806](https://github.com/Leaflet/Leaflet.markercluster/issues/806), [#986](https://github.com/Leaflet/Leaflet.markercluster/issues/986))
+- Animate circle markers on zoom and spiderfy like markers, with the default SVG renderer ([#1056](https://github.com/Leaflet/Leaflet.markercluster/issues/1056), [#1024](https://github.com/Leaflet/Leaflet.markercluster/issues/1024), [#1129](https://github.com/Leaflet/Leaflet.markercluster/pull/1129) by [@KristjanESPERANTO](https://github.com/KristjanESPERANTO))
+- Add the `spiderfiedClusterOpacity` option (default 0.3) ([#632](https://github.com/Leaflet/Leaflet.markercluster/issues/632))
+- Let `polygonOptions` be a function that takes the cluster and returns the options ([#562](https://github.com/Leaflet/Leaflet.markercluster/issues/562))
+- Fix `setLatLng` on a spiderfied marker reverting to its old position, a regression from 1.5.3 ([#1128](https://github.com/Leaflet/Leaflet.markercluster/pull/1128) by [@gasparoff](https://github.com/gasparoff))
+- Keep a marker's element when `setLatLng` moves it and it stays shown, so CSS transitions can animate the move ([#1000](https://github.com/Leaflet/Leaflet.markercluster/issues/1000), [#963](https://github.com/Leaflet/Leaflet.markercluster/issues/963), [#774](https://github.com/Leaflet/Leaflet.markercluster/issues/774), [#1130](https://github.com/Leaflet/Leaflet.markercluster/pull/1130) by [@KristjanESPERANTO](https://github.com/KristjanESPERANTO))
+- Keep layers with an open popup on the map when they're panned out of view, e.g. by the autopan of a popup bigger than the map ([#993](https://github.com/Leaflet/Leaflet.markercluster/issues/993), [#1131](https://github.com/Leaflet/Leaflet.markercluster/pull/1131) by [@KristjanESPERANTO](https://github.com/KristjanESPERANTO))
+- Keep the spider open when markers are added, removed, moved or dragged elsewhere; it only closes when the change involves the spiderfied cluster ([#318](https://github.com/Leaflet/Leaflet.markercluster/issues/318), [#778](https://github.com/Leaflet/Leaflet.markercluster/issues/778), [#716](https://github.com/Leaflet/Leaflet.markercluster/issues/716), [#871](https://github.com/Leaflet/Leaflet.markercluster/issues/871))
+- Keep markers that are unclustered at both zooms on the map when zooming without animation, so they keep their element, popup and focus ([#844](https://github.com/Leaflet/Leaflet.markercluster/issues/844))
+- Fix `zoomToShowLayer` stopping short when `zoomToBounds` lands at a zoom where the marker is still clustered ([#1114](https://github.com/Leaflet/Leaflet.markercluster/issues/1114))
+- Fix doubled clusters when a `moveend` fires in the middle of a pinch zoom that snaps back to the same zoom ([#930](https://github.com/Leaflet/Leaflet.markercluster/issues/930), [#790](https://github.com/Leaflet/Leaflet.markercluster/issues/790))
+
+## 2.0.0-beta.2 (2026-11-13)
+
+Bug fixes from the beta feedback and older issues. Please keep reporting problems in [#1115](https://github.com/Leaflet/Leaflet.markercluster/issues/1115).
+
+### 🐞 Bug fixes
+
+- Fix spiderfied markers vanishing when a zoom splits their cluster (with `zoomAnimation: false`), which also kept `zoomToShowLayer` from spiderfying with `animate: false` ([#780](https://github.com/Leaflet/Leaflet.markercluster/issues/780))
+- Fade spiderfied markers out in place during pinch zooms and `flyTo` instead of collapsing them to a position the zoom has moved away from
+- Fix an error and invisible clusters when removing the map's only layer with a `maxZoom`, e.g. while switching base layers. The clusters now stay until the zoom range is back ([#1127](https://github.com/Leaflet/Leaflet.markercluster/issues/1127))
+- Fix the browser freezing on an invalid latlng or a very high `maxZoom` ([#1043](https://github.com/Leaflet/Leaflet.markercluster/issues/1043), [#1008](https://github.com/Leaflet/Leaflet.markercluster/issues/1008))
+- Free the memory of emptied grid rows when removing markers ([#977](https://github.com/Leaflet/Leaflet.markercluster/issues/977))
+- Take cluster popup and tooltip anchors from the icon `iconCreateFunction` returns ([#1087](https://github.com/Leaflet/Leaflet.markercluster/issues/1087))
+- Fix clusters not expanding on click when `zoomToBounds` gets padding in its `fitBoundsOptions` ([#932](https://github.com/Leaflet/Leaflet.markercluster/issues/932))
+- Make `zoomToShowLayer` do nothing for a marker that isn't in the group or a group that isn't on the map, and stop waiting if the marker is removed during the zoom, instead of throwing ([#1125](https://github.com/Leaflet/Leaflet.markercluster/issues/1125))
+- Serve the 1.x builds on leaflet.github.io again for pages that load them from there ([#1126](https://github.com/Leaflet/Leaflet.markercluster/issues/1126))
+
+## 2.0.0-beta.1 (2026-11-04)
+
+The first beta of 2.0. Its changes are all listed under [2.0.0](#200-2026-11-25).
 
 ## 1.5.3 (2021-10-18)
 
