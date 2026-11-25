@@ -82,4 +82,23 @@ describe('animate option', () => {
 		expect(cluster._animationUnspiderfy).toBe(clusterProto._animationUnspiderfy);
 
 	});
+
+	it('keeps the markers shown at both zooms on the map when zooming without animation', () => {
+		const marker = new L.Marker([1.5, 1.5]).bindPopup('popup'),
+			pair = [new L.Marker([1.1, 1.1]), new L.Marker([1.12, 1.12])];
+		group = new MarkerClusterGroup({animate: false}).addLayers([marker, ...pair]).addTo(map);
+		marker.openPopup();
+
+		const icon = marker.getElement(),
+			removed = [];
+		marker.on('remove', () => removed.push(map.getZoom()));
+
+		map.setZoom(12, {animate: false});
+		map.setZoom(8, {animate: false});
+		expect(group.getVisibleParent(pair[0])).not.toBe(pair[0]);
+
+		expect(removed).toEqual([]);
+		expect(marker.getElement()).toBe(icon);
+		expect(marker.isPopupOpen()).toBe(true);
+	});
 });

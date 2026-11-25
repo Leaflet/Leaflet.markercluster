@@ -130,8 +130,22 @@ const mapBoundsInfinite = new L.LatLngBounds(new L.LatLng(-Infinity, -Infinity),
  * @param {number} newZoomLevel
  */
 function noAnimationZoom(previousZoomLevel, newZoomLevel) {
-	this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._minZoom, previousZoomLevel);
-	this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, this._getExpandedVisibleBounds());
+	const bounds = this._getExpandedVisibleBounds();
+	/** @param {ClusterChild | MarkerCluster} layer */
+	const remove = (layer) => {
+		this._featureGroup.removeLayer(layer);
+		layer.clusterShow?.();
+	};
+
+	// like _recursivelyRemoveChildrenFromMap, but markers unclustered at both zooms stay, keeping their popups and focus
+	this._topClusterLevel._recursively(this._currentShownBounds, this._minZoom - 1, previousZoomLevel - 1, (c) => {
+		for (const m of c._markers) {
+			if (c._zoom >= newZoomLevel || !bounds.contains(m.getLatLng())) {
+				remove(m);
+			}
+		}
+	}, c => c._childClusters.forEach(remove));
+	this._topClusterLevel._recursivelyAddChildrenToMap(null, newZoomLevel, bounds);
 
 	//We didn't actually animate, but we use this event to mean "clustering animations have finished"
 	this.fire('animationend');
