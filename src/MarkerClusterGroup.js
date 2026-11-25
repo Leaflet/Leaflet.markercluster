@@ -1213,7 +1213,13 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 		this._currentShownBounds = this._getExpandedVisibleBounds();
 	}
 
+	// at the shown zoom, not the map's: a moveend in the middle of a pinch comes at a fractional zoom, before zoomend
 	_moveEnd() {
+		this._updateShownLayers(this._zoom);
+	}
+
+	/** @param {number} zoom */
+	_updateShownLayers(zoom) {
 		if (this._inZoomAnimation) {
 			return;
 		}
@@ -1222,7 +1228,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 		// panning can take a layer with an open popup out of view, e.g. autopan of an oversized popup
 		this._topClusterLevel._recursivelyRemoveChildrenFromMap(this._currentShownBounds, this._minZoom, this._zoom, newBounds, true);
-		this._topClusterLevel._recursivelyAddChildrenToMap(null, Math.round(this._map.getZoom()), newBounds);
+		this._topClusterLevel._recursivelyAddChildrenToMap(null, zoom, newBounds);
 
 		this._currentShownBounds = newBounds;
 
@@ -1458,7 +1464,7 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 
 			this._animationZoomOut(this._zoom, mapZoom);
 		} else {
-			this._moveEnd();
+			this._updateShownLayers(mapZoom);
 		}
 	}
 

@@ -266,6 +266,22 @@ describe('zoomAnimation', () => {
 		}
 	});
 
+	it('ignores a moveend in the middle of a pinch that snaps back to the same zoom', () => {
+		group = new MarkerClusterGroup({animate: false, removeOutsideVisibleBounds: false});
+		group.addLayers([new L.Marker([1.4, 1.4]), new L.Marker([1.6, 1.6])]);
+		map.addLayer(group);
+		const zoom = map.getZoom();
+		const shown = group._featureGroup.getLayers();
+
+		// a dragend when the dragging finger lifts, at the pinch's fractional zoom
+		map._zoom = zoom + 0.6;
+		map.fire('moveend');
+		map._zoom = zoom;
+		map.fire('zoomend').fire('moveend');
+
+		expect(group._featureGroup.getLayers()).toEqual(shown);
+	});
+
 	describe('zoomToShowLayer', () => {
 
 		it('zoom to single marker inside map view', () => {
