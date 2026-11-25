@@ -780,7 +780,7 @@ export class MarkerCluster extends L.Marker {
 
 		this._fading = true;
 		this.setOpacity(1);
-		animateMarker(this, null, null, 0.3, duration);
+		animateMarker(this, null, null, group.options.spiderfiedClusterOpacity, duration);
 
 		for (const m of this._getChildren([], true)) {
 			const spider = group._spiders.get(m);
@@ -885,7 +885,7 @@ export class MarkerCluster extends L.Marker {
 				animateMarker(m, offsetFrom(map, thisLayerPos, m), null, 0, duration);
 			}
 		}
-		this.setOpacity(0.3);
+		this.setOpacity(group.options.spiderfiedClusterOpacity);
 		animateMarker(this, null, null, 1, duration);
 
 		group._ignoreMove = false;
@@ -923,7 +923,7 @@ export class MarkerCluster extends L.Marker {
 
 		//Make us visible and bring the child markers back in
 		this.setOpacity(1);
-		animateMarker(this, null, null, 0.3, duration);
+		animateMarker(this, null, null, group.options.spiderfiedClusterOpacity, duration);
 
 		for (let i = childMarkers.length - 1; i >= 0; i--) {
 			const m = childMarkers[i],
@@ -1057,7 +1057,7 @@ export class MarkerClusterNonAnimated extends MarkerCluster {
 
 			fg.addLayer(m);
 		}
-		this.setOpacity(0.3);
+		this.setOpacity(group.options.spiderfiedClusterOpacity);
 
 		group._ignoreMove = false;
 		group.fire('spiderfied', {

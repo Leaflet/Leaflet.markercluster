@@ -33,6 +33,7 @@ import './MarkerPatches.js';
  * @property {number} spiderfyDistanceMultiplier Scales the distance of spiderfied markers from the center, e.g. for
  *   big icons.
  * @property {PolylineOptions} spiderLegPolylineOptions Style of spider legs.
+ * @property {number} spiderfiedClusterOpacity Opacity of a cluster while it's spiderfied.
  * @property {boolean} chunkedLoading Split `addLayers` into chunks with breaks in between, so that the page doesn't
  *   freeze.
  * @property {number} chunkInterval Milliseconds of processing per chunk.
@@ -1951,6 +1952,8 @@ MarkerClusterGroup.mergeOptions({
 
 	// Make it possible to specify a polyline options on a spider leg
 	spiderLegPolylineOptions: {weight: 1.5, color: '#222', opacity: 0.5},
+
+	spiderfiedClusterOpacity: 0.3,
 
 	// When bulk adding layers, adds markers in chunks. Means addLayers may not add all the layers in the call, others will be loaded during setTimeouts
 	chunkedLoading: false,

@@ -243,6 +243,25 @@ describe('spiderfy', () => {
 		expect(parseFloat(legKeyframes()[1].strokeDashoffset)).toBeGreaterThan(0);
 	});
 
+	it('fades the cluster to spiderfiedClusterOpacity while spiderfied', () => {
+		for (const animate of [true, false]) {
+			group = new MarkerClusterGroup({animate, spiderfiedClusterOpacity: 0.6});
+			const marker = new L.Marker([1.5, 1.5]);
+			group.addLayers([marker, new L.Marker([1.5, 1.5])]).addTo(map);
+
+			const cluster = group.getVisibleParent(marker);
+			cluster.spiderfy();
+			vi.advanceTimersByTime(1000);
+			expect(cluster.getElement().style.opacity).toBe('0.6');
+
+			cluster.unspiderfy();
+			vi.advanceTimersByTime(1000);
+			expect(cluster.getElement().style.opacity).toBe('1');
+
+			map.removeLayer(group);
+		}
+	});
+
 	it('moves markers out of the cluster and back with a translate animation, at their spider positions', () => {
 
 		group = new MarkerClusterGroup();

@@ -102,6 +102,7 @@ Pass options when creating the group, e.g. `new MarkerClusterGroup({maxClusterRa
 | `clusterLabel` | `` c => `${c.getChildCount()} markers` `` | Returns the name screen readers announce for a cluster, e.g. to translate it. |
 | `clusterPane` | `'markerPane'` | The [map pane](https://leafletjs.com/reference.html#map-pane) for clusters ([demo](https://leaflet.github.io/Leaflet.markercluster/example/marker-clustering-pane.html)). |
 | `spiderLegPolylineOptions` | `{weight: 1.5, color: '#222', opacity: 0.5}` | [Polyline options](https://leafletjs.com/reference.html#polyline-option) for the legs of spread-out markers. |
+| `spiderfiedClusterOpacity` | `0.3` | Opacity of a cluster while its markers are spread out. |
 | `spiderfyDistanceMultiplier` | `1` | Scales how far spread-out markers are from the center, e.g. for big icons. |
 | `spiderfyShapePositions` | `null` | Places spread-out markers in a shape of your own, see [below](#custom-spiderfy-shapes). |
 
