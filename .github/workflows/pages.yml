@@ -24,8 +24,8 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run build
-      # demos import ../src, so keep the repo layout; the root redirects to the demos. dist/ serves the frozen
-      # gh-pages snapshot for old pages hotlinking it (to be removed with 2.0.0 final), so v2 builds go to dist-v2/
+      # demos import ../src, so keep the repo layout; the root redirects to the demos. dist/ serves the frozen gh-pages
+      # 1.x snapshot for old pages hotlinking it (don't delete the gh-pages branch), so v2 builds go to dist-v2/
       - run: |
           mkdir _site
           cp -r example src _site/
