@@ -158,6 +158,14 @@ describe('accessibility', () => {
 		expect(group._shownPolygon).toBe(null);
 	});
 
+	it('styles the coverage with polygonOptions as a function of the cluster', () => {
+		const {cluster} = addCluster({polygonOptions: c => ({color: c.getChildCount() > 2 ? 'red' : 'blue'})},
+			[[1.4, 1.4], [1.4, 1.6], [1.6, 1.5]]);
+		cluster.getElement().focus();
+
+		expect(group._shownPolygon.options.color).toBe('red');
+	});
+
 	it('shows the coverage of a cluster of two as a line', () => {
 		const {cluster} = addCluster(undefined, [[1.4, 1.4], [1.6, 1.6]]);
 		cluster.getElement().focus();

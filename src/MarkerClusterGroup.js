@@ -41,7 +41,8 @@ import './MarkerPatches.js';
  * @property {((processed: number, total: number, elapsed: number) => void) | null} chunkProgress Called after each
  *   chunk with the number of markers processed and total, and the milliseconds since the start, e.g. for a
  *   progress bar.
- * @property {PolylineOptions} polygonOptions Style of the coverage polygon shown on hover.
+ * @property {PolylineOptions | ((cluster: MarkerCluster<M>) => PolylineOptions)} polygonOptions Style of the
+ *   coverage polygon shown on hover, or a function that returns it for a cluster.
  */
 
 /**
@@ -1173,7 +1174,8 @@ export class MarkerClusterGroup extends L.FeatureGroup {
 			map.removeLayer(this._shownPolygon);
 		}
 		if (cluster !== this._spiderfied) {
-			this._shownPolygon = new L.Polygon(cluster.getConvexHull(), this.options.polygonOptions);
+			const options = this.options.polygonOptions;
+			this._shownPolygon = new L.Polygon(cluster.getConvexHull(), typeof options === 'function' ? options(cluster) : options);
 			map.addLayer(this._shownPolygon);
 		}
 	}

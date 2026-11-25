@@ -92,7 +92,7 @@ Pass options when creating the group, e.g. `new MarkerClusterGroup({maxClusterRa
 | `spiderfyOnMaxZoom` | `true` | Spread out a cluster's markers when it's clicked and zooming in wouldn't split it: at the bottom zoom, or when its markers stay together down to it. |
 | `spiderfyOnEveryZoom` | `false` | Spread out a cluster's markers when it's clicked at any zoom. |
 | `showCoverageOnHover` | `true` | Show the area covered by a cluster's markers on hover or keyboard focus. |
-| `polygonOptions` | `{}` | [Path options](https://leafletjs.com/reference.html#path-option) for that coverage polygon. |
+| `polygonOptions` | `{}` | [Path options](https://leafletjs.com/reference.html#path-option) for that coverage polygon, or a function that takes the cluster and returns them. |
 
 ### Appearance
 
